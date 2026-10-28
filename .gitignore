@@ -17,16 +17,33 @@ local.properties
 .AppleDouble
 .LSOverride
 
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+**/xcuserdata/
+
 # Logs / temp
 *.log
 logs/
-out/
 captures/
+out/
 *.hprof
 hs_err_pid*
 
-# Build outputs / local fixtures
+# Build outputs
 *.apk
 *.aab
+
+# Local test assets (never commit copyrighted media)
 fixtures/local/
 fixtures/downloads/
+experiments/spikes/s1-player/fixtures/*.mp4
+experiments/spikes/s1-player/fixtures/*.mkv
+experiments/spikes/s1-player/fixtures/hls/
+
+# Third-party reference checkouts (local only; not part of the project)
+reference/
+
+# Local agent tooling and skills
+.qoder/

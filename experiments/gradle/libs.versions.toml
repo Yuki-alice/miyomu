@@ -1,0 +1,20 @@
+[versions]
+kotlin = "2.4.21"
+compose = "1.12.2"
+
+# Pinned for later Phase 0 spikes; not wired into modules yet.
+mediamp = "0.5.1"
+quickjs = "1.0.15"
+coroutines = "1.10.2"
+
+[libraries]
+# S1: mediamp (see docs/adr/0005-mediamp-player.md)
+mediamp-all = { module = "org.openani.mediamp:mediamp-all", version.ref = "mediamp" }
+# S2: QuickJS runtime (see docs/adr/0003-js-extension-runtime.md)
+quickjs-kt = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjs" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
