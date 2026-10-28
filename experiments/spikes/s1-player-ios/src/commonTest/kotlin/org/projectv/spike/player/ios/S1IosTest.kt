@@ -42,7 +42,8 @@ class S1IosTest {
     }
 
     private companion object {
-        const val FILE_URL =
-            "file:///Users/kurisu/project%20v/spikes/s1-player/fixtures/base.mp4"
+        // Replace with an absolute file:// URL to a locally generated fixture
+        // (see experiments/spikes/s1-player/fixtures/generate.sh) before running.
+        const val FILE_URL = "file:///path/to/base.mp4"
     }
 }

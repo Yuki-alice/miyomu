@@ -54,7 +54,7 @@
 
 - Phase 0 spike 代码仍使用 `org.projectv.spike.*` 包名，S3 样例窗口标题仍是 “Project V — Phase 0 / S3”，均为历史临时标识。
 - Phase 1 M0 新建仓库时统一为 `miyomu`，并替换包名、窗口标题、应用名与 Maven group。
-- 工作目录已更名为 `/Users/kurisu/miyomu`；生产构建位于仓库根目录，Phase 0/1 验证代码在 `experiments/`。
+- 工作目录已更名为 `miyomu`；生产构建位于仓库根目录，Phase 0/1 验证代码在 `experiments/`。
 
 ## 待办
 
