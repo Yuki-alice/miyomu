@@ -32,7 +32,7 @@ jobs:
         with:
           packages: platform-tools
       - name: Install SDK platforms
-        run: sdkmanager --install "platforms;android-36" "platforms;android-37" "build-tools;36.0.0"
+        run: sdkmanager --install "platforms;android-36" "platforms;android-37.0" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Shared module tests
         run: >-
@@ -61,7 +61,7 @@ jobs:
         with:
           packages: platform-tools
       - name: Install SDK platforms
-        run: sdkmanager --install "platforms;android-36" "platforms;android-37" "build-tools;36.0.0"
+        run: sdkmanager --install "platforms;android-36" "platforms;android-37.0" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: M0 toolchain probe
         run: ./gradlew -p experiments/phase1/toolchain-probe assembleDebug
