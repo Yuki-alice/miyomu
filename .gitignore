@@ -1,0 +1,32 @@
+# Gradle / Kotlin
+.gradle/
+build/
+**/build/
+.kotlin/
+local.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs / temp
+*.log
+logs/
+out/
+captures/
+*.hprof
+hs_err_pid*
+
+# Build outputs / local fixtures
+*.apk
+*.aab
+fixtures/local/
+fixtures/downloads/
