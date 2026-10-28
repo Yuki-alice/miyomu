@@ -14,10 +14,11 @@ permissions:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false
+  FIXTURE_URL: http://127.0.0.1:18080
 
 jobs:
   desktop:
-    name: Desktop product and JVM spikes
+    name: Product tests and desktop build
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -25,12 +26,23 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      # The Android SDK "tools" package no longer exists in the repository, so
+      # setup-android's default package list fails; install only platform-tools.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install SDK platforms
         run: sdkmanager --install "platforms;android-36" "platforms;android-37" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Shared runtime and data tests
-        run: ./gradlew :shared:source-runtime:jvmTest :shared:data:jvmTest
+      - name: Shared module tests
+        run: >-
+          ./gradlew
+          :shared:network:jvmTest
+          :shared:source-runtime:jvmTest
+          :shared:data:jvmTest
+          :shared:local:jvmTest
+          :shared:reader-comic:jvmTest
+          :shared:ui:jvmTest
       - name: Desktop shell
         run: ./gradlew :desktopApp:compileKotlin
       - name: Phase 0 JVM spikes
@@ -46,6 +58,8 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install SDK platforms
         run: sdkmanager --install "platforms;android-36" "platforms;android-37" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
@@ -57,8 +71,6 @@ jobs:
         run: ./gradlew -p experiments/spikes/s1-player-android assembleDebug
       - name: S2 Android source runtime spike
         run: ./experiments/spikes/s2-js-runtime-android/gradlew -p experiments/spikes/s2-js-runtime-android assembleDebug
-      - name: Miyomu shared source runtime and data
-        run: ./gradlew :shared:source-runtime:jvmTest :shared:source-runtime:assemble :shared:data:jvmTest :shared:data:assemble
       - name: Miyomu Android shell
         run: ./gradlew :androidApp:assembleDebug
 
@@ -72,5 +84,29 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
+      # The S2 iOS test reads a source served over HTTP; the fixture server must
+      # be running on 127.0.0.1:18080 before the simulator test starts.
+      - name: Start fixture server
+        run: |
+          ./gradlew -p experiments :spikes:s2-js-runtime:runFixtureServer > fixture-server.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -sf "$FIXTURE_URL/api/search?q=ci" > /dev/null; then
+              echo "fixture server ready after ${attempt} attempts"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "fixture server did not start"
+          cat fixture-server.log
+          exit 1
       - name: S2 iOS simulator tests
         run: ./experiments/spikes/s2-js-runtime-ios/gradlew -p experiments/spikes/s2-js-runtime-ios iosSimulatorArm64Test
+      - name: Upload iOS test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-s2-test-report
+          path: |
+            experiments/spikes/s2-js-runtime-ios/build/reports/tests/iosSimulatorArm64Test/
+            fixture-server.log
+          if-no-files-found: ignore
