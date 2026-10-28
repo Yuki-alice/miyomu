@@ -1,0 +1,12 @@
+Miyomu
+Copyright 2026 Miyomu contributors
+
+This product includes material adapted from Aniyomi
+(https://github.com/aniyomiorg/aniyomi), Copyright Aniyomi contributors,
+licensed under the Apache License, Version 2.0.
+
+Adapted material currently covers:
+- Material 3 color tokens based on Aniyomi's TachiyomiColorScheme.
+- Library, detail, and reader layout patterns used as visual reference.
+
+The full Apache License 2.0 text is available in LICENSE.

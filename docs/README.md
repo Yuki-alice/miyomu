@@ -10,9 +10,10 @@
 | [05 Phase 1 计划](05-phase-1-plan.md) | 缩范围后的里程碑、任务与验收 | 已确认（单人全职，5–7 个月） |
 | [06 品牌备忘](06-brand.md) | Miyomu 名称、标识符、看板娘方向 | 名称已确认；域名/商标待清查 |
 | [07 Skills 与参考仓库](07-skills-and-references.md) | 已安装技能、许可、参考仓库与 agent 策略 | 已安装 |
+| [08 M1 任务重排](08-m1-task-plan.md) | M1 本地漫画/小说阅读器、共享 UI、Aniyomi 复用边界 | 执行中 |
 | [Phase 0 清单](checklists/phase-0.md) | 可勾选的任务列表与命令 | 执行中 |
 | [Phase 1 M0 清单](checklists/phase-1-m0.md) | 工具链、Ktor/Cookie、标识符、CI | 核心完成 |
-| [Phase 1 M1 清单](checklists/phase-1-m1.md) | 生产工程、源运行时、双端读路径 | 进行中 |
+| [Phase 1 M1 清单](checklists/phase-1-m1.md) | 共享 UI、本地库、漫画/小说阅读器 | 进行中 |
 | [Spike S1 播放器](spikes/s1-player.md) | mediamp 三端验证规格 | 桌面部分通过，移动端未开始 |
 | [Spike S2 源运行时](spikes/s2-js-runtime.md) | QuickJS + Venera 兼容源验证规格 | 三端 JSON + 三端 HTML/Cookie 通过；M0 已补 Ktor 与持久 Cookie |
 | [Spike S3 UI](spikes/s3-cmp-ui.md) | CMP + MD3E 屏幕迁移验证规格 | 验证完成（headless）；Conditional Go |
@@ -37,6 +38,7 @@
 | [0007](adr/0007-network-and-cookie-storage.md) | Ktor 网络层与持久 Cookie | 接受（M0 验证） |
 | [0008](adr/0008-venera-source-runtime.md) | Venera 风格 JS 源运行时读路径 | 接受（M1 切片；真实源待验证） |
 | [0009](adr/0009-room-kmp-data-layer.md) | Room KMP 作为数据层 | 接受（M1 验证） |
+| [0010](adr/0010-aniyomi-local-reader-reuse.md) | Aniyomi 本地阅读器复用边界 | 接受（M1） |
 
 ## 约定
 

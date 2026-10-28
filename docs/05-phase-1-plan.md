@@ -2,7 +2,7 @@
 
 - 状态：已确认（Apache-2.0；Miyomu；单人全职；Android + 桌面并行）· 2026-10-28
 - M0：核心完成（2026-10-28），见 [M0 清单](checklists/phase-1-m0.md) · [ADR-0006](adr/0006-unified-android-toolchain.md) · [ADR-0007](adr/0007-network-and-cookie-storage.md)
-- M1：进行中（2026-10-28），见 [M1 清单](checklists/phase-1-m1.md) · [ADR-0008](adr/0008-venera-source-runtime.md)
+- M1：进行中（2026-10-28），见 [M1 清单](checklists/phase-1-m1.md) · [M1 任务重排](08-m1-task-plan.md) · [ADR-0008](adr/0008-venera-source-runtime.md)
 - 依据：[S1 报告](spikes/results/s1-player.md) · [S2 报告](spikes/results/s2-js-runtime.md) · [S3 报告](spikes/results/s3-cmp-ui.md) · [Phase 0 清单](checklists/phase-0.md)
 
 ## 1. Phase 0 决策
@@ -38,30 +38,31 @@
 - ✅ Ktor 网络层（Android OkHttp / 桌面 CIO）+ 持久 Cookie（[ADR-0007](adr/0007-network-and-cookie-storage.md)）；Darwin 引擎随 iOS 接入。
 - ✅ CI 工作流：桌面根构建 + 两个 Android 独立工程 + iOS 测试 + M0 探针；命令已本地验证，GitHub 首跑待仓库初始化（[ci.yml](../.github/workflows/ci.yml)）。
 
-### M1 核心与单媒介（4–6 周，进行中）
+### M1 表现层与本地阅读器（8 周，进行中）
 
 - ✅ 生产 KMP 工程（仓库根目录）：model / network / source-api / source-runtime；Android + 桌面壳。
-- ✅ JS 源运行时读路径：每源 QuickJS、Ktor、持久 Cookie、KV、Ksoup DOM、超时/内存/响应配额；JVM 测试 5/5。
+- ✅ JS 源运行时读路径：每源 QuickJS、Ktor、持久 Cookie、KV、Ksoup DOM、超时/内存/响应配额；JVM 测试 5/5。**M1 冻结，M2 继续产品化。**
 - ✅ 双端调试壳：同一 HTML fixture 源跑通搜索→详情→章节→图片（[证据](../evidence/)）。
 - ✅ KMP 数据层：Room 2.8.5 + KSP 2.3.12 + bundled SQLite；库/进度已接入双端（[ADR-0009](adr/0009-room-kmp-data-layer.md)）。
-- ⏳ 真实 HTML Venera 兼容源零修改对照（需要合法本地测试源）。
-- [ ] `:shared:library` / `:shared:download` / `:shared:sync` 产品化。
-- [ ] 源运行时产品化：源仓库索引/校验、JS Cookie API、explore/categories、每源日志。
-- [ ] 漫画阅读器 MVP：Android + 桌面（复用 Aniyomi loader/VM，重写视图）。
-- [ ] 播放器轨道选择 spike：ExoPlayer/MPV 后端直连，定义 `TrackSelector`。
-- 验收：一个真实 HTML Venera 兼容源在 Android + 桌面跑通搜索→详情→章节→图片。
+- 🎯 M1 优先：共享 UI + 本地库 + 漫画/小说阅读器；详见 [M1 任务重排](08-m1-task-plan.md)。
+- [ ] 本地漫画：目录、ZIP/CBZ、7Z/CB7、PDF；LTR/RTL、纵向分页、Webtoon/连续、双页、缩放、预取、进度。
+- [ ] 本地小说：TXT、EPUB；章节识别、分页/滚动、字体/字号/行距/主题、进度。
+- [ ] Aniyomi 屏幕对照与 Apache-2.0 来源/NOTICE（[ADR-0010](adr/0010-aniyomi-local-reader-reuse.md)）。
+- ↗ 移出 M1：真实 Venera 源、源仓库、下载/同步（M2/M3）；播放器轨道选择（M3）。
+- 验收：Android + 桌面导入并阅读本地漫画与小说；库/详情/阅读/续读可用；双端构建与测试通过。
 
-### M2 迁移与桌面壳（6–8 周）
+### M2 源运行时与迁移（6–8 周）
 
-- Fork Aniyomi，Strangler 迁移 Library/Detail/Settings/Source 等屏幕到 CMP。
-- 桌面 CMP 壳（窗口、路由、图片、下载目录）。
+- 源运行时产品化与真实 Venera 源验证（从 M1 移入）：JS Cookie API、`fetch`、search options、explore/categories、源仓库索引/校验/安装/更新。
+- Fork Aniyomi，Strangler 迁移剩余 Library/Detail/Settings/Source 屏幕到 CMP；M1 的本地屏幕继续复用。
+- 桌面壳完善（窗口、路由、下载目录、平台集成）。
 - Android feature flag 接入共享 core；旧 APK 扩展仅作限期过渡。
 - 验收：Android 与桌面共享核心；屏幕迁移单屏 ≤1.5 人日；持续发版。
 
 ### M3 视频 / 小说 / 同步（6–8 周）
 
 - 视频播放器 UI：mediamp + 轨道选择 + 外挂字幕 + 续播。
-- 小说：TXT/EPUB 导入、分页排版、字体/主题/进度。
+- 小说增强：在线书源、更多格式/排版（M1 已完成本地 TXT/EPUB）。
 - 下载队列、WebDAV 同步、备份/恢复。
 - 验收：三种媒介各自可用；离线库完整；同步冲突可恢复。
 

@@ -23,15 +23,11 @@ android {
     buildFeatures {
         compose = true
     }
-
-    sourceSets["main"].assets.srcDir(rootProject.file("demo-resources"))
 }
 
 dependencies {
-    implementation(project(":shared:source-runtime"))
+    implementation(project(":shared:ui"))
+    implementation(project(":shared:local"))
     implementation(project(":shared:data"))
-    implementation(platform(libs.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.activity.compose)
 }
