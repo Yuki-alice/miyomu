@@ -12,35 +12,28 @@ import cafe.adriel.voyager.core.model.ScreenModelStore
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
-import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.ScreenTransitionContent
-import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.domain.ui.model.NavStyle
+import cafe.adriel.voyager.transitions.SlideTransition
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.plus
-import soup.compose.material.motion.animation.materialSharedAxisX
-import soup.compose.material.motion.animation.rememberSlideDistance
-import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 /**
  * For invoking back press to the parent activity
  */
 val LocalBackPress: ProvidableCompositionLocal<(() -> Unit)?> = staticCompositionLocalOf { null }
 
-private val uiPreferences: UiPreferences = Injekt.get()
-
+/**
+ * CMP port: Aniyomi's `Tab` also exposes `currentNavigationStyle()` backed by
+ * `Injekt.get<UiPreferences>()`. `NavStyle` lives in an unported module and the only consumer is
+ * the nav-animation picker, so the accessor is dropped until the settings screens land.
+ */
 interface Tab : cafe.adriel.voyager.navigator.tab.Tab {
     suspend fun onReselect(navigator: Navigator) {}
-
-    @Composable
-    fun currentNavigationStyle(): NavStyle = uiPreferences.navStyle().collectAsState().value
 }
 
 abstract class Screen : Screen {
@@ -64,20 +57,18 @@ interface AssistContentScreen {
     fun onProvideAssistUrl(): String?
 }
 
+/**
+ * CMP port: Aniyomi animates with `soup.compose.material.motion` (`materialSharedAxisX`), which is
+ * Android-only and deliberately not ported (ADR-0011). Voyager's own slide transition is used
+ * instead, so back/forward still animate and the pop direction is handled by Voyager.
+ */
 @Composable
 fun DefaultNavigatorScreenTransition(
     navigator: Navigator,
     modifier: Modifier = Modifier,
 ) {
-    val slideDistance = rememberSlideDistance()
-    ScreenTransition(
+    SlideTransition(
         navigator = navigator,
-        transition = {
-            materialSharedAxisX(
-                forward = navigator.lastEvent != StackEvent.Pop,
-                slideDistance = slideDistance,
-            )
-        },
         modifier = modifier,
     )
 }

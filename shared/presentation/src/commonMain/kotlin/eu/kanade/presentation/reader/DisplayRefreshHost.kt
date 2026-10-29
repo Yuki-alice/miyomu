@@ -14,15 +14,18 @@ import androidx.compose.ui.graphics.Color
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import kotlinx.coroutines.delay
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * CMP port: `ReaderPreferences` arrives through the constructor instead of `Injekt.get()`, which
+ * keeps this class free of the DI container (ADR-0011: constructor injection).
+ */
 @Stable
-class DisplayRefreshHost {
+class DisplayRefreshHost(
+    private val readerPreferences: ReaderPreferences,
+) {
 
     internal var currentDisplayRefresh by mutableStateOf(false)
-    private val readerPreferences = Injekt.get<ReaderPreferences>()
 
     internal val flashMillis = readerPreferences.flashDurationMillis()
     internal val flashMode = readerPreferences.flashColor()

@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastAny
 import cafe.adriel.voyager.core.model.ScreenModel
 import eu.kanade.core.util.insertSeparators
+import eu.kanade.domain.entries.manga.model.chaptersFiltered
+import eu.kanade.domain.entries.manga.model.downloadedFilter
 import eu.kanade.domain.entries.manga.model.isLocal
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.MangaSource

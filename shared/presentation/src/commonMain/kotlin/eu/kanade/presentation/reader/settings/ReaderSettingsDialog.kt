@@ -10,8 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.window.DialogWindowProvider
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
@@ -43,14 +41,14 @@ fun ReaderSettingsDialog(
             tabTitles = tabTitles,
             pagerState = pagerState,
         ) { page ->
-            val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-
+            // CMP port: Aniyomi reaches into the Android dialog window
+            // (LocalView.parent as DialogWindowProvider) to toggle the dim amount so the color
+            // filter can be previewed. Compose Multiplatform's Dialog exposes no such handle, so
+            // the dim tweak is dropped and only the menu visibility is driven here.
             LaunchedEffect(pagerState.currentPage) {
                 if (pagerState.currentPage == 2) {
-                    window?.setDimAmount(0f)
                     onHideMenus()
                 } else {
-                    window?.setDimAmount(0.5f)
                     onShowMenus()
                 }
             }

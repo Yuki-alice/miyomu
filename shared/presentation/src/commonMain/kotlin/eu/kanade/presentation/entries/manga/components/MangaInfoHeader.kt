@@ -458,10 +458,7 @@ private fun ColumnScope.MangaContentInfo(
                 .clickableNoIndication(
                     onLongClick = {
                         if (!author.isNullOrBlank()) {
-                            context.copyToClipboard(
-                                author,
-                                author,
-                            )
+                            clipboardManager.setText(AnnotatedString(author))
                         }
                     },
                     onClick = { if (!author.isNullOrBlank()) doSearch(author, true) },
@@ -486,7 +483,7 @@ private fun ColumnScope.MangaContentInfo(
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier
                     .clickableNoIndication(
-                        onLongClick = { context.copyToClipboard(artist, artist) },
+                        onLongClick = { clipboardManager.setText(AnnotatedString(artist)) },
                         onClick = { doSearch(artist, true) },
                     ),
                 textAlign = textAlign,

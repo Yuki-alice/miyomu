@@ -1,6 +1,5 @@
 package eu.kanade.presentation.library.manga
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import eu.kanade.core.preference.PreferenceMutableState
@@ -69,8 +67,8 @@ fun MangaLibraryPager(
             }
 
             val displayMode by getDisplayMode(page)
-            val configuration = LocalConfiguration.current
-            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            // CMP port: Aniyomi reads Configuration.orientation; desktop has no LocalConfiguration.
+            val isLandscape = this@BoxWithConstraints.maxWidth > this@BoxWithConstraints.maxHeight
             val columns by remember(isLandscape) { getColumnsForOrientation(isLandscape) }
 
             when (displayMode) {

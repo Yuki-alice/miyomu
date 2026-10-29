@@ -11,11 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.domain.entries.manga.model.readingMode
 import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.reader.components.ModeSelectionDialog
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
@@ -25,6 +22,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.SettingsIconGrid
 import tachiyomi.presentation.core.components.material.IconToggleButton
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.collectAsState
 
 private val ReadingModesWithoutDefault = ReadingMode.entries - ReadingMode.DEFAULT
 
@@ -34,11 +32,11 @@ fun ReadingModeSelectDialog(
     screenModel: ReaderSettingsScreenModel,
     onChange: (StringResource) -> Unit,
 ) {
-    val manga by screenModel.mangaFlow.collectAsState()
-    val readingMode = remember(manga) {
-        ReadingMode.fromPreference(
-            manga?.readingMode?.toInt(),
-        )
+    // CMP port: per-manga reading mode columns are not in the Room schema yet, so the global
+    // reader preference stands in for the current selection.
+    val readingModePreference by screenModel.preferences.defaultReadingMode().collectAsState()
+    val readingMode = remember(readingModePreference) {
+        ReadingMode.fromPreference(readingModePreference)
     }
 
     AdaptiveSheet(onDismissRequest = onDismissRequest) {
@@ -72,7 +70,7 @@ private fun DialogContent(
                         selected = (mode)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    imageVector = ImageVector.vectorResource(mode.iconRes),
+                    imageVector = mode.icon,
                     title = stringResource(mode.stringRes),
                 )
             }

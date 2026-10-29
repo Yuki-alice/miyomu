@@ -42,7 +42,10 @@ jobs:
           :shared:data:jvmTest
           :shared:local:jvmTest
           :shared:reader-comic:jvmTest
+          :shared:domain:jvmTest
           :shared:ui:jvmTest
+      - name: Ported presentation layer (JVM)
+        run: ./gradlew :shared:presentation:compileKotlinJvm
       - name: Desktop shell
         run: ./gradlew :desktopApp:compileKotlin
       - name: Phase 0 JVM spikes

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Crop
+import androidx.compose.material.icons.outlined.CropFree
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -13,9 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import tachiyomi.i18n.MR
@@ -42,7 +42,7 @@ fun BottomReaderBar(
     ) {
         IconButton(onClick = onClickReadingMode) {
             Icon(
-                painter = painterResource(readingMode.iconRes),
+                imageVector = readingMode.icon,
                 contentDescription = stringResource(MR.strings.viewer),
             )
         }
@@ -56,7 +56,9 @@ fun BottomReaderBar(
 
         IconButton(onClick = onClickCropBorder) {
             Icon(
-                painter = painterResource(if (cropEnabled) R.drawable.ic_crop_24dp else R.drawable.ic_crop_off_24dp),
+                // CMP port: R.drawable.ic_crop_24dp / ic_crop_off_24dp are Android drawables;
+                // the closest Material vectors stand in (Crop = on, CropFree = off).
+                imageVector = if (cropEnabled) Icons.Outlined.Crop else Icons.Outlined.CropFree,
                 contentDescription = stringResource(MR.strings.pref_crop_borders),
             )
         }

@@ -8,13 +8,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import eu.kanade.domain.entries.manga.model.readerOrientation
-import eu.kanade.domain.entries.manga.model.readingMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
-import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
+import eu.kanade.tachiyomi.ui.reader.viewer.WebtoonViewer
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.CheckboxItem
 import tachiyomi.presentation.core.components.HeadingItem
@@ -27,12 +25,13 @@ import java.text.NumberFormat
 @Composable
 internal fun ColumnScope.ReadingModePage(screenModel: ReaderSettingsScreenModel) {
     HeadingItem(MR.strings.pref_category_for_this_series)
-    val manga by screenModel.mangaFlow.collectAsState()
 
-    val readingMode = remember(manga) {
-        ReadingMode.fromPreference(
-            manga?.readingMode?.toInt(),
-        )
+    // CMP port: Aniyomi reads the per-manga `readingMode`/`readerOrientation` columns, which the
+    // Room schema does not carry yet. Until per-manga overrides land, the global reader
+    // preferences are shown as the current selection.
+    val readingModePreference by screenModel.preferences.defaultReadingMode().collectAsState()
+    val readingMode = remember(readingModePreference) {
+        ReadingMode.fromPreference(readingModePreference)
     }
     SettingsChipRow(MR.strings.pref_category_reading_mode) {
         ReadingMode.entries.map {
@@ -44,10 +43,9 @@ internal fun ColumnScope.ReadingModePage(screenModel: ReaderSettingsScreenModel)
         }
     }
 
-    val orientation = remember(manga) {
-        ReaderOrientation.fromPreference(
-            manga?.readerOrientation?.toInt(),
-        )
+    val orientationPreference by screenModel.preferences.defaultOrientationType().collectAsState()
+    val orientation = remember(orientationPreference) {
+        ReaderOrientation.fromPreference(orientationPreference)
     }
     SettingsChipRow(MR.strings.rotation_type) {
         ReaderOrientation.entries.map {

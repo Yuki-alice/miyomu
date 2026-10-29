@@ -27,6 +27,9 @@ kotlin {
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=kotlinx.coroutines.FlowPreview",
             "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+            // util/FastScrollAnimateItem.kt is copied verbatim from Aniyomi and uses a
+            // `context(LazyItemScope)` parameter, which is still experimental in Kotlin 2.3.21.
+            "-Xcontext-parameters",
         )
     }
 

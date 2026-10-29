@@ -6,10 +6,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.core.graphics.alpha
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.Companion.ColorFilterMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import tachiyomi.core.common.preference.getAndSet
@@ -131,3 +127,10 @@ private const val ALPHA_MASK: Long = 0xFF000000
 private const val RED_MASK: Long = 0x00FF0000
 private const val GREEN_MASK: Long = 0x0000FF00
 private const val BLUE_MASK: Long = 0x000000FF
+
+// CMP port: androidx.core.graphics.{red,green,blue,alpha} are Android-only, so the ARGB
+// components are extracted directly.
+private val Int.red: Int get() = (this shr 16) and 0xFF
+private val Int.green: Int get() = (this shr 8) and 0xFF
+private val Int.blue: Int get() = this and 0xFF
+private val Int.alpha: Int get() = (this ushr 24) and 0xFF

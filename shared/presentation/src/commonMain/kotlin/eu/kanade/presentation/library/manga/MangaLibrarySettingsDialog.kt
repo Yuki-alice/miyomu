@@ -1,6 +1,5 @@
 package eu.kanade.presentation.library.manga
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
@@ -16,7 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibrarySettingsScreenModel
@@ -80,17 +79,14 @@ private fun ColumnScope.FilterPage(
     screenModel: MangaLibrarySettingsScreenModel,
 ) {
     val filterDownloaded by screenModel.libraryPreferences.filterDownloadedManga().collectAsState()
-    val downloadedOnly by screenModel.preferences.downloadedOnly().collectAsState()
     val autoUpdateMangaRestrictions by screenModel.libraryPreferences.autoUpdateItemRestrictions().collectAsState()
 
+    // CMP port: the download subsystem is not ported yet, so "downloaded only" can never be on
+    // and the downloaded filter is always editable.
     TriStateItem(
         label = stringResource(MR.strings.label_downloaded),
-        state = if (downloadedOnly) {
-            TriState.ENABLED_IS
-        } else {
-            filterDownloaded
-        },
-        enabled = !downloadedOnly,
+        state = filterDownloaded,
+        enabled = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloadedManga) },
     )
     val filterUnread by screenModel.libraryPreferences.filterUnread().collectAsState()
@@ -129,31 +125,28 @@ private fun ColumnScope.FilterPage(
     }
 
     val trackers by screenModel.trackersFlow.collectAsState()
+    // CMP port: the tracker subsystem is stubbed to plain ids, so the label is shared.
     when (trackers.size) {
         0 -> {
             // No trackers
         }
         1 -> {
-            val service = trackers[0]
-            val filterTracker by screenModel.libraryPreferences.filterTrackedManga(
-                service.id.toInt(),
-            ).collectAsState()
+            val trackerId = trackers[0]
+            val filterTracker by screenModel.libraryPreferences.filterTrackedManga(trackerId).collectAsState()
             TriStateItem(
                 label = stringResource(MR.strings.action_filter_tracked),
                 state = filterTracker,
-                onClick = { screenModel.toggleTracker(service.id.toInt()) },
+                onClick = { screenModel.toggleTracker(trackerId) },
             )
         }
         else -> {
             HeadingItem(MR.strings.action_filter_tracked)
-            trackers.map { service ->
-                val filterTracker by screenModel.libraryPreferences.filterTrackedManga(
-                    service.id.toInt(),
-                ).collectAsState()
+            trackers.map { trackerId ->
+                val filterTracker by screenModel.libraryPreferences.filterTrackedManga(trackerId).collectAsState()
                 TriStateItem(
-                    label = service.name,
+                    label = stringResource(MR.strings.action_filter_tracked),
                     state = filterTracker,
-                    onClick = { screenModel.toggleTracker(service.id.toInt()) },
+                    onClick = { screenModel.toggleTracker(trackerId) },
                 )
             }
         }
@@ -246,9 +239,11 @@ private fun ColumnScope.DisplayPage(
         }
     }
 
-    val configuration = LocalConfiguration.current
-    val columnPreference = remember {
-        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    // CMP port: Aniyomi reads Configuration.orientation; desktop has no LocalConfiguration.
+    val containerSize = LocalWindowInfo.current.containerSize
+    val isLandscape = containerSize.width > containerSize.height
+    val columnPreference = remember(isLandscape) {
+        if (isLandscape) {
             screenModel.libraryPreferences.mangaLandscapeColumns()
         } else {
             screenModel.libraryPreferences.mangaPortraitColumns()

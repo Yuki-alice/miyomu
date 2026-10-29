@@ -36,6 +36,9 @@ kotlin {
             api(project(":shared:reader-comic"))
             api(project(":shared:data"))
             api(project(":shared:presentation-core"))
+            // Ported Aniyomi screens (ADR-0011). Wired here so the module stays in the build
+            // graph and cannot silently rot while the screens are connected one by one.
+            api(project(":shared:presentation"))
 
             api(libs.voyager.navigator)
             api(libs.voyager.screenmodel)
