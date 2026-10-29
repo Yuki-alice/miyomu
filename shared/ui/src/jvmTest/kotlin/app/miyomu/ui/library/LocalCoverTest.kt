@@ -109,5 +109,27 @@ class LocalCoverTest {
         assertTrue(result is SuccessResult, "coil should decode the local cover, got $result")
     }
 
+    @Test
+    fun coilDecodesMangaPassedDirectly() = runBlocking {
+        // The detail header hands coil a `Manga`, so the mapper has to bridge it to MangaCover.
+        val repository = FileLocalComicRepository()
+        val book = bookOf(sampleBook())
+        LocalCoverLoader.load = { id -> if (id == book.mangaId()) repository.cover(book) else null }
+
+        val imageLoader = ImageLoader.Builder(PlatformContext.INSTANCE)
+            .components {
+                add(MangaCoverMapper())
+                add(LocalMangaCoverFetcher.Factory())
+            }
+            .build()
+
+        val request = ImageRequest.Builder(PlatformContext.INSTANCE)
+            .data(book.toManga())
+            .build()
+
+        val result = imageLoader.execute(request)
+        assertTrue(result is SuccessResult, "coil should map Manga -> MangaCover, got $result")
+    }
+
     private fun loader() = ImageLoader.Builder(PlatformContext.INSTANCE).build()
 }

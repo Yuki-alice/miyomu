@@ -70,11 +70,13 @@ class MiyomuAppTest {
             capture("library")
             onNodeWithText("Sample Book").performClick()
 
+            // The ported detail screen lists chapters; clicking one opens the reader at page 0.
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithTag("start-reading").fetchSemanticsNodes().isNotEmpty()
+                onAllNodesWithText("chapter 1").fetchSemanticsNodes().isNotEmpty()
             }
+            Thread.sleep(600)
             capture("detail")
-            onNodeWithTag("start-reading").performClick()
+            onNodeWithText("chapter 1").performClick()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithTag("reader-pager").fetchSemanticsNodes().isNotEmpty()
@@ -134,10 +136,17 @@ class MiyomuAppTest {
                 onAllNodesWithText("Resume Book").fetchSemanticsNodes().isNotEmpty()
             }
             onNodeWithText("Resume Book").performClick()
+            // The ported detail screen puts the primary action on an extended FAB. Its label is
+            // "Start" until a chapter is marked read (a single-chapter book never is), and it
+            // follows the resolved locale, so accept either language.
+            val actionLabels = listOf("Resume", "继续阅读", "继续", "Start", "开始")
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithText("继续阅读").fetchSemanticsNodes().isNotEmpty()
+                actionLabels.any { label -> onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() }
             }
-            onNodeWithTag("start-reading").performClick()
+            val actionLabel = actionLabels.first { label ->
+                onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText(actionLabel).performClick()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithTag("reader-pager").fetchSemanticsNodes().isNotEmpty()
