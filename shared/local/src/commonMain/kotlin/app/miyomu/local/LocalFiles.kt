@@ -43,5 +43,12 @@ internal fun extensionOf(name: String): String =
 
 internal fun LocalBookFormat.isComicFormat(): Boolean = when (this) {
     LocalBookFormat.DIRECTORY, LocalBookFormat.ZIP -> true
-    LocalBookFormat.SEVEN_ZIP, LocalBookFormat.PDF, LocalBookFormat.EPUB, LocalBookFormat.TXT -> false
+    LocalBookFormat.SEVEN_ZIP,
+    LocalBookFormat.PDF,
+    LocalBookFormat.EPUB,
+    LocalBookFormat.TXT,
+    LocalBookFormat.FB2,
+    LocalBookFormat.HTML,
+    LocalBookFormat.MARKDOWN,
+    -> false
 }

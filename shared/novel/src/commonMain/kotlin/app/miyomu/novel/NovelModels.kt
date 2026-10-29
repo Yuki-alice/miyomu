@@ -61,4 +61,15 @@ class ParsedNovel(
     val chapters: List<NovelChapter> = emptyList(),
 )
 
+/** Generic chapter over pre-assembled blocks, used by the block-based format parsers. */
+class BlockChapter(
+    override val title: String?,
+    private val content: List<NovelBlock>,
+) : NovelChapter {
+    override fun text(): String =
+        content.filterIsInstance<NovelBlock.Text>().joinToString("\n") { it.text }
+
+    override fun blocks(): List<NovelBlock> = content
+}
+
 class NovelParseException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

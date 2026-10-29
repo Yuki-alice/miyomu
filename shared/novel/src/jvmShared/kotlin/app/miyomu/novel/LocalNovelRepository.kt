@@ -19,6 +19,9 @@ import java.io.File
 class LocalNovelRepository(
     private val txtParser: TxtNovelParser = TxtNovelParser(),
     private val epubParser: EpubNovelParser = EpubNovelParser(),
+    private val fb2Parser: Fb2NovelParser = Fb2NovelParser(),
+    private val htmlParser: HtmlNovelParser = HtmlNovelParser(),
+    private val markdownParser: MarkdownNovelParser = MarkdownNovelParser(),
     private val cacheSize: Int = DEFAULT_CACHE_SIZE,
 ) {
 
@@ -46,6 +49,9 @@ class LocalNovelRepository(
     private fun parseUncached(book: LocalBook): ParsedNovel = when (book.format) {
         LocalBookFormat.TXT -> txtParser.parse(book.title, File(book.location).readBytes())
         LocalBookFormat.EPUB -> epubParser.parse(File(book.location).readBytes())
+        LocalBookFormat.FB2 -> fb2Parser.parse(File(book.location).readBytes())
+        LocalBookFormat.HTML -> htmlParser.parse(book.title, File(book.location).readBytes())
+        LocalBookFormat.MARKDOWN -> markdownParser.parse(book.title, File(book.location).readBytes())
         else -> throw NovelParseException("Unsupported novel format: ${book.format}")
     }
 

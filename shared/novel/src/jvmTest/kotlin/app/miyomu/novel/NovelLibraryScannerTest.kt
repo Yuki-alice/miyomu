@@ -24,13 +24,16 @@ class NovelLibraryScannerTest {
     private val scanner = NovelLibraryScanner()
 
     @Test
-    fun `claims only txt and epub entries with novel media type`() {
+    fun `claims novel formats with novel media type`() {
         val root = FakeRef(
             "root",
             isDirectory = true,
             children = listOf(
                 FakeRef("小说b.txt"),
                 FakeRef("novel2.epub"),
+                FakeRef("novel3.fb2"),
+                FakeRef("novel4.html"),
+                FakeRef("novel5.md"),
                 FakeRef("manga.zip"),
                 FakeRef("image.jpg"),
                 FakeRef(".hidden.txt"),
@@ -40,8 +43,20 @@ class NovelLibraryScannerTest {
 
         val books = scanner.scan(root)
 
-        assertEquals(listOf("novel2", "小说b"), books.map { it.title })
-        assertEquals(listOf(LocalBookFormat.EPUB, LocalBookFormat.TXT), books.map { it.format })
+        assertEquals(
+            listOf("novel2", "novel3", "novel4", "novel5", "小说b"),
+            books.map { it.title },
+        )
+        assertEquals(
+            listOf(
+                LocalBookFormat.EPUB,
+                LocalBookFormat.FB2,
+                LocalBookFormat.HTML,
+                LocalBookFormat.MARKDOWN,
+                LocalBookFormat.TXT,
+            ),
+            books.map { it.format },
+        )
         assertTrue(books.all { it.mediaType == MediaType.NOVEL })
         assertTrue(books.all { it.id == it.location })
     }

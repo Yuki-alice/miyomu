@@ -27,6 +27,9 @@ class NovelLibraryScanner {
         val format = when (extensionOf(ref.name)) {
             "txt" -> LocalBookFormat.TXT
             "epub" -> LocalBookFormat.EPUB
+            "fb2" -> LocalBookFormat.FB2
+            "html", "htm" -> LocalBookFormat.HTML
+            "md", "markdown" -> LocalBookFormat.MARKDOWN
             else -> return null
         }
         return LocalBook(

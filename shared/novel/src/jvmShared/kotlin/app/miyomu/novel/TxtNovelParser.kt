@@ -25,37 +25,11 @@ class TxtNovelParser(
                     "increase TxtNovelParser.maxBytes if this is expected",
             )
         }
-        val text = decode(bytes)
+        val text = TextDecode.decode(bytes)
         return ParsedNovel(
             title = fileName.substringBeforeLast('.'),
             chapters = splitChapters(text),
         )
-    }
-
-    private fun decode(bytes: ByteArray): String {
-        when {
-            bytes.size >= 3 &&
-                bytes[0] == 0xEF.toByte() && bytes[1] == 0xBB.toByte() && bytes[2] == 0xBF.toByte() ->
-                return String(bytes, 3, bytes.size - 3, StandardCharsets.UTF_8)
-
-            bytes.size >= 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte() ->
-                return String(bytes, 2, bytes.size - 2, StandardCharsets.UTF_16LE)
-
-            bytes.size >= 2 && bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte() ->
-                return String(bytes, 2, bytes.size - 2, StandardCharsets.UTF_16BE)
-        }
-
-        try {
-            return StandardCharsets.UTF_8.newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT)
-                .decode(ByteBuffer.wrap(bytes))
-                .toString()
-        } catch (_: CharacterCodingException) {
-            // Not valid UTF-8; fall through to GB18030.
-        }
-        // GB18030 is a superset of GBK/GB2312 and the de-facto fallback for Chinese TXT.
-        return String(bytes, charset("GB18030"))
     }
 
     private fun splitChapters(text: String): List<NovelChapter> {

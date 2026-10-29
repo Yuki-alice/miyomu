@@ -50,7 +50,7 @@ class EpubNovelParser {
             val doc = Ksoup.parse(docText, "")
             val content = chapterBlocks(doc, resolved.substringBeforeLast('/', ""), bytes)
             if (content.isEmpty()) return@mapIndexedNotNull null
-            EpubChapter(
+            BlockChapter(
                 title = docTitleOf(doc) ?: defaultTitle(index),
                 content = content,
             )
@@ -78,53 +78,17 @@ class EpubNovelParser {
     /** Pre-order walk of the spine document body, interleaving paragraphs and illustrations. */
     private fun chapterBlocks(doc: Document, baseDir: String, epubBytes: ByteArray): List<NovelBlock> {
         val body = doc.body() ?: return emptyList()
-        val sink = mutableListOf<Raw>()
-        walk(body, baseDir, epubBytes, sink)
-        if (sink.none { it is Raw.Text }) {
+        val sink = mutableListOf<RawBlock>()
+        HtmlBodyWalker.walk(body, imageResolver = { imageOf(it, baseDir, epubBytes) }, sink = sink)
+        if (sink.none { it is RawBlock.Text }) {
             // Degenerate documents without recognizable block markup still keep their text.
             val fallback = body.text().trim()
-            if (fallback.isNotBlank()) sink.add(Raw.Text(fallback))
+            if (fallback.isNotBlank()) sink.add(RawBlock.Text(fallback))
         }
-
-        var offset = 0
-        val blocks = mutableListOf<NovelBlock>()
-        for (raw in sink) {
-            when (raw) {
-                is Raw.Text -> {
-                    blocks += NovelBlock.Text(offset, raw.text)
-                    offset += raw.text.length + 1 // +1 for the joining newline in text()
-                }
-                is Raw.Image -> blocks += NovelBlock.Image(
-                    startChar = offset,
-                    bytes = raw.bytes,
-                    format = raw.format,
-                    width = raw.width,
-                    height = raw.height,
-                )
-            }
-        }
-        return blocks
+        return assembleBlocks(sink)
     }
 
-    private fun walk(el: Element, baseDir: String, epubBytes: ByteArray, sink: MutableList<Raw>) {
-        val name = el.normalName()
-        if (name == "img" || name == "image") {
-            imageOf(el, baseDir, epubBytes)?.let(sink::add)
-            return
-        }
-        val hasBlockChild = el.children().any { it.normalName() in BLOCK_TAGS }
-        if (name in TEXT_TAGS && !hasBlockChild) {
-            val text = el.text().trim()
-            if (text.isNotBlank()) {
-                sink += Raw.Text(text)
-                return
-            }
-            // Empty paragraph that may still carry an illustration — fall through.
-        }
-        el.children().forEach { walk(it, baseDir, epubBytes, sink) }
-    }
-
-    private fun imageOf(el: Element, baseDir: String, epubBytes: ByteArray): Raw.Image? {
+    private fun imageOf(el: Element, baseDir: String, epubBytes: ByteArray): RawBlock? {
         val src = el.attr("src").ifBlank { el.attr("xlink:href") }.ifBlank { el.attr("href") }
         if (src.isBlank()) return null
         val resolved = resolveHref(baseDir, src)
@@ -133,7 +97,7 @@ class EpubNovelParser {
             ?.takeIf { it.isNotEmpty() }
             ?: return null
         val info = ImageHeaderSniffer.sniff(imageBytes)
-        return Raw.Image(
+        return RawBlock.Image(
             bytes = imageBytes,
             format = info?.format ?: "img",
             width = info?.width ?: 0,
@@ -180,21 +144,6 @@ class EpubNovelParser {
     private fun zipEntryBytes(bytes: ByteArray, name: String): ByteArray? =
         zipWalk(bytes) { entryName, stream -> if (entryName == name) stream.readBytes() else null }
 
-    private class EpubChapter(
-        override val title: String?,
-        private val content: List<NovelBlock>,
-    ) : NovelChapter {
-        override fun text(): String =
-            content.filterIsInstance<NovelBlock.Text>().joinToString("\n") { it.text }
-
-        override fun blocks(): List<NovelBlock> = content
-    }
-
-    private sealed class Raw {
-        data class Text(val text: String) : Raw()
-        data class Image(val bytes: ByteArray, val format: String, val width: Int, val height: Int) : Raw()
-    }
-
     private data class ManifestItem(val href: String, val mediaType: String, val properties: String)
 
     private fun defaultTitle(index: Int): String = "第 ${index + 1} 节"
@@ -202,15 +151,5 @@ class EpubNovelParser {
     private companion object {
         const val CONTAINER_PATH = "META-INF/container.xml"
         const val DEFAULT_BOOK_TITLE = "EPUB"
-
-        val TEXT_TAGS = setOf(
-            "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "li", "dd", "dt", "pre",
-            "figcaption", "div", "section", "article", "aside", "header", "footer", "td",
-        )
-        val BLOCK_TAGS = setOf(
-            "p", "div", "section", "article", "figure", "header", "footer", "aside",
-            "blockquote", "li", "ul", "ol", "table", "tr", "td", "th", "dl", "main", "nav",
-            "center", "h1", "h2", "h3", "h4", "h5", "h6", "body",
-        )
     }
 }
