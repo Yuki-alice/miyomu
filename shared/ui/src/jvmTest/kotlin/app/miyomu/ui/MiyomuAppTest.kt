@@ -16,6 +16,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.runComposeUiTest
 import app.miyomu.data.JvmMiyomuDatabaseFactory
 import app.miyomu.data.createMiyomuData
+import tachiyomi.core.common.preference.InMemoryPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
@@ -53,6 +54,17 @@ class MiyomuAppTest {
         )
 
         try {
+            // The app default is Aniyomi's RTL; this flow asserts LTR navigation. The in-memory
+            // store only sees values passed through its constructor sequence.
+            val preferences = InMemoryPreferenceStore(
+                sequenceOf(
+                    InMemoryPreferenceStore.InMemoryPreference(
+                        "pref_default_reading_mode_key",
+                        eu.kanade.tachiyomi.ui.reader.setting.ReadingMode.LEFT_TO_RIGHT.flagValue,
+                        0,
+                    ),
+                ),
+            )
             setContent {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
@@ -61,6 +73,7 @@ class MiyomuAppTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 1_000L },
+                    preferenceStore = preferences,
                     sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )

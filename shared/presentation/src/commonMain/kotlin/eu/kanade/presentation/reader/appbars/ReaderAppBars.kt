@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -65,9 +67,12 @@ fun ReaderAppBars(
     cropEnabled: Boolean,
     onClickCropBorder: () -> Unit,
     onClickSettings: () -> Unit,
+    // Miyomu: readerTheme drives these from ComicReaderScreen (upstream themes the activity).
+    backgroundColorOverride: androidx.compose.ui.graphics.Color? = null,
+    contentColorOverride: androidx.compose.ui.graphics.Color? = null,
 ) {
     val isRtl = viewer is R2LPagerViewer
-    val backgroundColor = MaterialTheme.colorScheme
+    val backgroundColor = backgroundColorOverride ?: MaterialTheme.colorScheme
         .surfaceColorAtElevation(3.dp)
         .copy(alpha = if (isSystemInDarkTheme()) 0.9f else 0.95f)
 
@@ -77,10 +82,13 @@ fun ReaderAppBars(
         Modifier
     }
 
-    Column(
-        modifier = Modifier.fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween,
+    CompositionLocalProvider(
+        LocalContentColor provides (contentColorOverride ?: LocalContentColor.current),
     ) {
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
         AnimatedVisibility(
             visible = visible,
             enter = slideInVertically(
@@ -190,5 +198,6 @@ fun ReaderAppBars(
                 )
             }
         }
+    }
     }
 }

@@ -10,12 +10,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.miyomu.data.ChapterRecord
 import app.miyomu.local.LocalBook
 import app.miyomu.local.LocalChapter
 import app.miyomu.model.LibraryItem
+import app.miyomu.model.MediaType
 import app.miyomu.model.ReadingProgress
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.library.mangaId
@@ -23,6 +26,7 @@ import app.miyomu.ui.library.toManga
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import eu.kanade.presentation.entries.manga.MangaScreen
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
@@ -68,15 +72,43 @@ fun MangaDetailContent(
     onBack: () -> Unit,
     onRead: (chapterIndex: Int, pageIndex: Int) -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
     val itemId = remember(book.id) { LibraryItem.idOf("local", book.id) }
     var chapters by remember(book.id) { mutableStateOf<List<LocalChapter>?>(null) }
+    var records by remember(book.id) { mutableStateOf<List<ChapterRecord>>(emptyList()) }
     var latestProgress by remember(book.id) { mutableStateOf<ReadingProgress?>(null) }
     var refreshToken by remember(book.id) { mutableIntStateOf(0) }
     var selectedIds by remember(book.id) { mutableStateOf(emptySet<Long>()) }
 
+    fun reloadMarks() {
+        scope.launch {
+            records = runCatching { graph.data.chapters.chapters(itemId) }.getOrDefault(emptyList())
+            latestProgress = runCatching { graph.data.progress.latest(itemId) }.getOrNull()
+        }
+    }
+
     LaunchedEffect(book.id, refreshToken) {
         chapters = runCatching { graph.comics.chapters(book) }.getOrDefault(emptyList())
-        latestProgress = runCatching { graph.data.progress.latest(itemId) }.getOrNull()
+        // Persist the chapter list (marks survive rescans), then read back.
+        val loaded = chapters.orEmpty()
+        if (loaded.isNotEmpty()) {
+            runCatching {
+                graph.data.chapters.replaceChapters(
+                    itemId,
+                    loaded.mapIndexed { index, chapter ->
+                        ChapterRecord(
+                            key = chapter.id,
+                            name = chapter.title,
+                            url = chapter.location,
+                            chapterNumber = (index + 1).toDouble(),
+                            sourceOrder = index.toLong(),
+                        )
+                    },
+                    fetchedAt = graph.nowMillis(),
+                )
+            }
+        }
+        reloadMarks()
     }
 
     val loadedChapters = chapters
@@ -97,12 +129,16 @@ fun MangaDetailContent(
         0
     }
 
-    val items = remember(loadedChapters, savedChapterIndex, selectedIds) {
+    val recordByKey = remember(records) { records.associateBy { it.key } }
+    val items = remember(loadedChapters, recordByKey, savedChapterIndex, selectedIds) {
         loadedChapters.mapIndexed { index, local ->
             val chapter = local.toDomainChapter(book, index)
+            val record = recordByKey[local.id]
             ChapterList.Item(
-                // A chapter counts as read once the reader has moved past it.
-                chapter = chapter.copy(read = savedChapterIndex >= 0 && index < savedChapterIndex),
+                chapter = chapter.copy(
+                    read = record?.read ?: (savedChapterIndex >= 0 && index < savedChapterIndex),
+                    bookmark = record?.bookmark ?: false,
+                ),
                 downloadState = MangaDownload.State.NOT_DOWNLOADED,
                 downloadProgress = 0,
                 selected = chapter.id in selectedIds,
@@ -137,7 +173,27 @@ fun MangaDetailContent(
         },
         // Downloads arrive in Phase C; the chapter action menu hides the entry entirely.
         onDownloadChapter = null,
-        onAddToLibraryClicked = {},
+        onAddToLibraryClicked = {
+            scope.launch {
+                val stored = graph.data.library.get(itemId)
+                if (stored != null) {
+                    graph.data.library.delete(itemId)
+                } else {
+                    graph.data.library.upsert(
+                        LibraryItem(
+                            id = itemId,
+                            mediaType = MediaType.COMIC,
+                            sourceId = "local",
+                            sourceKey = book.id,
+                            title = book.title,
+                            addedAt = graph.nowMillis(),
+                            updatedAt = graph.nowMillis(),
+                        ),
+                    )
+                }
+                refreshToken++
+            }
+        },
         onWebViewClicked = null,
         onWebViewLongClicked = null,
         onTrackingClicked = {},
@@ -152,10 +208,22 @@ fun MangaDetailContent(
         onEditCategoryClicked = null,
         onEditFetchIntervalClicked = null,
         onMigrateClicked = null,
-        // Read/bookmark flags have no storage yet: the local library has no chapter table, so
-        // these actions only move the selection state in this slice.
-        onMultiBookmarkClicked = { _, _ -> },
-        onMultiMarkAsReadClicked = { _, _ -> },
+        onMultiBookmarkClicked = { selected, bookmarked ->
+            scope.launch {
+                val keys = loadedChapters.filter { local -> selected.any { it.id == local.domainId() } }
+                    .map { it.id }
+                graph.data.chapters.setBookmarked(itemId, keys, bookmarked)
+                reloadMarks()
+            }
+        },
+        onMultiMarkAsReadClicked = { selected, read ->
+            scope.launch {
+                val keys = loadedChapters.filter { local -> selected.any { it.id == local.domainId() } }
+                    .map { it.id }
+                graph.data.chapters.setRead(itemId, keys, read)
+                reloadMarks()
+            }
+        },
         onMarkPreviousAsReadClicked = {},
         onMultiDeleteClicked = {},
         onChapterSwipe = { _, _ -> },

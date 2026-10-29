@@ -6,7 +6,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -60,6 +62,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +76,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -89,6 +93,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import app.miyomu.data.MiyomuData
@@ -105,6 +110,8 @@ import app.miyomu.reader.comic.PageSpread
 import app.miyomu.reader.comic.pageSpreads
 import app.miyomu.reader.comic.spreadIndexForPage
 import app.miyomu.ui.reader.ApplyReaderOrientation
+import app.miyomu.ui.reader.CropBounds
+import app.miyomu.ui.reader.computeSampledContentBounds
 import app.miyomu.ui.reader.readerTitles
 import app.miyomu.ui.reader.toComicReadingMode
 import app.miyomu.ui.reader.toReaderState
@@ -115,6 +122,7 @@ import eu.kanade.presentation.reader.appbars.ReaderAppBars
 import eu.kanade.presentation.reader.settings.ReaderSettingsDialog
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
+import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import tachiyomi.presentation.core.util.collectAsState as collectPreferenceAsState
@@ -122,6 +130,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 private const val MAX_ZOOM = 4f
@@ -226,14 +236,18 @@ fun ComicReaderScreen(
     val controller = remember(book.id) { ComicReaderController(pageSource, scope) }
     val state by controller.state.collectAsState()
 
-    LaunchedEffect(book.id) {
+    val itemId = libraryItemId
+    LaunchedEffect(book.id, itemId) {
         controller.open(book, initialChapterIndex, initialPageIndex)
+        // Per-manga override wins over the global default (Aniyomi semantics); 0 clears.
+        val modeFlag = readerPreferences.readerModeOverride(itemId).get().takeIf { it != 0 }
+            ?: readerPreferences.defaultReadingMode().get()
+        ReadingMode.fromPreference(modeFlag).toComicReadingMode()?.let(controller::setMode)
     }
     DisposableEffect(controller) {
         onDispose { controller.close() }
     }
 
-    val itemId = libraryItemId
     val chapter = state.currentChapter
     LaunchedEffect(chapter?.id, state.pageIndex, state.pages.size) {
         if (chapter != null && state.pages.isNotEmpty()) {
@@ -332,11 +346,31 @@ fun ComicReaderScreen(
     var orientationDialogVisible by remember { mutableStateOf(false) }
     val cropBorders = remember(readerPreferences) { readerPreferences.cropBorders() }
     val cropEnabled by cropBorders.collectPreferenceAsState()
-    val orientationFlag by remember(readerPreferences) {
+    val cropBordersWebtoon = remember(readerPreferences) { readerPreferences.cropBordersWebtoon() }
+    val cropWebtoonEnabled by cropBordersWebtoon.collectPreferenceAsState()
+    val orientationGlobal by remember(readerPreferences) {
         readerPreferences.defaultOrientationType()
     }.collectPreferenceAsState()
+    var orientationOverride by remember(itemId) {
+        mutableStateOf(readerPreferences.readerOrientationOverride(itemId).get())
+    }
+    val orientationFlag = orientationOverride.takeIf { it != 0 } ?: orientationGlobal
     val orientation = ReaderOrientation.fromPreference(orientationFlag)
     ApplyReaderOrientation(if (orientation == ReaderOrientation.DEFAULT) -1 else orientation.flag)
+
+    // readerTheme: 1 black, 2 gray, 3 white, else automatic (system dark).
+    val themeFlag by remember(readerPreferences) { readerPreferences.readerTheme() }
+        .collectPreferenceAsState()
+    val darkTheme = isSystemInDarkTheme()
+    val readerBackground = when (themeFlag) {
+        1 -> Color.Black
+        2 -> Color(0xFF2E2E2E)
+        3 -> Color.White
+        else -> if (darkTheme) Color.Black else Color.White
+    }
+    val readerContent = if (readerBackground == Color.White) Color(0xFF1C1B21) else Color.White
+
+    val cropBoundsCache = remember { mutableMapOf<String, CropBounds?>() }
 
     val readerState = state.toReaderState(chromeVisible = chromeVisible)
     val (mangaTitle, chapterTitle) = state.readerTitles()
@@ -349,7 +383,7 @@ fun ComicReaderScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(readerBackground)
             // The ported chrome shows the page as bare digits, so the current index is exposed
             // here for UI tests and accessibility.
             .testTag("reader-page-${state.pageIndex}")
@@ -389,6 +423,8 @@ fun ComicReaderScreen(
                 pageSource = pageSource,
                 zoom = zoom,
                 onTap = onReaderTap,
+                cropEnabled = cropWebtoonEnabled,
+                cropBoundsCache = cropBoundsCache,
                 modifier = Modifier.fillMaxSize().testTag("reader-webtoon"),
             )
             else -> PagedPager(
@@ -398,6 +434,8 @@ fun ComicReaderScreen(
                 pageSource = pageSource,
                 zoom = zoom,
                 onTap = onReaderTap,
+                cropEnabled = cropEnabled,
+                cropBoundsCache = cropBoundsCache,
                 modifier = Modifier.fillMaxSize().testTag("reader-pager"),
             )
         }
@@ -432,6 +470,8 @@ fun ComicReaderScreen(
             cropEnabled = cropEnabled,
             onClickCropBorder = { cropBorders.set(!cropEnabled) },
             onClickSettings = { settingsVisible = true },
+            backgroundColorOverride = readerBackground,
+            contentColorOverride = readerContent,
         )
     }
 
@@ -441,8 +481,14 @@ fun ComicReaderScreen(
         ReaderSettingsScreenModel(
             readerState = readerStateFlow,
             hasDisplayCutout = false,
-            onChangeReadingMode = { mode -> mode.toComicReadingMode()?.let(controller::setMode) },
-            onChangeOrientation = { chosen -> readerPreferences.defaultOrientationType().set(chosen.flagValue) },
+            onChangeReadingMode = { mode ->
+                readerPreferences.readerModeOverride(itemId).set(mode.flagValue)
+                mode.toComicReadingMode()?.let(controller::setMode)
+            },
+            onChangeOrientation = { chosen ->
+                orientationOverride = chosen.flagValue
+                readerPreferences.readerOrientationOverride(itemId).set(chosen.flagValue)
+            },
             preferences = readerPreferences,
         )
     }
@@ -479,6 +525,8 @@ private fun PagedPager(
     pageSource: ReaderPageSource,
     zoom: ReaderZoomState,
     onTap: (Float) -> Unit,
+    cropEnabled: Boolean,
+    cropBoundsCache: MutableMap<String, CropBounds?>,
     modifier: Modifier = Modifier,
 ) {
     when (state.mode) {
@@ -497,6 +545,8 @@ private fun PagedPager(
                 pageSource = pageSource,
                 zoom = zoom,
                 onTap = onTap,
+                cropEnabled = cropEnabled,
+                cropBoundsCache = cropBoundsCache,
             )
         }
         ComicReadingMode.VERTICAL -> VerticalPager(
@@ -511,6 +561,8 @@ private fun PagedPager(
                 pageSource = pageSource,
                 zoom = zoom,
                 onTap = onTap,
+                cropEnabled = cropEnabled,
+                cropBoundsCache = cropBoundsCache,
             )
         }
         ComicReadingMode.WEBTOON -> Unit
@@ -524,6 +576,8 @@ private fun WebtoonColumn(
     pageSource: ReaderPageSource,
     zoom: ReaderZoomState,
     onTap: (Float) -> Unit,
+    cropEnabled: Boolean,
+    cropBoundsCache: MutableMap<String, CropBounds?>,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -546,6 +600,8 @@ private fun WebtoonColumn(
                 ComicPage(
                     page = state.pages[index],
                     pageSource = pageSource,
+                    cropEnabled = cropEnabled,
+                    cropBoundsCache = cropBoundsCache,
                     modifier = Modifier.fillMaxWidth(),
                     imageModifier = Modifier.fillMaxWidth(),
                     contentScale = ContentScale.FillWidth,
@@ -562,6 +618,8 @@ private fun SpreadPage(
     pageSource: ReaderPageSource,
     zoom: ReaderZoomState,
     onTap: (Float) -> Unit,
+    cropEnabled: Boolean,
+    cropBoundsCache: MutableMap<String, CropBounds?>,
 ) {
     Box(
         modifier = Modifier
@@ -581,6 +639,8 @@ private fun SpreadPage(
                 ComicPage(
                     page = page,
                     pageSource = pageSource,
+                    cropEnabled = cropEnabled,
+                    cropBoundsCache = cropBoundsCache,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
@@ -595,19 +655,42 @@ private fun ComicPage(
     modifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier.fillMaxSize(),
     contentScale: ContentScale = ContentScale.Fit,
+    cropEnabled: Boolean = false,
+    cropBoundsCache: MutableMap<String, CropBounds?>? = null,
 ) {
     var image by remember(page.location) { mutableStateOf<ImageBitmap?>(null) }
+    var pageBytes by remember(page.location) { mutableStateOf<ByteArray?>(null) }
     var error by remember(page.location) { mutableStateOf<String?>(null) }
+    var cropTrigger by remember(page.location) { mutableIntStateOf(0) }
 
     LaunchedEffect(page.location) {
-        runCatching { decodeImageBitmap(pageSource.readPage(page)) }
-            .onSuccess { image = it }
+        runCatching { pageSource.readPage(page) }
+            .onSuccess { bytes ->
+                pageBytes = bytes
+                image = decodeImageBitmap(bytes)
+            }
             .onFailure { failure -> error = failure.message ?: "无法读取页面" }
+    }
+
+    LaunchedEffect(page.location, cropEnabled, pageBytes, image, cropTrigger) {
+        val bitmap = image ?: return@LaunchedEffect
+        val bytes = pageBytes ?: return@LaunchedEffect
+        if (!cropEnabled || cropBoundsCache == null) return@LaunchedEffect
+        if (cropBoundsCache.containsKey(page.location)) return@LaunchedEffect
+        val sampled = decodeImageBitmapSampled(bytes) ?: return@LaunchedEffect
+        cropBoundsCache[page.location] = computeSampledContentBounds(bitmap, sampled)
     }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         val bitmap = image
+        val bounds = if (cropEnabled) cropBoundsCache?.get(page.location) else null
         when {
+            bitmap != null && bounds != null && !bounds.isEmpty -> CroppedImage(
+                bitmap = bitmap,
+                bounds = bounds,
+                contentDescription = page.name,
+                modifier = imageModifier,
+            )
             bitmap != null -> Image(
                 bitmap = bitmap,
                 contentDescription = page.name,
@@ -617,6 +700,35 @@ private fun ComicPage(
             error != null -> Text(text = error.orEmpty(), color = Color.White)
             else -> CircularProgressIndicator(color = Color.White)
         }
+    }
+    // Re-run the crop scan when the setting flips on for an already-cached page.
+    LaunchedEffect(cropEnabled) {
+        if (cropEnabled) cropTrigger++
+    }
+}
+
+/** Draws the cropped region scaled to fit, letterboxed inside the viewport. */
+@Composable
+private fun CroppedImage(
+    bitmap: ImageBitmap,
+    bounds: CropBounds,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier) {
+        val srcWidth = bounds.width.coerceAtLeast(1)
+        val srcHeight = bounds.height.coerceAtLeast(1)
+        val scale = minOf(size.width / srcWidth, size.height / srcHeight)
+        val dstWidth = (srcWidth * scale).toInt().coerceAtMost(size.width.toInt())
+        val dstHeight = (srcHeight * scale).toInt().coerceAtMost(size.height.toInt())
+        drawImage(
+            image = bitmap,
+            srcOffset = IntOffset(bounds.left, bounds.top),
+            srcSize = IntSize(srcWidth, srcHeight),
+            dstOffset = IntOffset(((size.width - dstWidth) / 2f).toInt(), ((size.height - dstHeight) / 2f).toInt()),
+            dstSize = IntSize(dstWidth, dstHeight),
+            filterQuality = FilterQuality.Medium,
+        )
     }
 }
 

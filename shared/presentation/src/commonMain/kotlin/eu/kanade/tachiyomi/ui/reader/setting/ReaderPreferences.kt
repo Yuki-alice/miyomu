@@ -77,6 +77,13 @@ class ReaderPreferences(
 
     fun cropBordersWebtoon() = preferenceStore.getBoolean("crop_borders_webtoon", false)
 
+    // --- Miyomu additions (ADR-0011 per-item substitution): per-manga reader overrides. ---
+    /** ReadingMode flag for one library item; 0 = use the global default. */
+    fun readerModeOverride(itemId: String) = preferenceStore.getInt("pref_reader_mode_manga_$itemId", 0)
+
+    /** ReaderOrientation flag for one library item; 0 = use the global default. */
+    fun readerOrientationOverride(itemId: String) = preferenceStore.getInt("pref_reader_orientation_manga_$itemId", 0)
+
     fun webtoonSidePadding() = preferenceStore.getInt("webtoon_side_padding", WEBTOON_PADDING_MIN)
 
     fun readerHideThreshold() = preferenceStore.getEnum("reader_hide_threshold", ReaderHideThreshold.LOW)
