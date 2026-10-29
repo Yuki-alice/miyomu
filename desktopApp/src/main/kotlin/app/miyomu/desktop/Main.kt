@@ -8,6 +8,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.miyomu.data.JvmMiyomuDatabaseFactory
 import app.miyomu.data.createMiyomuData
+import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
@@ -35,6 +36,7 @@ fun main() = application {
         val root = remember { FileLocalFileRef(libraryRoot) }
         val comics = remember { FileLocalComicRepository() }
         val library = remember { LocalLibraryRepository() }
+        val preferences = remember { JsonPreferenceStore(File(home, "preferences.json")) }
 
         DisposableEffect(data) {
             onDispose { data.close() }
@@ -47,6 +49,7 @@ fun main() = application {
             root = root,
             deviceId = "desktop",
             nowMillis = System::currentTimeMillis,
+            preferenceStore = preferences,
             onOpenLibraryFolder = {
                 runCatching { Desktop.getDesktop().open(libraryRoot) }
             },

@@ -60,12 +60,15 @@ class MiyomuAppTest {
                 )
             }
 
-            val bookTag = "book-${FileLocalFileRef(book).location}"
+            // The ported library grid renders the title overlay instead of a per-item test tag.
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithTag(bookTag).fetchSemanticsNodes().isNotEmpty()
+                onAllNodesWithText("Sample Book").fetchSemanticsNodes().isNotEmpty()
             }
+            // Covers decode off the composition (coil), so give the loader a moment before the
+            // evidence screenshot is taken.
+            Thread.sleep(600)
             capture("library")
-            onNodeWithTag(bookTag).performClick()
+            onNodeWithText("Sample Book").performClick()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithTag("start-reading").fetchSemanticsNodes().isNotEmpty()
@@ -127,11 +130,10 @@ class MiyomuAppTest {
                 )
             }
 
-            val bookTag = "book-$bookLocation"
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithTag(bookTag).fetchSemanticsNodes().isNotEmpty()
+                onAllNodesWithText("Resume Book").fetchSemanticsNodes().isNotEmpty()
             }
-            onNodeWithTag(bookTag).performClick()
+            onNodeWithText("Resume Book").performClick()
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("继续阅读").fetchSemanticsNodes().isNotEmpty()
             }

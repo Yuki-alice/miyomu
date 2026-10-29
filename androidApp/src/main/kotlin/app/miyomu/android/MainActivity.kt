@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import app.miyomu.data.AndroidMiyomuDatabaseFactory
 import app.miyomu.data.createMiyomuData
+import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
             val root = remember { FileLocalFileRef(libraryRoot) }
             val comics = remember { FileLocalComicRepository() }
             val library = remember { LocalLibraryRepository() }
+            val preferences = remember { JsonPreferenceStore(File(context.filesDir, "preferences.json")) }
 
             DisposableEffect(data) {
                 onDispose { data.close() }
@@ -40,6 +42,7 @@ class MainActivity : ComponentActivity() {
                 root = root,
                 deviceId = "android",
                 nowMillis = System::currentTimeMillis,
+                preferenceStore = preferences,
             )
         }
     }

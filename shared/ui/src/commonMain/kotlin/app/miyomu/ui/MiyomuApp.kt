@@ -12,7 +12,11 @@ import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
 import app.miyomu.ui.home.HomeScreen
+import app.miyomu.ui.library.installLocalCoverLoader
+import app.miyomu.ui.library.localCoverResolver
 import cafe.adriel.voyager.navigator.Navigator
+import tachiyomi.core.common.preference.InMemoryPreferenceStore
+import tachiyomi.core.common.preference.PreferenceStore
 
 @Composable
 fun MiyomuApp(
@@ -22,8 +26,15 @@ fun MiyomuApp(
     root: LocalFileRef,
     deviceId: String,
     nowMillis: () -> Long,
+    /**
+     * Backing store for the ported preference groups. Platforms pass a JSON file; tests and
+     * previews fall back to an in-memory store.
+     */
+    preferenceStore: PreferenceStore? = null,
     onOpenLibraryFolder: (() -> Unit)? = null,
 ) {
+    val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
+
     val graph = remember {
         MiyomuGraph(
             library = library,
@@ -32,7 +43,19 @@ fun MiyomuApp(
             root = root,
             deviceId = deviceId,
             nowMillis = nowMillis,
+            preferenceStore = store,
             onOpenLibraryFolder = onOpenLibraryFolder,
+        )
+    }
+
+    // Coil resolves covers through a process-wide singleton, so the local fetcher has to be
+    // registered before the first grid item composes.
+    remember(graph) {
+        installLocalCoverLoader(
+            localCoverResolver(
+                books = { graph.library.books.value },
+                cover = { book -> graph.comics.cover(book) },
+            ),
         )
     }
 
