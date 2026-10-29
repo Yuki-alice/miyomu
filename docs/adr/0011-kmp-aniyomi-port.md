@@ -74,3 +74,4 @@
 | 逐集进度 | `reading_progress` 已是 `(itemId, entryId, deviceId)` 复合主键，补 `all(itemId)`/`latestFor`；播放器按 `entryId = 集文件路径` 保存与恢复 |
 | 集号解析 | 端口上游 `EpisodeRecognition`，按文件名解析集号；本地视频的 episodeFlags 改为按集号升序，避免上游“缺失集”分隔条在升序列表中误报 |
 | 季导航 | 季 = 子目录 book，点击 push 同一个 `VideoDetailScreen`；季统计（集数/已看/最后观看）在详情加载时计算 |
+| 详情列表设置 | `EpisodeSettingsDialog`/`SeasonSettingsDialog` 直接驱动 `episodeFlags`/`seasonFlags`；按书存 `PreferenceStore`（`local_video_episode_flags_<bookId>`、`local_video_season_flags_<bookId>`），默认剧集按集号升序、季列表开启未看/本地/继续观看徽标 |

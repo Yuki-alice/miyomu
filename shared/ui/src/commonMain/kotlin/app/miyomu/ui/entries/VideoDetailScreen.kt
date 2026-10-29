@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,6 +25,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.entries.anime.AnimeScreen
+import eu.kanade.presentation.entries.anime.EpisodeSettingsDialog
+import eu.kanade.presentation.entries.anime.SeasonSettingsDialog
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.FetchType
@@ -80,6 +83,29 @@ fun VideoDetailContent(
     var progressByEntry by remember(book.id) { mutableStateOf<Map<String, ReadingProgress>>(emptyMap()) }
     var selectedIds by remember(book.id) { mutableStateOf(emptySet<Long>()) }
     var reloadToken by remember(book.id) { mutableIntStateOf(0) }
+    var showSettings by remember(book.id) { mutableStateOf(false) }
+
+    // List filters/sort/display are per book and survive restarts through the preference store.
+    var episodeFlags by remember(book.id) {
+        mutableLongStateOf(
+            graph.preferenceStore.getLong(episodeFlagsKey(book.id), DefaultVideoEpisodeFlags).get(),
+        )
+    }
+    var seasonFlags by remember(book.id) {
+        mutableLongStateOf(
+            graph.preferenceStore.getLong(seasonFlagsKey(book.id), DefaultVideoSeasonFlags).get(),
+        )
+    }
+
+    fun updateEpisodeFlags(flags: Long) {
+        episodeFlags = flags
+        graph.preferenceStore.getLong(episodeFlagsKey(book.id), DefaultVideoEpisodeFlags).set(flags)
+    }
+
+    fun updateSeasonFlags(flags: Long) {
+        seasonFlags = flags
+        graph.preferenceStore.getLong(seasonFlagsKey(book.id), DefaultVideoSeasonFlags).set(flags)
+    }
 
     LaunchedEffect(book.id, reloadToken) {
         val loadedChapters = runCatching { graph.comics.chapters(book) }.getOrDefault(emptyList())
@@ -107,8 +133,11 @@ fun VideoDetailContent(
 
     // A mixed folder (direct videos plus season subfolders) stays an episode list.
     val isSeries = loadedChapters.isEmpty() && seasonBooks.isNotEmpty()
-    val anime = remember(book, isSeries) {
-        book.toAnime(if (isSeries) FetchType.Seasons else FetchType.Episodes)
+    val anime = remember(book, isSeries, episodeFlags, seasonFlags) {
+        book.toAnime(if (isSeries) FetchType.Seasons else FetchType.Episodes).copy(
+            episodeFlags = episodeFlags,
+            seasonFlags = seasonFlags,
+        )
     }
     val episodes = remember(loadedChapters, progressByEntry, selectedIds) {
         loadedChapters.mapIndexed { index, chapter ->
@@ -159,7 +188,7 @@ fun VideoDetailContent(
         onWebViewLongClicked = null,
         onTrackingClicked = null,
         onTagSearch = {},
-        onFilterButtonClicked = {},
+        onFilterButtonClicked = { showSettings = true },
         onRefresh = {
             scope.launch {
                 runCatching { graph.library.refresh(graph.root) }
@@ -194,9 +223,54 @@ fun VideoDetailContent(
         onSeasonClicked = { season ->
             seasonBooks.firstOrNull { it.animeId() == season.anime.id }?.let(onOpenSeason)
         },
-        onContinueWatchingClicked = null,
+        onContinueWatchingClicked = { season ->
+            seasonBooks.firstOrNull { it.animeId() == season.anime.id }?.let(onOpenSeason)
+        },
         onRelatedAnimeClicked = {},
         onRelatedAnimeLongClicked = {},
         relatedAnimeDisplayMode = LibraryDisplayMode.CompactGrid,
     )
+
+    if (showSettings) {
+        if (isSeries) {
+            SeasonSettingsDialog(
+                onDismissRequest = { showSettings = false },
+                anime = anime,
+                onDownloadFilterChanged = { updateSeasonFlags(seasonFlags.withSeasonDownloadedFilter(it)) },
+                onUnseenFilterChanged = { updateSeasonFlags(seasonFlags.withSeasonUnseenFilter(it)) },
+                onStartedFilterChanged = { updateSeasonFlags(seasonFlags.withSeasonStartedFilter(it)) },
+                onCompletedFilterChanged = { updateSeasonFlags(seasonFlags.withSeasonCompletedFilter(it)) },
+                onBookmarkedFilterChanged = { updateSeasonFlags(seasonFlags.withSeasonBookmarkedFilter(it)) },
+                onFillermarkedFilterChanged = { updateSeasonFlags(seasonFlags.withSeasonFillermarkedFilter(it)) },
+                onSortModeChanged = { updateSeasonFlags(seasonFlags.withSeasonSorting(it)) },
+                onDisplayGridModeChanged = { updateSeasonFlags(seasonFlags.withSeasonGridMode(it)) },
+                onDisplayGridSizeChanged = { updateSeasonFlags(seasonFlags.withSeasonGridSize(it)) },
+                onOverlayDownloadedChanged = { updateSeasonFlags(seasonFlags.withSeasonOverlayDownloaded(it)) },
+                onOverlayUnseenChanged = { updateSeasonFlags(seasonFlags.withSeasonOverlayUnseen(it)) },
+                onOverlayLocalChanged = { updateSeasonFlags(seasonFlags.withSeasonOverlayLocal(it)) },
+                onOverlayLangChanged = { updateSeasonFlags(seasonFlags.withSeasonOverlayLang(it)) },
+                onOverlayContinueChanged = { updateSeasonFlags(seasonFlags.withSeasonOverlayContinue(it)) },
+                onDisplayModeChanged = { updateSeasonFlags(seasonFlags.withSeasonDisplayMode(it)) },
+                onSetAsDefault = {},
+            )
+        } else {
+            EpisodeSettingsDialog(
+                onDismissRequest = { showSettings = false },
+                anime = anime,
+                onDownloadFilterChanged = { updateEpisodeFlags(episodeFlags.withEpisodeDownloadedFilter(it)) },
+                onUnseenFilterChanged = { updateEpisodeFlags(episodeFlags.withEpisodeUnseenFilter(it)) },
+                onBookmarkedFilterChanged = { updateEpisodeFlags(episodeFlags.withEpisodeBookmarkedFilter(it)) },
+                onFillermarkedFilterChanged = { updateEpisodeFlags(episodeFlags.withEpisodeFillermarkedFilter(it)) },
+                onSortModeChanged = { updateEpisodeFlags(episodeFlags.withEpisodeSorting(it)) },
+                onDisplayModeChanged = { updateEpisodeFlags(episodeFlags.withEpisodeDisplayMode(it)) },
+                onShowPreviewsEnabled = { updateEpisodeFlags(episodeFlags.withEpisodePreviews(it)) },
+                onShowSummariesEnabled = { updateEpisodeFlags(episodeFlags.withEpisodeSummaries(it)) },
+                onSetAsDefault = {},
+            )
+        }
+    }
 }
+
+private fun episodeFlagsKey(bookId: String): String = "local_video_episode_flags_$bookId"
+
+private fun seasonFlagsKey(bookId: String): String = "local_video_season_flags_$bookId"

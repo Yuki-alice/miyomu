@@ -133,6 +133,8 @@ class VideoAnimeMappingTest {
         assertEquals("Season 1", item.seasonAnime.anime.title)
         assertEquals(2L, item.seasonAnime.totalCount)
         assertEquals(1L, item.seasonAnime.seenCount)
+        assertEquals(1L, item.unseenCount)
+        assertTrue(item.isLocal)
         assertEquals(5_000L, item.seasonAnime.lastSeen)
     }
 }

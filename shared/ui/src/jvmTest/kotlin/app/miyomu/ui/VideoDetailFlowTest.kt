@@ -3,7 +3,9 @@ package app.miyomu.ui
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -154,6 +156,56 @@ class VideoDetailFlowTest {
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("E01").fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            data.close()
+        }
+    }
+
+    @Test
+    fun filterActionOpensEpisodeSettings() = runComposeUiTest {
+        val show = File(root, "Show").apply { mkdirs() }
+        File(show, "S01E01.mkv").writeBytes(byteArrayOf(1))
+
+        val data = createMiyomuData(
+            JvmMiyomuDatabaseFactory(File(root, "settings.db").absolutePath),
+        )
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                )
+            }
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("Show").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("Show").performClick()
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("S01E01").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            val filterLabels = listOf("Filter", "筛选")
+            val filterLabel = filterLabels.firstOrNull { label ->
+                onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+            } ?: error("filter action not found")
+            onNodeWithContentDescription(filterLabel).performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                listOf("Filter", "筛选").any { label ->
+                    onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+                }
+            }
+            waitUntil(timeoutMillis = 5_000) {
+                listOf("Display", "显示").any { label ->
+                    onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+                }
             }
         } finally {
             data.close()

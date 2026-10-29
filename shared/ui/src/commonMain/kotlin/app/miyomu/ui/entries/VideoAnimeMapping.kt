@@ -35,8 +35,8 @@ internal fun LocalBook.toAnime(fetchType: FetchType = FetchType.Episodes): Anime
     url = location,
     title = title,
     status = SAnime.UNKNOWN.toLong(),
-    // Ascending episode numbers keep the list in file order and avoid bogus "missing" rows.
-    episodeFlags = Anime.EPISODE_SORTING_NUMBER or Anime.EPISODE_SORT_ASC,
+    episodeFlags = DefaultVideoEpisodeFlags,
+    seasonFlags = DefaultVideoSeasonFlags,
     initialized = true,
     lastModifiedAt = lastModified,
     version = 1L,
@@ -85,16 +85,19 @@ internal fun LocalBook.toSeasonItem(
     progress: List<ReadingProgress>,
 ): AnimeSeasonItem {
     val byEntry = progress.associateBy { it.entryId }
+    val seasonAnime = SeasonAnime(
+        anime = toAnime(),
+        totalCount = episodes.size.toLong(),
+        seenCount = episodes.count { byEntry[it.location].isWatched() }.toLong(),
+        bookmarkCount = 0,
+        fillermarkCount = 0,
+        latestUpload = episodes.maxOfOrNull { it.lastModified } ?: lastModified,
+        fetchedAt = 0,
+        lastSeen = progress.maxOfOrNull { it.updatedAt } ?: 0L,
+    )
     return AnimeSeasonItem(
-        seasonAnime = SeasonAnime(
-            anime = toAnime(),
-            totalCount = episodes.size.toLong(),
-            seenCount = episodes.count { byEntry[it.location].isWatched() }.toLong(),
-            bookmarkCount = 0,
-            fillermarkCount = 0,
-            latestUpload = episodes.maxOfOrNull { it.lastModified } ?: lastModified,
-            fetchedAt = 0,
-            lastSeen = progress.maxOfOrNull { it.updatedAt } ?: 0L,
-        ),
+        seasonAnime = seasonAnime,
+        unseenCount = seasonAnime.unseenCount,
+        isLocal = true,
     )
 }
