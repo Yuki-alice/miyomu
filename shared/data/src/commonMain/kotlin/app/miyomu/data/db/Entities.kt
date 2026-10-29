@@ -85,3 +85,24 @@ data class VideoResolveEntity(
     val headersJson: String,
     val fetchedAt: Long,
 )
+
+/** User-defined library category (Aniyomi semantics; id 0 is the system "Default"). */
+@Entity(tableName = "category")
+data class CategoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val order: Long,
+    val flags: Long = 0L,
+    val hidden: Boolean = false,
+)
+
+/** Library item membership in a category, keyed like Aniyomi's manga_category table. */
+@Entity(
+    tableName = "manga_category",
+    primaryKeys = ["itemId", "categoryId"],
+    indices = [Index(value = ["categoryId"])],
+)
+data class MangaCategoryEntity(
+    val itemId: String,
+    val categoryId: Long,
+)

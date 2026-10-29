@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -21,6 +22,7 @@ import app.miyomu.model.LibraryItem
 import app.miyomu.model.MediaType
 import app.miyomu.model.ReadingProgress
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.library.CategoryEditDialog
 import app.miyomu.ui.library.mangaId
 import app.miyomu.ui.library.toManga
 import cafe.adriel.voyager.core.screen.Screen
@@ -79,11 +81,15 @@ fun MangaDetailContent(
     var latestProgress by remember(book.id) { mutableStateOf<ReadingProgress?>(null) }
     var refreshToken by remember(book.id) { mutableIntStateOf(0) }
     var selectedIds by remember(book.id) { mutableStateOf(emptySet<Long>()) }
+    var showCategoryDialog by remember(book.id) { mutableStateOf(false) }
+    val categories by graph.data.categories.observeCategories().collectAsState(initial = emptyList())
+    var memberOf by remember(book.id) { mutableStateOf<Set<Long>>(emptySet()) }
 
     fun reloadMarks() {
         scope.launch {
             records = runCatching { graph.data.chapters.chapters(itemId) }.getOrDefault(emptyList())
             latestProgress = runCatching { graph.data.progress.latest(itemId) }.getOrNull()
+            memberOf = runCatching { graph.data.categories.categoryIdsForItem(itemId).toSet() }.getOrDefault(emptySet())
         }
     }
 

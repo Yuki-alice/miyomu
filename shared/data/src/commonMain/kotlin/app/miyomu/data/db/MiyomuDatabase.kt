@@ -13,8 +13,10 @@ import androidx.sqlite.execSQL
         EpisodeEntity::class,
         ChapterEntity::class,
         VideoResolveEntity::class,
+        CategoryEntity::class,
+        MangaCategoryEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class MiyomuDatabase : RoomDatabase() {
@@ -55,6 +57,26 @@ abstract class MiyomuDatabase : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2)
+        // createSql mirrors the exported 3.json (verified the same way as 1→2).
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SQLiteConnection) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `category` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`order` INTEGER NOT NULL, `flags` INTEGER NOT NULL, `hidden` INTEGER NOT NULL)",
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `manga_category` (" +
+                        "`itemId` TEXT NOT NULL, `categoryId` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`itemId`, `categoryId`))",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_manga_category_categoryId` " +
+                        "ON `manga_category` (`categoryId`)",
+                )
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
     }
 }

@@ -1,6 +1,8 @@
 package app.miyomu.data
 
+import app.miyomu.data.db.CategoryEntity
 import app.miyomu.data.db.ChapterEntity
+import app.miyomu.data.db.MangaCategoryEntity
 import app.miyomu.data.db.EpisodeEntity
 import app.miyomu.data.db.LibraryItemEntity
 import app.miyomu.data.db.MiyomuDao
@@ -15,6 +17,23 @@ data class BackupData(
     val progress: List<BackupProgress> = emptyList(),
     val chapters: List<BackupChapter> = emptyList(),
     val episodes: List<BackupEpisode> = emptyList(),
+    val categories: List<BackupCategory> = emptyList(),
+    val categoryMemberships: List<BackupCategoryMembership> = emptyList(),
+)
+
+@kotlinx.serialization.Serializable
+data class BackupCategory(
+    val id: Long,
+    val name: String,
+    val order: Long,
+    val flags: Long = 0L,
+    val hidden: Boolean = false,
+)
+
+@kotlinx.serialization.Serializable
+data class BackupCategoryMembership(
+    val itemId: String,
+    val categoryId: Long,
 )
 
 @kotlinx.serialization.Serializable
@@ -87,6 +106,8 @@ internal class RoomBackupRepository(
         progress = dao.allProgressRows().map { it.toBackup() },
         chapters = dao.allChapterRows().map { it.toBackup() },
         episodes = dao.allEpisodeRows().map { it.toBackup() },
+        categories = dao.categories().map { it.toBackup() },
+        categoryMemberships = dao.allMangaCategoryRows().map { BackupCategoryMembership(it.itemId, it.categoryId) },
     )
 
     override suspend fun restore(data: BackupData, replace: Boolean) {
@@ -100,6 +121,19 @@ internal class RoomBackupRepository(
         data.progress.forEach { dao.upsertProgress(it.toEntity()) }
         dao.upsertChapters(data.chapters.map { it.toEntity() })
         dao.upsertEpisodes(data.episodes.map { it.toEntity() })
+        data.categories.forEach { category ->
+            if (category.id != 0L) {
+                dao.insertCategory(
+                    CategoryEntity(
+                        id = category.id, name = category.name, order = category.order,
+                        flags = category.flags, hidden = category.hidden,
+                    ),
+                )
+            }
+        }
+        dao.upsertMangaCategories(
+            data.categoryMemberships.map { MangaCategoryEntity(it.itemId, it.categoryId) },
+        )
     }
 }
 
@@ -151,6 +185,14 @@ private fun BackupProgress.toEntity() = ReadingProgressEntity(
     duration = duration,
     updatedAt = updatedAt,
     deviceId = deviceId,
+)
+
+private fun CategoryEntity.toBackup() = BackupCategory(
+    id = id,
+    name = name,
+    order = order,
+    flags = flags,
+    hidden = hidden,
 )
 
 private fun ChapterEntity.toBackup() = BackupChapter(

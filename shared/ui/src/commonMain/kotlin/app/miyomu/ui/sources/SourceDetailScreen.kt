@@ -32,6 +32,7 @@ import app.miyomu.model.LibraryStatus
 import app.miyomu.model.MediaType
 import app.miyomu.model.ReadingProgress
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.library.CategoryEditDialog
 import app.miyomu.ui.reader.OnlineReaderScreen
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -105,6 +106,9 @@ fun SourceDetailContent(
     var records by remember(summary.id) { mutableStateOf<List<ChapterRecord>>(emptyList()) }
     var progressByEntry by remember(summary.id) { mutableStateOf<Map<String, ReadingProgress>>(emptyMap()) }
     var favorite by remember(summary.id) { mutableStateOf(false) }
+    var showCategoryDialog by remember(summary.id) { mutableStateOf(false) }
+    val categories by graph.data.categories.observeCategories().collectAsState(initial = emptyList())
+    var memberOf by remember(summary.id) { mutableStateOf<Set<Long>>(emptySet()) }
     var error by remember(summary.id) { mutableStateOf<String?>(null) }
     var reloadToken by remember(summary.id) { mutableIntStateOf(0) }
     var selectedIds by remember(summary.id) { mutableStateOf(emptySet<Long>()) }
@@ -142,6 +146,7 @@ fun SourceDetailContent(
             }
             .onFailure { failure -> error = failure.message ?: failure::class.simpleName }
         favorite = runCatching { graph.data.library.get(itemId) != null }.getOrDefault(false)
+        memberOf = runCatching { graph.data.categories.categoryIdsForItem(itemId).toSet() }.getOrDefault(emptySet())
     }
 
     val loaded = details
@@ -306,7 +311,7 @@ fun SourceDetailContent(
         onCoverClicked = {},
         onShareClicked = null,
         onDownloadActionClicked = null,
-        onEditCategoryClicked = null,
+        onEditCategoryClicked = if (favorite) ({ showCategoryDialog = true }) else null,
         onEditFetchIntervalClicked = null,
         onMigrateClicked = null,
         onMultiBookmarkClicked = { chapters, bookmarked ->
@@ -338,4 +343,30 @@ fun SourceDetailContent(
             selectedIds = items.map { it.id }.toSet() - selectedIds
         },
     )
+
+    if (showCategoryDialog) {
+        CategoryEditDialog(
+            categories = categories,
+            memberOf = memberOf,
+            onDismiss = { showCategoryDialog = false },
+            onConfirm = { selected, newName ->
+                scope.launch {
+                    if (newName != null) {
+                        val id = graph.data.categories.upsert(
+                            tachiyomi.domain.category.model.Category(
+                                id = tachiyomi.domain.category.model.Category.UNCATEGORIZED_ID,
+                                name = newName,
+                                order = categories.size.toLong(),
+                            ),
+                        )
+                        graph.data.categories.setItemCategories(itemId, selected + id)
+                    } else {
+                        graph.data.categories.setItemCategories(itemId, selected)
+                    }
+                    memberOf = runCatching { graph.data.categories.categoryIdsForItem(itemId).toSet() }
+                        .getOrDefault(emptySet())
+                }
+            },
+        )
+    }
 }

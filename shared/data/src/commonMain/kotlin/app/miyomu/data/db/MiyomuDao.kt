@@ -1,6 +1,8 @@
 package app.miyomu.data.db
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Update
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
@@ -120,4 +122,36 @@ interface MiyomuDao {
 
     @Query("DELETE FROM video_resolve_cache WHERE fetchedAt < :before")
     suspend fun deleteResolveOlderThan(before: Long)
+
+    // --- Categories ---
+
+    @Query("SELECT * FROM category ORDER BY `order`")
+    fun observeCategories(): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM category ORDER BY `order`")
+    suspend fun categories(): List<CategoryEntity>
+
+    @Insert
+    suspend fun insertCategory(category: CategoryEntity): Long
+
+    @Update
+    suspend fun updateCategory(category: CategoryEntity)
+
+    @Query("DELETE FROM category WHERE id = :id AND id != 0")
+    suspend fun deleteCategory(id: Long)
+
+    @Query("SELECT categoryId FROM manga_category WHERE itemId = :itemId")
+    suspend fun categoryIdsForItem(itemId: String): List<Long>
+
+    @Query("SELECT itemId FROM manga_category WHERE categoryId = :categoryId")
+    fun observeItemsForCategory(categoryId: Long): Flow<List<String>>
+
+    @Query("SELECT * FROM manga_category")
+    suspend fun allMangaCategoryRows(): List<MangaCategoryEntity>
+
+    @Upsert
+    suspend fun upsertMangaCategories(rows: List<MangaCategoryEntity>)
+
+    @Query("DELETE FROM manga_category WHERE itemId = :itemId")
+    suspend fun clearItemCategories(itemId: String)
 }

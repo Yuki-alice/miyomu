@@ -51,8 +51,15 @@ fun MangaLibraryScreen(
     var showSettings by remember { mutableStateOf(false) }
     val selection = remember { mutableStateListOf<LibraryManga>() }
 
-    // One synthetic category keeps the pager and toolbar happy until categories are ported.
-    val categories = remember { listOf(Category(id = 0L, name = "", order = 0L, flags = 0L, hidden = false)) }
+    // System "Default" tab plus user categories from the v3 schema; memberships filter per tab.
+    val userCategories by graph.data.categories.observeCategories().collectAsState(initial = emptyList())
+    val memberships by produceState(initialValue = emptyList<Pair<String, Long>>()) {
+        value = runCatching { graph.data.categories.allMemberships() }.getOrDefault(emptyList())
+    }
+    val categories = remember(userCategories) {
+        listOf(Category(id = 0L, name = "", order = 0L, flags = 0L, hidden = false)) + userCategories
+    }
+    var currentPage by remember { mutableStateOf(0) }
 
     val displayModeState = remember(scope) { preferences.displayMode().asState(scope) }
     val portraitColumns = remember(scope) { preferences.mangaPortraitColumns().asState(scope) }
@@ -70,6 +77,19 @@ fun MangaLibraryScreen(
     val visibleItems = remember(allItems, searchQuery) {
         val query = searchQuery
         if (query.isNullOrBlank()) allItems else allItems.filter { it.matches(query) }
+    }
+
+    val itemsForCategory: (Int) -> List<MangaLibraryItem> = { page ->
+        val categoryId = categories.getOrNull(page)?.id ?: 0L
+        if (categoryId == 0L) {
+            visibleItems
+        } else {
+            visibleItems.filter { item ->
+                val book = books.firstOrNull { it.mangaId() == item.libraryManga.id }
+                val itemId = book?.let { LibraryItem.idOf("local", it.id) }
+                itemId != null && memberships.any { it.first == itemId && it.second == categoryId }
+            }
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -108,10 +128,10 @@ fun MangaLibraryScreen(
             searchQuery = searchQuery,
             selection = selection,
             contentPadding = PaddingValues(),
-            currentPage = { 0 },
+            currentPage = { currentPage },
             hasActiveFilters = false,
-            showPageTabs = false,
-            onChangeCurrentPage = {},
+            showPageTabs = categories.size > 1,
+            onChangeCurrentPage = { currentPage = it },
             onMangaClicked = { mangaId ->
                 books.firstOrNull { it.mangaId() == mangaId }?.let(onOpenBook)
             },
@@ -137,12 +157,12 @@ fun MangaLibraryScreen(
                 true
             },
             onGlobalSearchClicked = {},
-            getNumberOfMangaForCategory = { allItems.size },
+            getNumberOfMangaForCategory = { category -> itemsForCategory(category.id.toInt()).size },
             getDisplayMode = { displayModeState },
             getColumnsForOrientation = { isLandscape ->
                 if (isLandscape) landscapeColumns else portraitColumns
             },
-            getLibraryForPage = { visibleItems },
+            getLibraryForPage = { page -> itemsForCategory(page) },
         )
     }
 

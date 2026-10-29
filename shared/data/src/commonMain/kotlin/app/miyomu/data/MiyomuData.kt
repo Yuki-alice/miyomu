@@ -17,6 +17,7 @@ class MiyomuData internal constructor(
     val chapters: ChapterRepository = RoomChapterRepository(dao)
     val videoResolve: VideoResolveRepository = RoomVideoResolveRepository(dao)
     val backup: BackupRepository = RoomBackupRepository(dao)
+    val categories: CategoryRepository = RoomCategoryRepository(dao)
 
     fun close() {
         database.close()

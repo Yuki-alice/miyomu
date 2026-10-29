@@ -34,6 +34,7 @@ kotlin {
         }
         commonMain.dependencies {
             api(project(":shared:model"))
+            api(project(":shared:domain"))
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.kotlinx.coroutines.core)
