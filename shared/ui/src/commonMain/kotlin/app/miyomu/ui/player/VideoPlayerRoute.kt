@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.backhandler.BackHandler
 import app.miyomu.local.LocalBook
+import app.miyomu.local.LocalChapter
 import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
@@ -33,6 +34,7 @@ private const val PROGRESS_SAVE_INTERVAL_MILLIS = 5_000L
 class VideoPlayerRoute(
     private val graph: MiyomuGraph,
     private val book: LocalBook,
+    private val episode: LocalChapter? = null,
 ) : Screen {
 
     @Composable
@@ -40,6 +42,8 @@ class VideoPlayerRoute(
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
         val itemId = remember(book.id) { LibraryItem.idOf("local", book.id) }
+        val entryId = episode?.location ?: book.location
+        val title = episode?.title ?: book.title
 
         var resumePosition by remember(book.id) { mutableLongStateOf(0L) }
         var resumeLoaded by remember(book.id) { mutableStateOf(false) }
@@ -48,9 +52,9 @@ class VideoPlayerRoute(
         var latestDuration by remember(book.id) { mutableLongStateOf(0L) }
         var leaving by remember(book.id) { mutableStateOf(false) }
 
-        LaunchedEffect(book.id) {
+        LaunchedEffect(book.id, entryId) {
             resumePosition = runCatching {
-                graph.data.progress.latest(itemId)?.position?.toLong() ?: 0L
+                graph.data.progress.latestFor(itemId, entryId)?.position?.toLong() ?: 0L
             }.getOrDefault(0L)
             lastSaved = resumePosition
             resumeLoaded = true
@@ -61,7 +65,7 @@ class VideoPlayerRoute(
             graph.data.progress.save(
                 ReadingProgress(
                     itemId = itemId,
-                    entryId = book.location,
+                    entryId = entryId,
                     kind = ProgressKind.TIMESTAMP,
                     position = position.toDouble(),
                     duration = duration.toDouble(),
@@ -91,8 +95,8 @@ class VideoPlayerRoute(
         BackHandler(enabled = true, onBack = leavePlayer)
 
         VideoPlayerScreen(
-            title = book.title,
-            uri = book.location,
+            title = title,
+            uri = entryId,
             startPositionMillis = resumePosition,
             onBack = leavePlayer,
             onPositionChanged = { position, duration ->

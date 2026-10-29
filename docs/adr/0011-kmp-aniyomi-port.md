@@ -70,3 +70,7 @@
 | anime 图标/图片 | `R.drawable` → material icons（下载、状态、展开箭头）；coil 的 `useBackground` 去掉；未注册 `Anime -> AnimeCover` mapper（本地视频无封面，占位显示） |
 | 本地视频映射 | 一个视频文件 = 单集 anime：`Anime.create().copy(source = 0, fetchType = Episodes)` + 一个 `Episode(episodeNumber = 1)`；`lastSecondSeen`/`totalSeconds` 按上游约定存**毫秒** |
 | 播放器进度刷新 | 详情页重新进入时重读 `progress`，剧集行显示“已看/总时长”；返回播放器用系统 BackHandler 先保存再 pop |
+| 本地视频目录语义 | 目录直接含视频 = 多集视频书；子目录含视频 = 季（列表）；图片章节目录/漫画压缩包优先判定为漫画 |
+| 逐集进度 | `reading_progress` 已是 `(itemId, entryId, deviceId)` 复合主键，补 `all(itemId)`/`latestFor`；播放器按 `entryId = 集文件路径` 保存与恢复 |
+| 集号解析 | 端口上游 `EpisodeRecognition`，按文件名解析集号；本地视频的 episodeFlags 改为按集号升序，避免上游“缺失集”分隔条在升序列表中误报 |
+| 季导航 | 季 = 子目录 book，点击 push 同一个 `VideoDetailScreen`；季统计（集数/已看/最后观看）在详情加载时计算 |

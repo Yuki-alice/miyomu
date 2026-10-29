@@ -14,6 +14,7 @@ class FileLocalComicRepository : LocalComicRepository {
     override suspend fun chapters(book: LocalBook): List<LocalChapter> = withContext(Dispatchers.IO) {
         when (book.format) {
             LocalBookFormat.DIRECTORY -> directoryChapters(book)
+            LocalBookFormat.VIDEO -> videoChapters(book)
             LocalBookFormat.ZIP -> listOf(
                 LocalChapter(
                     id = book.location,
@@ -26,6 +27,11 @@ class FileLocalComicRepository : LocalComicRepository {
             )
             else -> emptyList()
         }
+    }
+
+    override suspend fun seasons(book: LocalBook): List<LocalBook> = withContext(Dispatchers.IO) {
+        if (book.format != LocalBookFormat.VIDEO) return@withContext emptyList()
+        videoSeasons(book)
     }
 
     override suspend fun pages(chapter: LocalChapter): List<LocalPage> = withContext(Dispatchers.IO) {
@@ -52,10 +58,83 @@ class FileLocalComicRepository : LocalComicRepository {
 
     override suspend fun cover(book: LocalBook): ByteArray? = withContext(Dispatchers.IO) {
         runCatching {
+            if (book.format == LocalBookFormat.VIDEO) return@runCatching videoCover(book)
             val chapter = chapters(book).firstOrNull() ?: return@runCatching null
             val page = pages(chapter).firstOrNull() ?: return@runCatching null
             readPage(page)
         }.getOrNull()
+    }
+
+    /**
+     * A video book has no pages; its episodes are the video files. A single file stands in as
+     * its own episode so the detail screen has one code path.
+     */
+    private fun videoChapters(book: LocalBook): List<LocalChapter> {
+        val file = File(book.location)
+        if (file.isFile) {
+            return listOf(
+                LocalChapter(
+                    id = book.location,
+                    title = book.title,
+                    bookLocation = book.location,
+                    location = book.location,
+                    format = LocalBookFormat.VIDEO,
+                    lastModified = book.lastModified,
+                ),
+            )
+        }
+        if (!file.isDirectory) return emptyList()
+
+        return file.listFiles().orEmpty()
+            .filter { it.isFile && !it.name.startsWith('.') && isVideoName(it.name) }
+            .sortedWith { left, right -> naturalCompare(left.name, right.name) }
+            .map { episode ->
+                LocalChapter(
+                    id = episode.absolutePath,
+                    title = episode.name.substringBeforeLast('.'),
+                    bookLocation = book.location,
+                    location = episode.absolutePath,
+                    format = LocalBookFormat.VIDEO,
+                    lastModified = episode.lastModified(),
+                )
+            }
+    }
+
+    private fun videoSeasons(book: LocalBook): List<LocalBook> {
+        val directory = File(book.location)
+        if (!directory.isDirectory) return emptyList()
+
+        return directory.listFiles().orEmpty()
+            .filter { it.isDirectory && !it.name.startsWith('.') }
+            .filter { season ->
+                season.listFiles().orEmpty().any { it.isFile && isVideoName(it.name) }
+            }
+            .sortedWith { left, right -> naturalCompare(left.name, right.name) }
+            .map { season ->
+                LocalBook(
+                    id = season.absolutePath,
+                    title = season.name,
+                    format = LocalBookFormat.VIDEO,
+                    mediaType = app.miyomu.model.MediaType.VIDEO,
+                    location = season.absolutePath,
+                    lastModified = season.lastModified(),
+                )
+            }
+    }
+
+    /** Uses `cover`/`folder`/`poster` images, or the same-named image next to a video file. */
+    private fun videoCover(book: LocalBook): ByteArray? {
+        val location = File(book.location)
+        val directory = if (location.isDirectory) location else location.parentFile ?: return null
+        val baseName = if (location.isDirectory) null else location.nameWithoutExtension
+
+        val images = directory.listFiles().orEmpty()
+            .filter { it.isFile && isImageName(it.name) }
+        val preferred = images.firstOrNull {
+            it.nameWithoutExtension.lowercase() in setOf("cover", "folder", "poster", "thumbnail")
+        } ?: baseName?.let { base -> images.firstOrNull { it.nameWithoutExtension == base } }
+
+        return preferred?.readBytes()
     }
 
     private fun directoryChapters(book: LocalBook): List<LocalChapter> {

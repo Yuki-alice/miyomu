@@ -25,7 +25,8 @@ Adapted material currently covers:
 - `shared/domain`: preference API (interfaces and helpers) copied from
   Aniyomi's `core/common` preference package, plus a new file-backed store;
   manga/chapter/anime/episode/season domain models, covers and relation
-  groups, and the library/episode/season sorters and missing-entry helpers.
+  groups, and the library/episode/season sorters, episode-number recognition
+  and missing-entry helpers.
 - App shell (`shared/ui` home tabs, detail/reader entry screens) structured
   after Aniyomi's `ui/home` and `ui/entries` navigation code, with the
   reader's screen-model state adapted to Miyomu's `ComicReaderController`.

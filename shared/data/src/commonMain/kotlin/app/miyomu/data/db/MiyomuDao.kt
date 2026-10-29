@@ -28,6 +28,12 @@ interface MiyomuDao {
     @Query("SELECT * FROM reading_progress WHERE itemId = :itemId ORDER BY updatedAt DESC LIMIT 1")
     suspend fun latestProgress(itemId: String): ReadingProgressEntity?
 
+    @Query("SELECT * FROM reading_progress WHERE itemId = :itemId ORDER BY updatedAt DESC")
+    suspend fun allProgress(itemId: String): List<ReadingProgressEntity>
+
+    @Query("SELECT * FROM reading_progress WHERE itemId = :itemId AND entryId = :entryId ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun progressForEntry(itemId: String, entryId: String): ReadingProgressEntity?
+
     @Upsert
     suspend fun upsertProgress(progress: ReadingProgressEntity)
 

@@ -44,6 +44,12 @@ internal class RoomProgressRepository(
     override suspend fun latest(itemId: String): ReadingProgress? =
         dao.latestProgress(itemId)?.toModel()
 
+    override suspend fun latestFor(itemId: String, entryId: String): ReadingProgress? =
+        dao.progressForEntry(itemId, entryId)?.toModel()
+
+    override suspend fun all(itemId: String): List<ReadingProgress> =
+        dao.allProgress(itemId).map { it.toModel() }
+
     override suspend fun save(progress: ReadingProgress) {
         dao.upsertProgress(progress.toEntity())
     }

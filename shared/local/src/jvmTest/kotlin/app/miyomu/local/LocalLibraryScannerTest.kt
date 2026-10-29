@@ -90,6 +90,52 @@ class LocalLibraryScannerTest {
         assertTrue(books.all { it.mediaType == MediaType.VIDEO })
     }
 
+    @Test
+    fun `directory of videos becomes a multi-episode book`() = kotlinx.coroutines.runBlocking {
+        val show = File(root, "Show").apply { mkdirs() }
+        writeFile(show, "S01E01.mkv", byteArrayOf(1))
+        writeFile(show, "S01E02.mkv", byteArrayOf(1))
+        writeFile(show, "cover.jpg", byteArrayOf(9))
+
+        val book = LocalLibraryScanner().scan(FileLocalFileRef(root)).single()
+
+        assertEquals(LocalBookFormat.VIDEO, book.format)
+        assertEquals(MediaType.VIDEO, book.mediaType)
+        val chapters = repository.chapters(book)
+        assertEquals(listOf("S01E01", "S01E02"), chapters.map { it.title })
+        assertTrue(chapters.all { it.format == LocalBookFormat.VIDEO })
+    }
+
+    @Test
+    fun `season folders become a video series`() = kotlinx.coroutines.runBlocking {
+        val show = File(root, "Show").apply { mkdirs() }
+        val seasonOne = File(show, "Season 1").apply { mkdirs() }
+        writeFile(seasonOne, "E01.mkv", byteArrayOf(1))
+        writeFile(seasonOne, "E02.mkv", byteArrayOf(1))
+        val seasonTwo = File(show, "Season 2").apply { mkdirs() }
+        writeFile(seasonTwo, "E01.mkv", byteArrayOf(1))
+        writeFile(show, "cover.jpg", byteArrayOf(9))
+
+        val book = LocalLibraryScanner().scan(FileLocalFileRef(root)).single()
+
+        assertEquals(LocalBookFormat.VIDEO, book.format)
+        assertTrue(repository.chapters(book).isEmpty())
+        val seasons = repository.seasons(book)
+        assertEquals(listOf("Season 1", "Season 2"), seasons.map { it.title })
+        assertEquals(2, repository.chapters(seasons.first()).size)
+        assertNotNull(repository.cover(book))
+    }
+
+    @Test
+    fun `video cover uses the same-named image`() = kotlinx.coroutines.runBlocking {
+        writeFile(root, "Episode 1.mkv", byteArrayOf(1))
+        writeFile(root, "Episode 1.jpg", byteArrayOf(7))
+
+        val book = LocalLibraryScanner().scan(FileLocalFileRef(root)).first { it.title == "Episode 1" }
+
+        assertEquals(7, repository.cover(book)?.single())
+    }
+
     private fun writeFile(parent: File, name: String, bytes: ByteArray) {
         parent.mkdirs()
         Files.write(parent.toPath().resolve(name), bytes)

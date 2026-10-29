@@ -78,6 +78,88 @@ class VideoDetailFlowTest {
         }
     }
 
+    @Test
+    fun videoFolderListsEpisodes() = runComposeUiTest {
+        val show = File(root, "Show").apply { mkdirs() }
+        File(show, "S01E01.mkv").writeBytes(byteArrayOf(1))
+        File(show, "S01E02.mkv").writeBytes(byteArrayOf(1))
+
+        val data = createMiyomuData(
+            JvmMiyomuDatabaseFactory(File(root, "episodes.db").absolutePath),
+        )
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                )
+            }
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("Show").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("Show").performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("S01E01").fetchSemanticsNodes().isNotEmpty()
+            }
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("S01E02").fetchSemanticsNodes().isNotEmpty()
+            }
+            capture("video-episodes")
+        } finally {
+            data.close()
+        }
+    }
+
+    @Test
+    fun seasonFoldersOpenSeasonDetail() = runComposeUiTest {
+        val show = File(root, "Show").apply { mkdirs() }
+        File(show, "Season 1").apply { mkdirs() }
+        File(show, "Season 1/E01.mkv").writeBytes(byteArrayOf(1))
+        File(show, "Season 2").apply { mkdirs() }
+        File(show, "Season 2/E01.mkv").writeBytes(byteArrayOf(1))
+
+        val data = createMiyomuData(
+            JvmMiyomuDatabaseFactory(File(root, "seasons.db").absolutePath),
+        )
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                )
+            }
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("Show").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("Show").performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("Season 1").fetchSemanticsNodes().isNotEmpty()
+            }
+            capture("video-seasons")
+            onNodeWithText("Season 1").performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("E01").fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            data.close()
+        }
+    }
+
     private fun androidx.compose.ui.test.ComposeUiTest.capture(name: String) {
         val directory = File("build/reports/miyomu-ui").apply { mkdirs() }
         val bitmap = onRoot().captureToImage().asSkiaBitmap()
