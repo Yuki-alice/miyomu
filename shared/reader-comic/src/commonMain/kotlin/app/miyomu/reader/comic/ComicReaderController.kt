@@ -129,6 +129,14 @@ class ComicReaderController(
         mutableState.update { it.copy(mode = mode) }
     }
 
+    fun setDualPage(enabled: Boolean) {
+        mutableState.update { it.copy(dualPage = enabled) }
+    }
+
+    fun setFirstPageAlone(alone: Boolean) {
+        mutableState.update { it.copy(firstPageAlone = alone) }
+    }
+
     fun retry() {
         val current = mutableState.value
         val book = current.book ?: return

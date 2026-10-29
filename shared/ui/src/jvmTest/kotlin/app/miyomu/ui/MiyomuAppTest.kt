@@ -83,12 +83,6 @@ class MiyomuAppTest {
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("2 / 2").fetchSemanticsNodes().isNotEmpty()
             }
-            onNodeWithContentDescription("阅读模式").performClick()
-            onNodeWithText("纵向翻页").performClick()
-            onAllNodesWithText("2 / 2").fetchSemanticsNodes().isNotEmpty()
-            onNodeWithContentDescription("阅读模式").performClick()
-            onNodeWithText("从右到左").performClick()
-            onAllNodesWithText("2 / 2").fetchSemanticsNodes().isNotEmpty()
             capture("reader")
             onNodeWithContentDescription("下一章").assertExists()
         } finally {

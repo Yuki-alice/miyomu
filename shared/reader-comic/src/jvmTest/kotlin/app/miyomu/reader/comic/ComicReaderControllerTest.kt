@@ -110,6 +110,56 @@ class ComicReaderControllerTest {
         assertEquals(4, pairs[2].second?.index)
     }
 
+    @Test
+    fun `dual page toggles update state and follow the mode`() = runBlocking {
+        val controller = controller()
+        controller.open(book)
+
+        controller.setDualPage(true)
+
+        val state = controller.state.value
+        assertEquals(true, state.dualPage)
+        assertEquals(true, state.usesDualPage)
+
+        controller.setMode(ComicReadingMode.WEBTOON)
+
+        val webtoonState = controller.state.value
+        assertEquals(true, webtoonState.dualPage)
+        assertEquals(false, webtoonState.supportsDualPage)
+        assertEquals(false, webtoonState.usesDualPage)
+    }
+
+    @Test
+    fun `first page alone can be disabled for spreads`() = runBlocking {
+        val controller = controller()
+        controller.open(book)
+
+        controller.setFirstPageAlone(false)
+
+        assertEquals(false, controller.state.value.firstPageAlone)
+    }
+
+    @Test
+    fun `spreads cover all pages and map indices in both directions`() {
+        val pages = (0 until 8).map { LocalPage(it, "$it.jpg", "/p/$it.jpg") }
+
+        val single = pageSpreads(pages, dualPage = false)
+        assertEquals(8, single.size)
+        assertEquals(listOf(0, 1, 2, 3, 4, 5, 6, 7), single.map { it.startIndex })
+
+        val dual = pageSpreads(pages, dualPage = true, firstPageAlone = true)
+        assertEquals(5, dual.size)
+        assertEquals(listOf(0, 1, 3, 5, 7), dual.map { it.startIndex })
+        assertEquals(2, dual[1].pages.size)
+        assertEquals(1, dual.last().pages.size)
+
+        assertEquals(0, spreadIndexForPage(dual, 0))
+        assertEquals(1, spreadIndexForPage(dual, 2))
+        assertEquals(2, spreadIndexForPage(dual, 4))
+        assertEquals(3, spreadIndexForPage(dual, 6))
+        assertEquals(4, spreadIndexForPage(dual, 7))
+    }
+
     private fun controller() = ComicReaderController(repository, CoroutineScope(Dispatchers.Unconfined))
 
     private inner class FakeRepository : LocalComicRepository {

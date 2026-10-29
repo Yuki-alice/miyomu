@@ -47,3 +47,4 @@ reference/
 
 # Local agent tooling and skills
 .qoder/
+.zcode/

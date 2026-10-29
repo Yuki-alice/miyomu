@@ -35,6 +35,12 @@ kotlin {
             api(project(":shared:local"))
             api(project(":shared:reader-comic"))
             api(project(":shared:data"))
+            api(project(":shared:presentation-core"))
+
+            api(libs.voyager.navigator)
+            api(libs.voyager.screenmodel)
+            api(libs.voyager.tab.navigator)
+            api(libs.voyager.transitions)
 
             implementation(compose.runtime)
             implementation(compose.foundation)
