@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import app.miyomu.data.AndroidMiyomuDatabaseFactory
 import app.miyomu.data.createMiyomuData
@@ -12,6 +13,7 @@ import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.manager.FileSourceRuntimeManager
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.MiyomuApp
 import java.io.File
@@ -35,6 +37,11 @@ class MainActivity : ComponentActivity() {
             val sourceInstalls = remember {
                 FileSourceInstallManager(Path(File(context.filesDir, "sources").absolutePath))
             }
+            val scope = rememberCoroutineScope()
+            val sourceRuntime = remember { FileSourceRuntimeManager(sourceInstalls, scope) }
+            DisposableEffect(sourceRuntime) {
+                onDispose { sourceRuntime.close() }
+            }
 
             DisposableEffect(data) {
                 onDispose { data.close() }
@@ -49,6 +56,7 @@ class MainActivity : ComponentActivity() {
                 nowMillis = System::currentTimeMillis,
                 preferenceStore = preferences,
                 sourceInstalls = sourceInstalls,
+                sourceRuntime = sourceRuntime,
             )
         }
     }

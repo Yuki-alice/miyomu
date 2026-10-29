@@ -17,6 +17,7 @@
 | `:shared:source-api` | `ComicSource` / `ManagedComicSource` |
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
 | `:shared:source-repo` | 源仓库索引、安装/更新/卸载与本地清单 |
+| `:shared:source-manager` | 已安装源的运行时加载与搜索/详情/页面/图片 |
 | `:shared:data` | Room 2.8.5 + KSP；库/进度 schema 与 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:reader-comic` | 漫画阅读状态、模式、页配对 |
@@ -145,7 +146,9 @@ Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端 macOS（arm64/x64�
 「更多 → 源仓库」可以添加索引 JSON 的 URL，浏览仓库里的 JS 源并安装/更新/卸载。安装会把脚本
 落到应用的 `sources/<id>/source.js`，元数据与仓库地址保存在 `sources/manifest.json`；格式与
 安全边界见 [ADR-0013](docs/adr/0013-js-source-repository-format.md)。Miyomu 不内置、不推荐任何仓库。
-当前切片只做仓库与安装管理，安装后的源尚未接入搜索/详情/阅读（C2）。
+安装后的源会由 `shared:source-manager` 加载进 QuickJS 运行时，“浏览”Tab 列出可用源：
+点源进入搜索，点结果进入详情（移植的 `MangaScreen`），点章节进入阅读器（复用移植的阅读
+chrome，页面与图片经源运行时加载）。
 
 ## 源运行时（M2）
 
@@ -172,7 +175,7 @@ Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端 macOS（arm64/x64�
 - 视频（Android）：倍速与轨道选择不持久化；不加载外挂字幕文件；无集数导航、手势调亮度/音量、锁屏与画中画。
 - 视频详情：混合目录（直接视频 + 季子目录）只取直接视频；没有下一集/自动连播；下载与追踪入口未接线；剧集书签无存储（已看由播放进度 ≥85% 推导）；设置对话框的“设为默认”暂为空实现。
 - Linux 桌面不提供视频：MPV 的 Linux 运行时是 GPL-3.0，与 Apache-2.0 定位冲突（ADR-0012 方案 A）。
-- 源仓库（C1）：已安装源尚未加载进运行时，搜索/详情/阅读接线与下载/同步在后续切片。
+- 在线源（C2）：搜索/详情/阅读已打通；在线章节的已读/书签标记与“加入书架”尚未接数据层，下载与备份/同步仍待后续切片。
 
 ## 文档
 

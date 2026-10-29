@@ -29,11 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import app.miyomu.local.LocalBook
+import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.model.MediaType
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.entries.MangaDetailScreen
 import app.miyomu.ui.entries.VideoDetailScreen
 import app.miyomu.ui.sources.SourceRepositoryScreen
+import app.miyomu.ui.sources.SourceSearchScreen
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -65,12 +67,15 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
         val onOpenSources: () -> Unit = remember(navigator) {
             { navigator.push(SourceRepositoryScreen(graph)) }
         }
-        val tabs = remember(graph, onOpenBook, onOpenSources) {
+        val onOpenSource: (SourceRuntimeInfo) -> Unit = remember(navigator) {
+            { info -> navigator.push(SourceSearchScreen(graph, info.id, info.name)) }
+        }
+        val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource) {
             listOf(
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph),
                 MangaHistoryTab(graph, onOpenBook),
-                BrowseTab(graph),
+                BrowseTab(graph, onOpenSource, onOpenSources),
                 MoreTab(graph, onOpenSources),
             )
         }

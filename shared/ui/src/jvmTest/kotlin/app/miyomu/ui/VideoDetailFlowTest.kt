@@ -48,6 +48,7 @@ class VideoDetailFlowTest {
                     deviceId = "test",
                     nowMillis = { 1_000L },
                     sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
 
@@ -111,6 +112,7 @@ class VideoDetailFlowTest {
                     deviceId = "test",
                     nowMillis = { 1_000L },
                     sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
 
@@ -153,6 +155,7 @@ class VideoDetailFlowTest {
                     deviceId = "test",
                     nowMillis = { 1_000L },
                     sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
 
@@ -194,6 +197,7 @@ class VideoDetailFlowTest {
                     deviceId = "test",
                     nowMillis = { 1_000L },
                     sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
 

@@ -2,6 +2,7 @@ package app.miyomu.ui.reader
 
 import androidx.compose.runtime.Composable
 import app.miyomu.local.LocalBook
+import app.miyomu.model.LibraryItem
 import app.miyomu.ui.ComicReaderScreen
 import app.miyomu.ui.MiyomuGraph
 import cafe.adriel.voyager.core.screen.Screen
@@ -24,7 +25,8 @@ class ReaderScreen(
             book = book,
             initialChapterIndex = chapterIndex,
             initialPageIndex = pageIndex,
-            comics = graph.comics,
+            libraryItemId = LibraryItem.idOf("local", book.id),
+            pageSource = graph.comics,
             data = graph.data,
             deviceId = graph.deviceId,
             nowMillis = graph.nowMillis,

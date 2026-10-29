@@ -2,7 +2,7 @@ package app.miyomu.reader.comic
 
 import app.miyomu.local.LocalBook
 import app.miyomu.local.LocalChapter
-import app.miyomu.local.LocalComicRepository
+import app.miyomu.local.ReaderPageSource
 import app.miyomu.local.LocalPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -13,11 +13,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Owns the reading session and loads chapters/pages through [LocalComicRepository].
+ * Owns the reading session and loads chapters/pages through [ReaderPageSource].
  * The controller is platform-neutral; Compose only observes [state].
  */
 class ComicReaderController(
-    private val repository: LocalComicRepository,
+    private val repository: ReaderPageSource,
     private val scope: CoroutineScope,
 ) {
     private val mutableState = MutableStateFlow(ComicReaderUiState())

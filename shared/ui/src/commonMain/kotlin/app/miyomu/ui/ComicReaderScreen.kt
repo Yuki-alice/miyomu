@@ -93,7 +93,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import app.miyomu.data.MiyomuData
 import app.miyomu.local.LocalBook
-import app.miyomu.local.LocalComicRepository
+import app.miyomu.local.ReaderPageSource
 import app.miyomu.local.LocalPage
 import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
@@ -214,7 +214,8 @@ fun ComicReaderScreen(
     book: LocalBook,
     initialChapterIndex: Int,
     initialPageIndex: Int,
-    comics: LocalComicRepository,
+    libraryItemId: String,
+    pageSource: ReaderPageSource,
     data: MiyomuData,
     deviceId: String,
     nowMillis: () -> Long,
@@ -222,7 +223,7 @@ fun ComicReaderScreen(
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val controller = remember(book.id) { ComicReaderController(comics, scope) }
+    val controller = remember(book.id) { ComicReaderController(pageSource, scope) }
     val state by controller.state.collectAsState()
 
     LaunchedEffect(book.id) {
@@ -232,7 +233,7 @@ fun ComicReaderScreen(
         onDispose { controller.close() }
     }
 
-    val itemId = LibraryItem.idOf("local", book.id)
+    val itemId = libraryItemId
     val chapter = state.currentChapter
     LaunchedEffect(chapter?.id, state.pageIndex, state.pages.size) {
         if (chapter != null && state.pages.isNotEmpty()) {
@@ -385,7 +386,7 @@ fun ComicReaderScreen(
             isWebtoon -> WebtoonColumn(
                 state = state,
                 listState = listState,
-                comics = comics,
+                pageSource = pageSource,
                 zoom = zoom,
                 onTap = onReaderTap,
                 modifier = Modifier.fillMaxSize().testTag("reader-webtoon"),
@@ -394,7 +395,7 @@ fun ComicReaderScreen(
                 state = state,
                 spreads = spreads,
                 pagerState = pagerState,
-                comics = comics,
+                pageSource = pageSource,
                 zoom = zoom,
                 onTap = onReaderTap,
                 modifier = Modifier.fillMaxSize().testTag("reader-pager"),
@@ -475,7 +476,7 @@ private fun PagedPager(
     state: ComicReaderUiState,
     spreads: List<PageSpread>,
     pagerState: PagerState,
-    comics: LocalComicRepository,
+    pageSource: ReaderPageSource,
     zoom: ReaderZoomState,
     onTap: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -493,7 +494,7 @@ private fun PagedPager(
             SpreadPage(
                 spread = spreads[index],
                 rtl = state.mode == ComicReadingMode.RIGHT_TO_LEFT,
-                comics = comics,
+                pageSource = pageSource,
                 zoom = zoom,
                 onTap = onTap,
             )
@@ -507,7 +508,7 @@ private fun PagedPager(
             SpreadPage(
                 spread = spreads[index],
                 rtl = false,
-                comics = comics,
+                pageSource = pageSource,
                 zoom = zoom,
                 onTap = onTap,
             )
@@ -520,7 +521,7 @@ private fun PagedPager(
 private fun WebtoonColumn(
     state: ComicReaderUiState,
     listState: LazyListState,
-    comics: LocalComicRepository,
+    pageSource: ReaderPageSource,
     zoom: ReaderZoomState,
     onTap: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -544,7 +545,7 @@ private fun WebtoonColumn(
             ) { index ->
                 ComicPage(
                     page = state.pages[index],
-                    comics = comics,
+                    pageSource = pageSource,
                     modifier = Modifier.fillMaxWidth(),
                     imageModifier = Modifier.fillMaxWidth(),
                     contentScale = ContentScale.FillWidth,
@@ -558,7 +559,7 @@ private fun WebtoonColumn(
 private fun SpreadPage(
     spread: PageSpread,
     rtl: Boolean,
-    comics: LocalComicRepository,
+    pageSource: ReaderPageSource,
     zoom: ReaderZoomState,
     onTap: (Float) -> Unit,
 ) {
@@ -579,7 +580,7 @@ private fun SpreadPage(
             pages.forEach { page ->
                 ComicPage(
                     page = page,
-                    comics = comics,
+                    pageSource = pageSource,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
@@ -590,7 +591,7 @@ private fun SpreadPage(
 @Composable
 private fun ComicPage(
     page: LocalPage,
-    comics: LocalComicRepository,
+    pageSource: ReaderPageSource,
     modifier: Modifier = Modifier,
     imageModifier: Modifier = Modifier.fillMaxSize(),
     contentScale: ContentScale = ContentScale.Fit,
@@ -599,7 +600,7 @@ private fun ComicPage(
     var error by remember(page.location) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(page.location) {
-        runCatching { decodeImageBitmap(comics.readPage(page)) }
+        runCatching { decodeImageBitmap(pageSource.readPage(page)) }
             .onSuccess { image = it }
             .onFailure { failure -> error = failure.message ?: "无法读取页面" }
     }

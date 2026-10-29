@@ -2,6 +2,7 @@ package app.miyomu.desktop
 
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -12,6 +13,7 @@ import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.manager.FileSourceRuntimeManager
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.MiyomuApp
 import java.awt.Desktop
@@ -42,6 +44,11 @@ fun main() = application {
         val sourceInstalls = remember {
             FileSourceInstallManager(Path(File(home, "sources").absolutePath))
         }
+        val scope = rememberCoroutineScope()
+        val sourceRuntime = remember { FileSourceRuntimeManager(sourceInstalls, scope) }
+        DisposableEffect(sourceRuntime) {
+            onDispose { sourceRuntime.close() }
+        }
 
         DisposableEffect(data) {
             onDispose { data.close() }
@@ -56,6 +63,7 @@ fun main() = application {
             nowMillis = System::currentTimeMillis,
             preferenceStore = preferences,
             sourceInstalls = sourceInstalls,
+            sourceRuntime = sourceRuntime,
             onOpenLibraryFolder = {
                 runCatching { Desktop.getDesktop().open(libraryRoot) }
             },

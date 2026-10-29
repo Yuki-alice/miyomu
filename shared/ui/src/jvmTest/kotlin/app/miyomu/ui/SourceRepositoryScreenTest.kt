@@ -72,6 +72,7 @@ class SourceRepositoryScreenTest {
                     deviceId = "test",
                     nowMillis = { 1_000L },
                     sourceInstalls = fakeManager(),
+                    sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
 
@@ -110,6 +111,7 @@ class SourceRepositoryScreenTest {
                         nowMillis = { 1_000L },
                         preferenceStore = InMemoryPreferenceStore(),
                         sourceInstalls = manager,
+                        sourceRuntime = FakeSourceRuntimeManager(),
                     ),
                     onBack = {},
                 )
