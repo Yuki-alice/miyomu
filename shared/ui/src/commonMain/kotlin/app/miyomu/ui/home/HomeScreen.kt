@@ -32,7 +32,7 @@ import app.miyomu.local.LocalBook
 import app.miyomu.model.MediaType
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.entries.MangaDetailScreen
-import app.miyomu.ui.player.VideoPlayerRoute
+import app.miyomu.ui.entries.VideoDetailScreen
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -53,9 +53,9 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
 
         val onOpenBook: (LocalBook) -> Unit = remember(navigator) {
             { book ->
-                // Video books go straight to the player; comics open the detail screen.
+                // Video books open the anime-style detail screen; comics use the manga one.
                 if (book.mediaType == MediaType.VIDEO) {
-                    navigator.push(VideoPlayerRoute(graph, book))
+                    navigator.push(VideoDetailScreen(graph, book))
                 } else {
                     navigator.push(MangaDetailScreen(graph, book))
                 }

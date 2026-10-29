@@ -59,3 +59,14 @@
 
 刻意保留的能力缺口（等对应数据层到位再补）：章节已读/书签无存储、分类系统、下载、追踪、`readerTheme`。
 
+## 实施记录（B1 ~ B2，2026-10-29）
+
+| 场景 | 实际做法 |
+|---|---|
+| 播放器引擎 | `shared/player` 只依赖 mediamp 代码（api/exoplayer/mpv），**不打包** MPV 原生运行时；桌面探测 `mpv-natives-<os>-<arch>.txt`，缺失时显示说明（ADR-0012） |
+| 播放器 chrome | Aniyomi `PlayerActivity` 的 Compose 重写：自动隐藏、双击 ±10s、倍速与 `MediaMetadata` 音轨/字幕选择；不移植 Android View 控件 |
+| anime 源接口 | `eu.kanade.tachiyomi.animesource.AnimeSource` 缩减为 id/name/lang，加 `StubAnimeSource`；在线 `getEpisodeList`/hoster/quality 随 Phase C |
+| anime 详情动作 | 下载/追踪/源设置/分享传 `null` 隐藏；筛选按钮与设置对话框暂为空实现；`EpisodeOptionsDialogScreen`（播放器 loader）与 `AnimeImagesDialog`（Bitmap + Android View）未移植 |
+| anime 图标/图片 | `R.drawable` → material icons（下载、状态、展开箭头）；coil 的 `useBackground` 去掉；未注册 `Anime -> AnimeCover` mapper（本地视频无封面，占位显示） |
+| 本地视频映射 | 一个视频文件 = 单集 anime：`Anime.create().copy(source = 0, fetchType = Episodes)` + 一个 `Episode(episodeNumber = 1)`；`lastSecondSeen`/`totalSeconds` 按上游约定存**毫秒** |
+| 播放器进度刷新 | 详情页重新进入时重读 `progress`，剧集行显示“已看/总时长”；返回播放器用系统 BackHandler 先保存再 pop |

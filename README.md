@@ -4,7 +4,7 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> 状态：**Phase A2 完成 + Phase B 播放器（B1）完成**：书架、详情、阅读器已跑在移植的 Aniyomi 界面上；Android 本地视频可播放、可切音轨/字幕、可续播。桌面播放器受许可证决策阻断，见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
+> 状态：**Phase A2 + Phase B 完成**：书架、漫画/视频详情、阅读器、播放器全部跑在移植的 Aniyomi 界面上；Android 本地视频可播放、可切音轨/字幕、可续播。桌面播放器受许可证决策阻断，见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
 > 许可证：Apache-2.0（2026-10-28 确认，见 [ADR-0004](docs/adr/0004-licensing-and-clean-room.md)）
 > 生产构建位于仓库根目录；Phase 0/1 验证代码在 `experiments/`，使用独立 Gradle 构建。
 
@@ -93,10 +93,11 @@ python3 tools/make_sample_library.py
 - 书架：移植的 `LibraryToolbar` + `MangaLibraryContent`，紧凑/舒适网格、列表、显示模式与列数设置、下拉刷新、多选。
 - 详情：移植的 `MangaScreen`（宽屏双栏、窄屏单栏），信息头、章节列表、筛选、继续阅读 FAB。
 - 阅读器：移植的 `ReaderAppBars`（顶栏、章节导航、页码滑条、模式/方向/裁边/设置）、阅读设置三页、阅读模式与方向选择弹窗。
+- 视频详情：移植的 `AnimeScreen`（信息头、剧集/季列表、继续观看 FAB、多选），本地视频映射为单集 anime。
 - 播放器：mediamp Surface + 播放器 chrome（顶栏/底栏、自动隐藏、双击 ±10 秒、倍速与音轨/字幕选择）。
 - 窄屏用底部导航，宽屏（≥720dp）用侧边 NavigationRail。
 
-截图：[书架](evidence/a2-library-port.png) · [详情](evidence/a2-detail-port.png) · [阅读器](evidence/a2-reader-port.png) · [播放器](evidence/b1-player-controls.png) · [播放设置](evidence/b1-player-settings.png)
+截图：[书架](evidence/a2-library-port.png) · [漫画详情](evidence/a2-detail-port.png) · [阅读器](evidence/a2-reader-port.png) · [视频详情](evidence/b2-video-detail.png) · [播放器](evidence/b1-player-controls.png) · [播放设置](evidence/b1-player-settings.png)
 
 ## 本地阅读
 
@@ -128,7 +129,7 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 
 ## 视频播放
 
-库里的视频文件（mp4/m4v/mkv/webm/avi/mov/ts/m2ts）直接成为视频书，点开即播放：播放/暂停、进度条、双击左右 ±10 秒、倍速、音轨与内嵌字幕轨选择；退出时保存时间戳，再次打开从上次位置继续。
+库里的视频文件（mp4/m4v/mkv/webm/avi/mov/ts/m2ts）直接成为视频书，点开进入 anime 风格的详情页（单集）：点“开始/继续观看”进入播放器，支持播放/暂停、进度条、双击左右 ±10 秒、倍速、音轨与内嵌字幕轨选择；退出时保存时间戳，再次打开从上次位置继续。
 
 Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端需要 MPV 原生库，而聚合运行时是 GPL-3.0，默认不打包（见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)）；桌面打开视频会显示说明页而不是崩溃。
 
@@ -155,6 +156,7 @@ Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端需要 MPV 原生�
 - Android 本地库暂用应用私有目录，SAF 文件选择器待补。
 - 真实 Venera 源尚未零修改验证；源运行时兼容层已冻结到 M2。
 - 视频（Android）：倍速与轨道选择不持久化；不加载外挂字幕文件；无集数导航、手势调亮度/音量、锁屏与画中画。
+- 视频详情：一个文件 = 单集，尚不支持文件夹多集/季；下载、追踪、筛选入口未接线；剧集书签无存储（已看由播放进度 ≥85% 推导）；封面为占位。
 - 桌面视频未启用：MPV 原生运行时是 GPL-3.0，等待 ADR-0012 决策。
 - 下载/追踪/同步在后续里程碑。
 

@@ -15,13 +15,17 @@ Adapted material currently covers:
   scrollbar metrics, preview annotations, back handling).
 - `shared/presentation`: the `eu.kanade.presentation` layer copied from
   Aniyomi — library (toolbar, tabs, pager, compact/comfortable grids, list,
-  settings dialog), entries (manga screen, info header, chapter list items),
-  reader chrome (app bars, chapter navigator, page/settings dialogs) and
-  shared components. Upstream package names and file layout are preserved so
-  the module stays diffable against Aniyomi.
+  settings dialog), entries (manga and anime screens, info headers, chapter
+  and episode/season list items, related-anime rows, download indicator,
+  episode/season settings dialogs), reader chrome (app bars, chapter
+  navigator, page/settings dialogs) and shared components. Android-only
+  source-preference, hoster/quality and bitmap image dialogs are omitted.
+  Upstream package names and file layout are preserved so the module stays
+  diffable against Aniyomi.
 - `shared/domain`: preference API (interfaces and helpers) copied from
   Aniyomi's `core/common` preference package, plus a new file-backed store;
-  manga/chapter/category domain models and the library/anime sort models.
+  manga/chapter/anime/episode/season domain models, covers and relation
+  groups, and the library/episode/season sorters and missing-entry helpers.
 - App shell (`shared/ui` home tabs, detail/reader entry screens) structured
   after Aniyomi's `ui/home` and `ui/entries` navigation code, with the
   reader's screen-model state adapted to Miyomu's `ComicReaderController`.
