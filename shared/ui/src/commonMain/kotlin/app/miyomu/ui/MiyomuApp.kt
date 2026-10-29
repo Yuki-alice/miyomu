@@ -11,6 +11,9 @@ import app.miyomu.data.MiyomuData
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.model.MediaType
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.ui.home.HomeScreen
 import app.miyomu.ui.library.installLocalCoverLoader
 import app.miyomu.ui.library.localCoverResolver
@@ -22,6 +25,8 @@ import tachiyomi.core.common.preference.PreferenceStore
 fun MiyomuApp(
     library: LocalLibraryRepository,
     comics: LocalComicRepository,
+    novels: LocalNovelRepository,
+    novelLibrary: NovelLibraryRepository,
     data: MiyomuData,
     root: LocalFileRef,
     deviceId: String,
@@ -39,6 +44,8 @@ fun MiyomuApp(
         MiyomuGraph(
             library = library,
             comics = comics,
+            novels = novels,
+            novelLibrary = novelLibrary,
             data = data,
             root = root,
             deviceId = deviceId,
@@ -49,18 +56,26 @@ fun MiyomuApp(
     }
 
     // Coil resolves covers through a process-wide singleton, so the local fetcher has to be
-    // registered before the first grid item composes.
+    // registered before the first grid item composes. Comic and novel books share the reserved
+    // local source id; the resolver branches on the media type to fetch the right bytes.
     remember(graph) {
         installLocalCoverLoader(
             localCoverResolver(
-                books = { graph.library.books.value },
-                cover = { book -> graph.comics.cover(book) },
+                books = { graph.library.books.value + graph.novelLibrary.books.value },
+                cover = { book ->
+                    if (book.mediaType == MediaType.NOVEL) {
+                        graph.novels.cover(book)
+                    } else {
+                        graph.comics.cover(book)
+                    }
+                },
             ),
         )
     }
 
     LaunchedEffect(root) {
         library.refresh(root)
+        novelLibrary.refresh(root)
     }
 
     MiyomuTheme {

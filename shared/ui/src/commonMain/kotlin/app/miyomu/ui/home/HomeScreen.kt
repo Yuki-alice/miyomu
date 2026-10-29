@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.ImportContacts
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Update
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import app.miyomu.local.LocalBook
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.entries.MangaDetailScreen
+import app.miyomu.ui.novel.NovelDetailScreen
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -48,18 +50,30 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val books by graph.library.books.collectAsState()
+        val novelBooks by graph.novelLibrary.books.collectAsState()
 
         val onOpenBook: (LocalBook) -> Unit = remember(navigator) {
             { book -> navigator.push(MangaDetailScreen(graph, book)) }
         }
-        val tabs = remember(graph, onOpenBook) {
+        val onOpenNovel: (LocalBook) -> Unit = remember(navigator) {
+            { book -> navigator.push(NovelDetailScreen(graph, book)) }
+        }
+        val tabs = remember(graph, onOpenBook, onOpenNovel) {
             listOf(
+                NovelLibraryTab(graph, onOpenNovel),
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph),
                 MangaHistoryTab(graph, onOpenBook),
                 BrowseTab(graph),
                 MoreTab(graph),
             )
+        }
+        val badgeCount: (Tab) -> Int = { tab ->
+            when (tab) {
+                is NovelLibraryTab -> novelBooks.size
+                is MangaLibraryTab -> books.size
+                else -> 0
+            }
         }
 
         TabNavigator(tabs.first()) { tabNavigator ->
@@ -82,7 +96,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                                 NavigationRailItem(
                                     selected = tabNavigator.current == tab,
                                     onClick = { tabNavigator.current = tab },
-                                    icon = { TabIcon(tab, if (tab is MangaLibraryTab) books.size else 0) },
+                                    icon = { TabIcon(tab, badgeCount(tab)) },
                                     label = { Text(tab.options.title) },
                                     alwaysShowLabel = true,
                                 )
@@ -100,7 +114,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                                     NavigationBarItem(
                                         selected = tabNavigator.current == tab,
                                         onClick = { tabNavigator.current = tab },
-                                        icon = { TabIcon(tab, if (tab is MangaLibraryTab) books.size else 0) },
+                                        icon = { TabIcon(tab, badgeCount(tab)) },
                                         label = { Text(tab.options.title) },
                                         alwaysShowLabel = true,
                                     )
@@ -131,6 +145,7 @@ private fun TabIcon(tab: Tab, badgeCount: Int) {
 }
 
 private fun Tab.icon(): ImageVector? = when (this) {
+    is NovelLibraryTab -> Icons.Outlined.ImportContacts
     is MangaLibraryTab -> Icons.AutoMirrored.Outlined.MenuBook
     is UpdatesTab -> Icons.Outlined.Update
     is MangaHistoryTab -> Icons.Outlined.History

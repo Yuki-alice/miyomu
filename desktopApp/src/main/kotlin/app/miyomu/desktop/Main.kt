@@ -12,6 +12,8 @@ import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.ui.MiyomuApp
 import java.awt.Desktop
 import java.io.File
@@ -36,6 +38,8 @@ fun main() = application {
         val root = remember { FileLocalFileRef(libraryRoot) }
         val comics = remember { FileLocalComicRepository() }
         val library = remember { LocalLibraryRepository() }
+        val novels = remember { LocalNovelRepository() }
+        val novelLibrary = remember { NovelLibraryRepository() }
         val preferences = remember { JsonPreferenceStore(File(home, "preferences.json")) }
 
         DisposableEffect(data) {
@@ -45,6 +49,8 @@ fun main() = application {
         MiyomuApp(
             library = library,
             comics = comics,
+            novels = novels,
+            novelLibrary = novelLibrary,
             data = data,
             root = root,
             deviceId = "desktop",

@@ -849,4 +849,24 @@
     <string name="library_exported">已导出列表</string>
     <string name="tracked_privately">私下记录</string>
     <string name="action_toggle_private_on">私下记录</string>
+    <!-- 小说阅读器(Miyomu 小说端,docs/10) -->
+    <string name="label_novels">小说</string>
+    <string name="novel_empty_library">还没有小说。把 .txt 或 .epub 文件放进库文件夹即可。</string>
+    <string name="novel_reader_settings">阅读设置</string>
+    <string name="novel_reading_mode">阅读模式</string>
+    <string name="novel_reading_mode_paged">分页</string>
+    <string name="novel_reading_mode_scroll">滚动</string>
+    <string name="novel_theme">主题</string>
+    <string name="novel_theme_light">浅色</string>
+    <string name="novel_theme_sepia">羊皮纸</string>
+    <string name="novel_theme_dark">深色</string>
+    <string name="novel_theme_black">纯黑</string>
+    <string name="novel_font_size">字号</string>
+    <string name="novel_line_height">行距</string>
+    <string name="novel_page_padding">页边距</string>
+    <string name="novel_paragraph_spacing">段落间距</string>
+    <string name="novel_chapter_position">第 %1$d / %2$d 章</string>
+    <string name="novel_page_position">%1$d / %2$d</string>
+    <string name="novel_previous_chapter">上一章</string>
+    <string name="novel_next_chapter">下一章</string>
 </resources>
