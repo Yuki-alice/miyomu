@@ -36,3 +36,52 @@ data class ReadingProgressEntity(
     val updatedAt: Long,
     val deviceId: String,
 )
+
+/**
+ * Persisted episode row for any anime item (local scan or online source). `key` is the stable
+ * identity a scan/source agrees on, `url` is the play target; marks survive re-scans because
+ * replace reconciles on `key`.
+ */
+@Entity(
+    tableName = "entry_episode",
+    primaryKeys = ["itemId", "key"],
+    indices = [Index(value = ["itemId", "sourceOrder"])],
+)
+data class EpisodeEntity(
+    val itemId: String,
+    val key: String,
+    val name: String,
+    val url: String,
+    val episodeNumber: Double?,
+    val sourceOrder: Long,
+    val seen: Boolean,
+    val bookmark: Boolean,
+    val fetchedAt: Long,
+)
+
+/** Persisted chapter row for any comic item; same reconciliation contract as [EpisodeEntity]. */
+@Entity(
+    tableName = "entry_chapter",
+    primaryKeys = ["itemId", "key"],
+    indices = [Index(value = ["itemId", "sourceOrder"])],
+)
+data class ChapterEntity(
+    val itemId: String,
+    val key: String,
+    val name: String,
+    val url: String,
+    val chapterNumber: Double?,
+    val sourceOrder: Long,
+    val read: Boolean,
+    val bookmark: Boolean,
+    val fetchedAt: Long,
+)
+
+/** Cached resolve result (stream URLs + anti-leech headers) for one episode url. */
+@Entity(tableName = "video_resolve_cache")
+data class VideoResolveEntity(
+    @PrimaryKey val key: String,
+    val streamsJson: String,
+    val headersJson: String,
+    val fetchedAt: Long,
+)

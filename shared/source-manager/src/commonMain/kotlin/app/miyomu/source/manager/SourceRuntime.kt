@@ -4,6 +4,7 @@ import app.miyomu.model.ComicDetails
 import app.miyomu.model.ComicSummary
 import app.miyomu.model.PageRef
 import app.miyomu.model.Paged
+import app.miyomu.model.ResolvedVideo
 import kotlinx.coroutines.flow.StateFlow
 
 /** A loaded source, as shown to the UI. */
@@ -36,6 +37,9 @@ interface SourceRuntimeManager {
     suspend fun details(sourceId: String, comicId: String): ComicDetails
 
     suspend fun pages(sourceId: String, comicId: String, chapterId: String): List<PageRef>
+
+    /** Anime-only: resolves an episode url into stream candidates + request headers (ADR-0014). */
+    suspend fun resolveVideo(sourceId: String, episodeUrl: String): ResolvedVideo
 
     suspend fun loadImage(sourceId: String, url: String, headers: Map<String, String>): ByteArray
 

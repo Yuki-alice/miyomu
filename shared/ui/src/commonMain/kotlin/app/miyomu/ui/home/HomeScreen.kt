@@ -67,8 +67,20 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
         val onOpenSources: () -> Unit = remember(navigator) {
             { navigator.push(SourceRepositoryScreen(graph)) }
         }
+        val onOpenDownloads: (() -> Unit)? = graph.downloadQueue?.let { queue ->
+            val open: () -> Unit = { navigator.push(app.miyomu.ui.download.DownloadQueueRoute(queue)) }
+            open
+        }
+        val onOpenBackup: (() -> Unit)? = graph.backupFile?.let {
+            val open: () -> Unit = { navigator.push(app.miyomu.ui.backup.BackupSyncRoute(graph)) }
+            open
+        }
+        val onOpenDanmaku: () -> Unit = remember(navigator) {
+            val open: () -> Unit = { navigator.push(app.miyomu.ui.settings.DanmakuSettingsRoute(graph)) }
+            open
+        }
         val onOpenSource: (SourceRuntimeInfo) -> Unit = remember(navigator) {
-            { info -> navigator.push(SourceSearchScreen(graph, info.id, info.name)) }
+            { info -> navigator.push(SourceSearchScreen(graph, info.id, info.name, info.mediaType)) }
         }
         val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource) {
             listOf(
@@ -76,7 +88,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                 UpdatesTab(graph),
                 MangaHistoryTab(graph, onOpenBook),
                 BrowseTab(graph, onOpenSource, onOpenSources),
-                MoreTab(graph, onOpenSources),
+                MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku),
             )
         }
 

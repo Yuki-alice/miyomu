@@ -2,6 +2,7 @@ package app.miyomu.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,12 +34,13 @@ import kotlinx.coroutines.delay
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.compose.MediampPlayerSurface
 import org.openani.mediamp.compose.rememberMediampPlayer
+import org.openani.mediamp.features.AudioLevelController
 import org.openani.mediamp.features.PlaybackSpeed
 import org.openani.mediamp.features.audioTracks
 import org.openani.mediamp.features.subtitleTracks
 import org.openani.mediamp.metadata.AudioTrack
 import org.openani.mediamp.metadata.SubtitleTrack
-import org.openani.mediamp.playUri
+import org.openani.mediamp.source.UriMediaData
 import org.openani.mediamp.togglePlayWhenReady
 
 private const val ControlsHideDelayMillis = 3_500L
@@ -58,6 +60,13 @@ fun VideoPlayerScreen(
     uri: String,
     onBack: () -> Unit,
     startPositionMillis: Long = 0L,
+    headers: Map<String, String> = emptyMap(),
+    initialSpeed: Float = 1f,
+    onSpeedChanged: (Float) -> Unit = {},
+    onNextEpisode: (() -> Unit)? = null,
+    autoPlayNext: Boolean = false,
+    danmaku: app.miyomu.danmaku.DanmakuState? = null,
+    onDanmakuToggled: ((Boolean) -> Unit)? = null,
     onPositionChanged: (positionMillis: Long, durationMillis: Long) -> Unit = { _, _ -> },
 ) {
     if (!isVideoPlaybackAvailable()) {
@@ -113,12 +122,30 @@ fun VideoPlayerScreen(
     var scrubPosition by remember { mutableFloatStateOf(-1f) }
     var seekHint by remember { mutableStateOf<String?>(null) }
     var hintNonce by remember { mutableIntStateOf(0) }
+    var selectedSpeed by remember(uri) { mutableFloatStateOf(initialSpeed) }
+    var brightness by remember { mutableFloatStateOf(1f) }
+    var gestureHint by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(uri) {
+    val audioController = remember(player) { player.features[AudioLevelController] }
+
+    LaunchedEffect(uri, headers) {
         error = null
         runCatching {
-            player.playUri(uri, playWhenReady = true, startPositionMillis = startPositionMillis)
+            // playUri() passes empty headers; online sources need Referer/UA, so set the data directly.
+            player.setMediaData(
+                UriMediaData(uri, headers),
+                playWhenReady = true,
+                startPositionMillis = startPositionMillis,
+            )
         }.onFailure { error = it.message ?: "无法打开视频" }
+        speedFeature?.set(selectedSpeed)
+    }
+
+    // Auto-play next when playback ends.
+    LaunchedEffect(playerState.mediaStatus, autoPlayNext) {
+        if (playerState.mediaStatus is MediaStatus.Ended && autoPlayNext && onNextEpisode != null) {
+            onNextEpisode()
+        }
     }
 
     LaunchedEffect(position, duration) {
@@ -137,6 +164,7 @@ fun VideoPlayerScreen(
         if (hintNonce > 0) {
             delay(700)
             seekHint = null
+            gestureHint = null
         }
     }
 
@@ -158,10 +186,31 @@ fun VideoPlayerScreen(
             .fillMaxSize()
             .background(Color.Black)
             .pointerInput(player) {
+                detectVerticalDragGestures { change, dragAmount ->
+                    change.consume()
+                    val left = change.position.x < size.width / 2f
+                    if (left) {
+                        brightness = (brightness - dragAmount / 1500f).coerceIn(0.1f, 1f)
+                        gestureHint = "亮度 ${((brightness) * 100).toInt()}%"
+                    } else if (audioController != null) {
+                        val step = -dragAmount / 3000f
+                        if (step > 0) audioController.volumeUp(step) else audioController.volumeDown(-step)
+                        gestureHint = "音量 ${(audioController.volume.value * 100).toInt()}%"
+                    }
+                }
+            }
+            .pointerInput(player) {
                 detectTapGestures(
                     onTap = {
-                        controlsVisible = !controlsVisible
-                        interactionNonce++
+                        if (speedFeature != null && selectedSpeed > 1.5f) {
+                            selectedSpeed = 1f
+                            speedFeature.set(1f)
+                            gestureHint = "恢复 1.0x"
+                            hintNonce++
+                        } else {
+                            controlsVisible = !controlsVisible
+                            interactionNonce++
+                        }
                     },
                     onDoubleTap = { offset ->
                         val third = size.width / 3f
@@ -177,10 +226,28 @@ fun VideoPlayerScreen(
                             else -> player.togglePlayWhenReady()
                         }
                     },
+                    onLongPress = {
+                        if (speedFeature != null) {
+                            selectedSpeed = 2f
+                            speedFeature.set(2f)
+                            gestureHint = "2x 快进(点击恢复)"
+                            hintNonce++
+                            revealControls()
+                        }
+                    },
                 )
             },
     ) {
         MediampPlayerSurface(player, Modifier.fillMaxSize())
+
+        danmaku?.let { dm ->
+            DanmakuOverlay(
+                positionMillis = position,
+                isPlaying = playerState.playWhenReady,
+                state = dm,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         when {
             error != null -> CenteredMessage(error.orEmpty())
@@ -190,6 +257,29 @@ fun VideoPlayerScreen(
                 color = Color.White,
                 modifier = Modifier.align(Alignment.Center),
             )
+        }
+
+        if (brightness < 1f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.85f * (1f - brightness))),
+            )
+        }
+
+        gestureHint?.let { hint ->
+            Surface(
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black.copy(alpha = 0.7f),
+                shape = RoundedCornerShape(24.dp),
+            ) {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                )
+            }
         }
 
         seekHint?.let { hint ->
@@ -237,15 +327,20 @@ fun VideoPlayerScreen(
                     scrubPosition = -1f
                     revealControls()
                 },
+                onNextEpisode = onNextEpisode,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
 
         if (showSettings) {
             PlayerSettingsSheet(
+                danmakuEnabled = danmaku?.let { !it.enabled }?.not(),
+                onDanmakuToggled = onDanmakuToggled,
                 speed = speedFeature?.let { speed },
                 onSpeedSelected = { option ->
+                    selectedSpeed = option ?: 1f
                     speedFeature?.set(option)
+                    onSpeedChanged(option)
                     revealControls()
                 },
                 audioCandidates = audioCandidates,

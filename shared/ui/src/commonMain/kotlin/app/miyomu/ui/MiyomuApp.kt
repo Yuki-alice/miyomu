@@ -8,6 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import app.miyomu.data.MiyomuData
+import app.miyomu.download.DownloadQueue
+import app.miyomu.download.FileDownloadStore
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
@@ -35,6 +37,9 @@ fun MiyomuApp(
     preferenceStore: PreferenceStore? = null,
     sourceInstalls: SourceInstallManager,
     sourceRuntime: SourceRuntimeManager,
+    downloadQueue: DownloadQueue? = null,
+    downloadStore: FileDownloadStore? = null,
+    backupFile: java.io.File? = null,
     onOpenLibraryFolder: (() -> Unit)? = null,
 ) {
     val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
@@ -50,6 +55,9 @@ fun MiyomuApp(
             preferenceStore = store,
             sourceInstalls = sourceInstalls,
             sourceRuntime = sourceRuntime,
+            downloadQueue = downloadQueue,
+            downloadStore = downloadStore,
+            backupFile = backupFile,
             onOpenLibraryFolder = onOpenLibraryFolder,
         )
     }

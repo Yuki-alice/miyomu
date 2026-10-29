@@ -55,6 +55,7 @@ class SourceSearchScreen(
     private val graph: MiyomuGraph,
     private val sourceId: String,
     private val sourceName: String,
+    private val mediaType: String = "COMIC",
 ) : Screen {
 
     @Composable
@@ -66,7 +67,11 @@ class SourceSearchScreen(
             sourceName = sourceName,
             onBack = { navigator.pop() },
             onOpen = { summary ->
-                navigator.push(SourceDetailScreen(graph, sourceId, sourceName, summary))
+                if (mediaType == "VIDEO") {
+                    navigator.push(SourceAnimeDetailScreen(graph, sourceId, sourceName, summary))
+                } else {
+                    navigator.push(SourceDetailScreen(graph, sourceId, sourceName, summary))
+                }
             },
         )
     }

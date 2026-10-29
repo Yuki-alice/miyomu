@@ -103,7 +103,7 @@ internal fun JsPagesDto.toPages(): List<PageRef> = images
     .map { PageRef(url = it) }
     .toList()
 
-private fun parseTags(element: JsonElement?): Map<String, List<String>> {
+internal fun parseTags(element: JsonElement?): Map<String, List<String>> {
     val objectValue = element as? JsonObject ?: return emptyMap()
     return objectValue.mapValues { (_, value) ->
         when (value) {

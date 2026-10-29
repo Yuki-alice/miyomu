@@ -11,7 +11,12 @@ kotlin {
 
     jvm {
         testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
+            useJUnitPlatform {
+                // Live-site smoke tests are opt-in: ./gradlew :shared:source-runtime:jvmTest -Pcanary
+                if (!project.hasProperty("canary")) {
+                    excludeTags("canary")
+                }
+            }
         }
     }
     android {

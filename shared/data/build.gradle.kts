@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -25,11 +26,18 @@ kotlin {
     }
 
     sourceSets {
+        jvmMain {
+            kotlin.srcDir("src/jvmShared/kotlin")
+        }
+        androidMain {
+            kotlin.srcDir("src/jvmShared/kotlin")
+        }
         commonMain.dependencies {
             api(project(":shared:model"))
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

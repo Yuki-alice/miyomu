@@ -37,6 +37,8 @@ kotlin {
             api(project(":shared:player"))
             api(project(":shared:source-repo"))
             api(project(":shared:source-manager"))
+            api(project(":shared:download"))
+            api(project(":shared:danmaku"))
             api(project(":shared:data"))
             api(project(":shared:presentation-core"))
             // Ported Aniyomi screens (ADR-0011). Wired here so the module stays in the build

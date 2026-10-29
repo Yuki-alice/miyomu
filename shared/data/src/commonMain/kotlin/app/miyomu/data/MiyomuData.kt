@@ -13,6 +13,10 @@ class MiyomuData internal constructor(
 
     val library: LibraryRepository = RoomLibraryRepository(dao)
     val progress: ProgressRepository = RoomProgressRepository(dao)
+    val anime: AnimeRepository = RoomAnimeRepository(dao)
+    val chapters: ChapterRepository = RoomChapterRepository(dao)
+    val videoResolve: VideoResolveRepository = RoomVideoResolveRepository(dao)
+    val backup: BackupRepository = RoomBackupRepository(dao)
 
     fun close() {
         database.close()

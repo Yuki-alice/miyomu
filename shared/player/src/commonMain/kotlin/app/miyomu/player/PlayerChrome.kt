@@ -28,6 +28,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -83,6 +84,7 @@ internal fun PlayerBottomBar(
     onOpenSettings: () -> Unit,
     onScrub: (Float) -> Unit,
     onScrubFinished: () -> Unit,
+    onNextEpisode: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -132,6 +134,12 @@ internal fun PlayerBottomBar(
                     color = Color.White,
                 )
 
+                if (onNextEpisode != null) {
+                    TextButton(onClick = onNextEpisode) {
+                        Text("下一集", color = Color.White)
+                    }
+                }
+
                 IconButton(onClick = onOpenSettings, enabled = settingsEnabled) {
                     Icon(
                         imageVector = Icons.Outlined.Settings,
@@ -146,6 +154,8 @@ internal fun PlayerBottomBar(
 
 @Composable
 internal fun PlayerSettingsSheet(
+    danmakuEnabled: Boolean? = null,
+    onDanmakuToggled: ((Boolean) -> Unit)? = null,
     speed: Float?,
     onSpeedSelected: (Float) -> Unit,
     audioCandidates: List<AudioTrack>,
@@ -161,6 +171,8 @@ internal fun PlayerSettingsSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         PlayerSettingsContent(
+            danmakuEnabled = danmakuEnabled,
+            onDanmakuToggled = onDanmakuToggled,
             speed = speed,
             onSpeedSelected = onSpeedSelected,
             audioCandidates = audioCandidates,
@@ -176,6 +188,8 @@ internal fun PlayerSettingsSheet(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PlayerSettingsContent(
+    danmakuEnabled: Boolean? = null,
+    onDanmakuToggled: ((Boolean) -> Unit)? = null,
     speed: Float?,
     onSpeedSelected: (Float) -> Unit,
     audioCandidates: List<AudioTrack>,
@@ -196,6 +210,15 @@ internal fun PlayerSettingsContent(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         )
+
+        if (danmakuEnabled != null && onDanmakuToggled != null) {
+            SectionTitle("弹幕")
+            TrackOptionRow(
+                label = if (danmakuEnabled) "已开启（点击关闭）" else "已关闭（点击开启）",
+                selected = danmakuEnabled,
+                onClick = { onDanmakuToggled(!danmakuEnabled) },
+            )
+        }
 
         if (speed != null) {
             SectionTitle("播放速度")

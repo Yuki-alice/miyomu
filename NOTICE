@@ -48,4 +48,13 @@ viewer core, SQLDelight data layer, Material motion, drawable resources) are
 replaced by multiplatform equivalents; see
 docs/adr/0011-kmp-aniyomi-port.md for the full substitution map.
 
+The Phase D additions (ADR-0014) are original Miyomu code with no copied
+material: the JS anime source engine (`shared/source-api`/`source-runtime`/
+`source-manager` anime paths, `demo-resources/sources/anime/*`), the download
+queue (`shared/download`), the dandanplay danmaku client and Compose overlay
+(`shared/danmaku`, `shared/player`), and the backup/WebDAV, download-queue and
+settings screens in `shared/ui`. The player chrome follows Animeko
+(https://github.com/open-ani/animeko, AGPL-3.0) for behavior only — no Animeko
+code is used.
+
 The full Apache License 2.0 text is available in LICENSE.

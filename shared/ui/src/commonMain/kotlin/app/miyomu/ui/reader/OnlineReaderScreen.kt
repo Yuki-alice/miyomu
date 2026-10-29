@@ -27,6 +27,7 @@ class OnlineReaderScreen(
     private val title: String,
     private val chapters: List<app.miyomu.model.Chapter>,
     private val chapterIndex: Int,
+    private val pageSourceOverride: ReaderPageSource? = null,
 ) : Screen {
 
     @Composable
@@ -41,15 +42,16 @@ class OnlineReaderScreen(
                 location = "",
             )
         }
-        val pageSource = remember(sourceId, comicId, chapters) {
-            OnlinePageSource(graph.sourceRuntime, sourceId, comicId, chapters)
-        }
+        val pageSource = pageSourceOverride
+            ?: remember(sourceId, comicId, chapters) {
+                OnlinePageSource(graph.sourceRuntime, sourceId, comicId, chapters)
+            }
 
         ComicReaderScreen(
             book = book,
             initialChapterIndex = chapterIndex,
             initialPageIndex = 0,
-            libraryItemId = LibraryItem.idOf("source-$sourceId", comicId),
+            libraryItemId = LibraryItem.idOf(sourceId, comicId),
             pageSource = pageSource,
             data = graph.data,
             deviceId = graph.deviceId,

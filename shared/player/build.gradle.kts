@@ -34,6 +34,7 @@ kotlin {
             // no backend of its own. The `mediamp-all` bundle resolves to an empty JVM variant
             // in this setup, so the backends are declared per target instead (ADR-0005).
             api(libs.mediamp.api)
+            api(project(":shared:danmaku"))
 
             implementation(compose.runtime)
             implementation(compose.foundation)

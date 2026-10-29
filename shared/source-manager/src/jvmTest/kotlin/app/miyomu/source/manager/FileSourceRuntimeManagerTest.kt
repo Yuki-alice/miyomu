@@ -52,6 +52,66 @@ class FileSourceRuntimeManagerTest {
     }
 
     @Test
+    fun `loads an anime source alongside a comic source and resolves video`() {
+        val comicScript = File(root, "fixture/source.js")
+        comicScript.parentFile.mkdirs()
+        comicScript.writeText(requireNotNull(javaClass.getResource("/fixture_source.js")).readText())
+        val animeScript = File(root, "anime/source.js")
+        animeScript.parentFile.mkdirs()
+        animeScript.writeText(animeFixtureScript())
+
+        val installs = FakeInstalls(
+            listOf(
+                InstalledSource(
+                    id = "fixture",
+                    name = "Fixture",
+                    version = "1.0.0",
+                    lang = "en",
+                    scriptPath = comicScript.absolutePath,
+                    repositoryUrl = "https://repo.test/index.json",
+                    installedAt = 1L,
+                    updatedAt = 1L,
+                ),
+                InstalledSource(
+                    id = "anime_fixture",
+                    name = "Anime Fixture",
+                    version = "1.0.0",
+                    lang = "zh",
+                    scriptPath = animeScript.absolutePath,
+                    repositoryUrl = "https://repo.test/index.json",
+                    installedAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val manager = FileSourceRuntimeManager(installs, scope)
+
+        try {
+            runBlocking {
+                val state = withTimeout(20_000) { manager.state.first { !it.loading && it.sources.size == 2 } }
+                assertEquals(
+                    listOf("VIDEO", "COMIC"),
+                    state.sources.sortedBy { it.id }.map { it.mediaType },
+                )
+
+                val search = manager.search("anime_fixture", "夜")
+                assertEquals("夜行西行", search.items.single().title)
+
+                val details = manager.details("anime_fixture", "a1")
+                assertEquals(2, details.episodes.size)
+                assertEquals("线路1", details.episodes.first().name)
+
+                val resolved = manager.resolveVideo("anime_fixture", details.episodes.first().url)
+                assertEquals("https://stream.test/a1.m3u8", resolved.streams.single().url)
+                assertEquals("https://stream.test/", resolved.headers["Referer"])
+            }
+        } finally {
+            manager.close()
+        }
+    }
+
+    @Test
     fun `reports a source whose key does not match the package id`() {
         val script = File(root, "bad/source.js")
         script.parentFile.mkdirs()
@@ -104,6 +164,36 @@ class FileSourceRuntimeManagerTest {
         script.writeText(requireNotNull(javaClass.getResource("/fixture_source.js")).readText())
         return script
     }
+
+    private fun animeFixtureScript(): String = """
+        class AnimeFixtureSource extends AnimeSource {
+            name = "Anime Fixture";
+            key = "anime_fixture";
+            version = "1.0.0";
+            url = "";
+
+            async search(query, page) {
+                return { list: [{ id: "a1", title: "夜行西行" }], maxPage: 1 };
+            }
+
+            async detail(id) {
+                return {
+                    title: "Anime Fixture",
+                    episodes: [
+                        { key: "https://stream.test/a1", name: "线路1", url: "https://stream.test/a1", line: 0, number: 1 },
+                        { key: "https://stream.test/a2", name: "线路2", url: "https://stream.test/a2", line: 1, number: 1 }
+                    ]
+                };
+            }
+
+            async resolve(episodeUrl) {
+                return {
+                    urls: [{ url: "https://stream.test/a1.m3u8", quality: "1080P", type: "hls" }],
+                    headers: { Referer: "https://stream.test/" }
+                };
+            }
+        }
+    """.trimIndent()
 }
 
 private class FakeInstalls(initial: List<InstalledSource>) : SourceInstallManager {

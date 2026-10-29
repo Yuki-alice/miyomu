@@ -4,6 +4,7 @@ import app.miyomu.model.ComicDetails
 import app.miyomu.model.ComicSummary
 import app.miyomu.model.PageRef
 import app.miyomu.model.Paged
+import app.miyomu.model.ResolvedVideo
 import app.miyomu.source.manager.SourceRuntimeManager
 import app.miyomu.source.manager.SourceRuntimeState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,9 @@ internal class FakeSourceRuntimeManager(
 
     override suspend fun pages(sourceId: String, comicId: String, chapterId: String): List<PageRef> =
         pages
+
+    override suspend fun resolveVideo(sourceId: String, episodeUrl: String): ResolvedVideo =
+        ResolvedVideo(streams = emptyList(), headers = emptyMap())
 
     override suspend fun loadImage(sourceId: String, url: String, headers: Map<String, String>): ByteArray =
         imageBytes

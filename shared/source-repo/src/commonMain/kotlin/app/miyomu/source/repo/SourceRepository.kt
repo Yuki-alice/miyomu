@@ -2,6 +2,7 @@ package app.miyomu.source.repo
 
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * A user-added source repository: an index JSON that points at JS source scripts.
@@ -25,6 +26,8 @@ data class SourcePackage(
     val sha256: String? = null,
     val description: String? = null,
     val iconUrl: String? = null,
+    /** Per-site values for template sources; injected as `globalThis.__MIYOMU_CONFIG` (D9). */
+    val config: JsonObject? = null,
 )
 
 /** A source package copied into the local source directory. */
@@ -39,6 +42,7 @@ data class InstalledSource(
     val sha256: String? = null,
     val description: String? = null,
     val iconUrl: String? = null,
+    val config: JsonObject? = null,
     val installedAt: Long,
     val updatedAt: Long,
 )

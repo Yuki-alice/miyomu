@@ -1,9 +1,7 @@
 package app.miyomu.source.runtime
 
 internal const val SourcePreamble: String = """
-globalThis.ComicSource = class ComicSource {
-    static sources = Object.create(null);
-
+globalThis.MiyomuSourceBase = class MiyomuSourceBase {
     loadData(key) {
         const value = __hostKvGet(this.key + ":" + key);
         return value === undefined ? null : value;
@@ -30,6 +28,14 @@ globalThis.ComicSource = class ComicSource {
     translate(key) {
         return key;
     }
+};
+
+globalThis.ComicSource = class ComicSource extends MiyomuSourceBase {
+    static sources = Object.create(null);
+};
+
+globalThis.AnimeSource = class AnimeSource extends MiyomuSourceBase {
+    static sources = ComicSource.sources;
 };
 
 globalThis.Comic = class Comic {
@@ -238,6 +244,67 @@ globalThis.HtmlElement = class HtmlElement {
     }
 };
 
+globalThis.Std = {
+    resolveUrl(base, url) {
+        if (!url) return url;
+        url = String(url);
+        if (/^https?:\/\//i.test(url)) return url;
+        if (url.startsWith("//")) {
+            const scheme = /^https:/i.test(String(base)) ? "https:" : "http:";
+            return scheme + url;
+        }
+        return String(base).replace(/\/+$/, "") + "/" + url.replace(/^\/+/, "");
+    },
+
+    // Absolute/relative m3u8 urls embedded in player scripts, with escaped slashes unquoted.
+    extractM3u8(html) {
+        const text = String(html).replace(/\\\//g, "/");
+        const found = [];
+        const re = /https?:\/\/[^\s"'<>\\]+?\.m3u8/gi;
+        let match;
+        while ((match = re.exec(text)) !== null) {
+            if (found.indexOf(match[0]) < 0) found.push(match[0]);
+        }
+        return found;
+    },
+
+    // AppleCMS vod_play_url: groups joined by "${'$'}${'$'}${'$'}", each "name${'$'}url#name${'$'}url".
+    parseAppleCmsPlay(vodPlayFrom, vodPlayUrl) {
+        const froms = String(vodPlayFrom || "").split("${'$'}${'$'}${'$'}");
+        const groups = String(vodPlayUrl || "").split("${'$'}${'$'}${'$'}");
+        const lines = [];
+        for (let i = 0; i < froms.length; i++) {
+            const episodes = (groups[i] || "").split("#").map(item => {
+                const index = item.indexOf("$");
+                if (index < 0) return null;
+                const name = item.slice(0, index).trim();
+                const url = item.slice(index + 1).trim();
+                if (!url) return null;
+                return { name: name, url: url };
+            }).filter(Boolean);
+            if (episodes.length > 0) lines.push({ from: froms[i].trim(), episodes: episodes });
+        }
+        return lines;
+    },
+
+    parseEpisodeNumber(name) {
+        const text = String(name || "");
+        const patterns = [
+            /第\s*([0-9]+)\s*[集话期回]/,
+            /\b(?:S\d+\s*E|E)([0-9]+)\b/i,
+            /\b([0-9]{1,4})\b/
+        ];
+        for (const pattern of patterns) {
+            const match = pattern.exec(text);
+            if (match) {
+                const value = parseFloat(match[1]);
+                if (!isNaN(value)) return value;
+            }
+        }
+        return null;
+    }
+};
+
 globalThis.__miyomuCreateSource = async function (source) {
     if (source == null || typeof source !== "object") {
         throw new Error("source instance is required");
@@ -294,6 +361,27 @@ globalThis.__miyomuInvoke = async function (action, sourceKey, payloadJson) {
             throw new Error("source does not support chapter pages");
         }
         return JSON.stringify(await source.comic.loadEp(payload.comicId, payload.chapterId == null ? null : payload.chapterId));
+    }
+
+    if (action === "animeSearch") {
+        if (typeof source.search !== "function") {
+            throw new Error("source does not support search");
+        }
+        return JSON.stringify(await source.search(payload.query, payload.page || 1));
+    }
+
+    if (action === "animeDetail") {
+        if (typeof source.detail !== "function") {
+            throw new Error("source does not support detail");
+        }
+        return JSON.stringify(await source.detail(payload.id));
+    }
+
+    if (action === "animeResolve") {
+        if (typeof source.resolve !== "function") {
+            throw new Error("source does not support resolve");
+        }
+        return JSON.stringify(await source.resolve(payload.episodeUrl));
     }
 
     throw new Error("unknown action: " + action);

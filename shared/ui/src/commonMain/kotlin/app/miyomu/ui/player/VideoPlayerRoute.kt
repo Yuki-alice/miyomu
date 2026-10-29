@@ -11,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.backhandler.BackHandler
+import app.miyomu.danmaku.DanmakuState
+import app.miyomu.danmaku.matchTrack
 import app.miyomu.local.LocalBook
 import app.miyomu.local.LocalChapter
 import app.miyomu.model.LibraryItem
@@ -27,6 +29,9 @@ import kotlin.math.abs
 /** Position is persisted at most this often, so the position flow does not hammer Room. */
 private const val PROGRESS_SAVE_INTERVAL_MILLIS = 5_000L
 
+internal const val PlayerSpeedKey = "player_speed"
+internal const val PlayerAutoNextKey = "player_auto_next"
+
 /**
  * Video playback route: resumes from the saved timestamp and writes it back while playing.
  * Replaces Aniyomi's `PlayerActivity` with a Compose screen (ADR-0011, Phase B).
@@ -35,6 +40,7 @@ class VideoPlayerRoute(
     private val graph: MiyomuGraph,
     private val book: LocalBook,
     private val episode: LocalChapter? = null,
+    private val headers: Map<String, String> = emptyMap(),
 ) : Screen {
 
     @Composable
@@ -45,6 +51,8 @@ class VideoPlayerRoute(
         val entryId = episode?.location ?: book.location
         val title = episode?.title ?: book.title
 
+        var episodes by remember(book.id) { mutableStateOf<List<LocalChapter>>(emptyList()) }
+        var danmaku by remember(book.id) { mutableStateOf<DanmakuState?>(null) }
         var resumePosition by remember(book.id) { mutableLongStateOf(0L) }
         var resumeLoaded by remember(book.id) { mutableStateOf(false) }
         var lastSaved by remember(book.id) { mutableLongStateOf(0L) }
@@ -57,7 +65,25 @@ class VideoPlayerRoute(
                 graph.data.progress.latestFor(itemId, entryId)?.position?.toLong() ?: 0L
             }.getOrDefault(0L)
             lastSaved = resumePosition
+            episodes = runCatching { graph.comics.chapters(book) }.getOrDefault(emptyList())
             resumeLoaded = true
+
+            // Danmaku: enabled pref + configured dandanplay credentials + auto-match by title.
+            val danmakuEnabled = graph.preferenceStore.getBoolean(graph.danmakuKeys.ENABLED, true).get()
+            val credentials = graph.readDanmakuCredentials()
+            danmaku = if (danmakuEnabled && credentials.isConfigured) {
+                runCatching {
+                    graph.danmaku.setCredentials(credentials)
+                    val number = episode?.title?.let { title ->
+                        app.miyomu.danmaku.parseDanmakuEpisodeNumber(title)
+                            ?: episodes.indexOf(episode).takeIf { it >= 0 }?.plus(1)?.toDouble()
+                    }
+                    val track = graph.danmaku.matchTrack(book.title, number)
+                    DanmakuState(enabled = true, track = track)
+                }.getOrDefault(null)
+            } else {
+                DanmakuState(enabled = false, track = null)
+            }
         }
 
         suspend fun persistProgress(position: Long, duration: Long) {
@@ -94,10 +120,26 @@ class VideoPlayerRoute(
 
         BackHandler(enabled = true, onBack = leavePlayer)
 
+        val nextEpisode = episodes.firstOrNull { chapter ->
+            episodes.indexOfFirst { it.location == entryId } >= 0 &&
+                episodes.indexOf(chapter) == episodes.indexOfFirst { it.location == entryId } + 1
+        }
         VideoPlayerScreen(
             title = title,
             uri = entryId,
             startPositionMillis = resumePosition,
+            headers = headers,
+            initialSpeed = graph.preferenceStore.getFloat(PlayerSpeedKey, 1f).get(),
+            onSpeedChanged = { speed -> graph.preferenceStore.getFloat(PlayerSpeedKey, 1f).set(speed) },
+            onNextEpisode = nextEpisode?.let { chapter ->
+                { navigator.replace(VideoPlayerRoute(graph, book, chapter)) }
+            },
+            autoPlayNext = graph.preferenceStore.getBoolean(PlayerAutoNextKey, true).get(),
+            danmaku = danmaku,
+            onDanmakuToggled = { enabled ->
+                graph.preferenceStore.getBoolean(graph.danmakuKeys.ENABLED, true).set(enabled)
+                danmaku = danmaku?.copy(enabled = enabled)
+            },
             onBack = leavePlayer,
             onPositionChanged = { position, duration ->
                 latestPosition = position

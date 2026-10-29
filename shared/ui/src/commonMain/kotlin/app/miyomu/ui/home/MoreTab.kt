@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
@@ -30,6 +31,9 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 class MoreTab(
     private val graph: MiyomuGraph,
     private val onOpenSources: () -> Unit,
+    private val onOpenDownloads: (() -> Unit)? = null,
+    private val onOpenBackup: (() -> Unit)? = null,
+    private val onOpenDanmaku: (() -> Unit)? = null,
 ) : Tab {
 
     override val options: TabOptions
@@ -46,10 +50,31 @@ class MoreTab(
             MoreRow(icon = Icons.Outlined.FolderOpen, title = "本地库", subtitle = graph.root.location)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MoreRow(
+                icon = Icons.Outlined.Download,
+                title = "下载队列",
+                subtitle = "离线章节的进度与管理",
+                onClick = onOpenDownloads,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            MoreRow(
                 icon = Icons.Outlined.Extension,
                 title = "源仓库",
                 subtitle = "添加索引 JSON，安装 JS 源",
                 onClick = onOpenSources,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            MoreRow(
+                icon = Icons.Outlined.Settings,
+                title = "备份与同步",
+                subtitle = "本地备份与 WebDAV 同步",
+                onClick = onOpenBackup,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            MoreRow(
+                icon = Icons.Outlined.Settings,
+                title = "弹幕设置",
+                subtitle = "弹弹play 凭据与默认开关",
+                onClick = onOpenDanmaku,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MoreRow(icon = Icons.Outlined.Settings, title = "阅读设置", subtitle = "阅读模式、方向与排版（后续）")

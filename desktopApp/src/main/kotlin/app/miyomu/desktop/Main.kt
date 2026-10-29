@@ -13,6 +13,8 @@ import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.download.FileDownloadQueue
+import app.miyomu.download.FileDownloadStore
 import app.miyomu.source.manager.FileSourceRuntimeManager
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.MiyomuApp
@@ -46,8 +48,13 @@ fun main() = application {
         }
         val scope = rememberCoroutineScope()
         val sourceRuntime = remember { FileSourceRuntimeManager(sourceInstalls, scope) }
+        val downloadStore = remember { FileDownloadStore(File(home, "downloads")) }
+        val downloadQueue = remember { FileDownloadQueue(sourceRuntime, downloadStore, scope) }
         DisposableEffect(sourceRuntime) {
-            onDispose { sourceRuntime.close() }
+            onDispose {
+                downloadQueue.close()
+                sourceRuntime.close()
+            }
         }
 
         DisposableEffect(data) {
@@ -64,6 +71,9 @@ fun main() = application {
             preferenceStore = preferences,
             sourceInstalls = sourceInstalls,
             sourceRuntime = sourceRuntime,
+            downloadQueue = downloadQueue,
+            downloadStore = downloadStore,
+            backupFile = java.io.File(home, "backup.json"),
             onOpenLibraryFolder = {
                 runCatching { Desktop.getDesktop().open(libraryRoot) }
             },

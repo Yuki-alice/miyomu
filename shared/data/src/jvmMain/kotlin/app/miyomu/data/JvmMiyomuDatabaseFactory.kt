@@ -14,6 +14,7 @@ class JvmMiyomuDatabaseFactory(
         return Room.databaseBuilder<MiyomuDatabase>(name = databasePath)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
+            .addMigrations(*MiyomuDatabase.ALL_MIGRATIONS)
             .build()
     }
 }

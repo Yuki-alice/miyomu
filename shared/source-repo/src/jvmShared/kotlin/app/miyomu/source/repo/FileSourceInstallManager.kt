@@ -144,6 +144,7 @@ class FileSourceInstallManager(
                 sha256 = digest,
                 description = pkg.description,
                 iconUrl = pkg.iconUrl,
+                config = pkg.config,
                 installedAt = existing?.installedAt ?: now,
                 updatedAt = now,
             )

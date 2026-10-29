@@ -1,6 +1,10 @@
 package app.miyomu.ui
 
 import app.miyomu.data.MiyomuData
+import app.miyomu.danmaku.DanmakuCredentials
+import app.miyomu.danmaku.DandanplayRepository
+import app.miyomu.download.DownloadQueue
+import app.miyomu.download.FileDownloadStore
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
@@ -27,9 +31,33 @@ class MiyomuGraph(
     val preferenceStore: PreferenceStore,
     val sourceInstalls: SourceInstallManager,
     val sourceRuntime: SourceRuntimeManager,
+    val downloadQueue: DownloadQueue? = null,
+    val downloadStore: FileDownloadStore? = null,
+    val backupFile: java.io.File? = null,
     val onOpenLibraryFolder: (() -> Unit)? = null,
 ) {
     val libraryPreferences: LibraryPreferences = LibraryPreferences(preferenceStore)
 
     val readerPreferences: ReaderPreferences = ReaderPreferences(preferenceStore)
+
+    val danmakuKeys: DanmakuPrefKeys = DanmakuPrefKeys
+
+    /** Danmaku repo; credentials are re-read from prefs before each load (settings may change). */
+    val danmaku: DandanplayRepository by lazy {
+        DandanplayRepository(
+            httpClient = io.ktor.client.HttpClient(),
+            initialCredentials = readDanmakuCredentials(),
+        )
+    }
+
+    fun readDanmakuCredentials(): DanmakuCredentials = DanmakuCredentials(
+        appId = preferenceStore.getString(DanmakuPrefKeys.APP_ID).get(),
+        appSecret = preferenceStore.getString(DanmakuPrefKeys.SECRET).get(),
+    )
+}
+
+object DanmakuPrefKeys {
+    const val APP_ID = "danmaku_app_id"
+    const val SECRET = "danmaku_app_secret"
+    const val ENABLED = "danmaku_enabled"
 }

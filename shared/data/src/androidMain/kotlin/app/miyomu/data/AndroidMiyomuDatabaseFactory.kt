@@ -14,5 +14,6 @@ class AndroidMiyomuDatabaseFactory(
         Room.databaseBuilder<MiyomuDatabase>(context, databaseName)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
+            .addMigrations(*MiyomuDatabase.ALL_MIGRATIONS)
             .build()
 }
