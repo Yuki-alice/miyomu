@@ -4,7 +4,7 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> 状态：**Phase A2 + Phase B 完成**：书架、漫画/视频详情、阅读器、播放器全部跑在移植的 Aniyomi 界面上；Android 与桌面（macOS/Windows）都能播放本地视频，按目录多集/季组织、切音轨/字幕、逐集续播。桌面运行时方案见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)（方案 A）。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
+> 状态：**Phase A/B/C + D 完成**：书架、漫画/视频详情、阅读器、播放器跑在移植的 Aniyomi 界面上；在线漫画源与 anime 源（自有 JS 格式，ADR-0014）可浏览/搜索/详情/阅读/播放；下载队列、备份与 WebDAV 同步、弹幕（用户自配弹弹play 凭据）已落地。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md) 与 [10 anime 源与播放器计划](docs/10-anime-source-and-player-plan.md)。
 > 许可证：Apache-2.0（2026-10-28 确认，见 [ADR-0004](docs/adr/0004-licensing-and-clean-room.md)）
 > 生产构建位于仓库根目录；Phase 0/1 验证代码在 `experiments/`，使用独立 Gradle 构建。
 
@@ -17,7 +17,9 @@
 | `:shared:source-api` | `ComicSource` / `ManagedComicSource` |
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
 | `:shared:source-repo` | 源仓库索引、安装/更新/卸载与本地清单 |
-| `:shared:source-manager` | 已安装源的运行时加载与搜索/详情/页面/图片 |
+| `:shared:source-manager` | 已安装源的运行时加载与搜索/详情/页面/图片/视频解析 |
+| `:shared:download` | 漫画章节下载队列、离线页源 |
+| `:shared:danmaku` | dandanplay 弹幕客户端（用户自配凭据） |
 | `:shared:data` | Room 2.8.5 + KSP；库/进度 schema 与 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:reader-comic` | 漫画阅读状态、模式、页配对 |
@@ -79,7 +81,10 @@ python3 tools/make_sample_library.py
 ./gradlew :desktopApp:build
 ./gradlew :androidApp:assembleDebug
 ./gradlew :shared:local:jvmTest :shared:reader-comic:jvmTest :shared:ui:jvmTest :shared:player:jvmTest
-./gradlew :shared:source-runtime:jvmTest :shared:data:jvmTest
+./gradlew :shared:source-runtime:jvmTest :shared:source-manager:jvmTest :shared:data:jvmTest
+./gradlew :shared:download:jvmTest :shared:danmaku:jvmTest :shared:network:jvmTest
+# 真站弹幕源冒烟（手动，第三方站点不进 CI）：
+./gradlew :shared:source-runtime:jvmTest -Pcanary
 ```
 
 验证代码是独立构建，从仓库根目录执行：
@@ -141,6 +146,16 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 
 Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端 macOS（arm64/x64）与 Windows（x64/arm64）内置 MPV 运行时（Apache-2.0 + LGPL-2.1+，见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)）；Linux 的 MPV 构建是 GPL-3.0，不随应用分发，打开视频会显示说明页而不是崩溃。
 
+## 在线源（anime + 漫画）
+
+anime 源用自有的 `AnimeSource` JS 格式（ADR-0014）：`search` / `detail` / `resolve`，resolve 返回流地址列表与防盗链 headers（mediamp `UriMediaData.headers` 直达 ExoPlayer/MPV）。`demo-resources/sources/anime/` 内有已验证的 [omofun 源](demo-resources/sources/anime/omofun.js)（canary 通过）与 [苹果CMS 模板](demo-resources/sources/anime/applecms_template.js)（一个模板覆盖全部标准 /api.php/provide/vod/ 采集站）。真站冒烟：`./gradlew :shared:source-runtime:jvmTest -Pcanary`。
+
+## 下载 / 备份 / 弹幕
+
+- 漫画章节可从详情页下载（顺序队列、断点续传），离线后自动用本地页源阅读；「更多 → 下载队列」管理。
+- 「更多 → 备份与同步」：书库/进度/标记导出 JSON、本地恢复，以及 WebDAV 上传/下载（用户自配 URL 与凭据）。
+- 弹幕走弹弹play 开放 API，需在 dev.dandanplay.com 注册 AppId/AppSecret 并在「更多 → 弹幕设置」填入；播放设置内可开关。
+
 ## 源仓库（Phase C）
 
 「更多 → 源仓库」可以添加索引 JSON 的 URL，浏览仓库里的 JS 源并安装/更新/卸载。安装会把脚本
@@ -175,7 +190,9 @@ chrome，页面与图片经源运行时加载）。
 - 视频（Android）：倍速与轨道选择不持久化；不加载外挂字幕文件；无集数导航、手势调亮度/音量、锁屏与画中画。
 - 视频详情：混合目录（直接视频 + 季子目录）只取直接视频；没有下一集/自动连播；下载与追踪入口未接线；剧集书签无存储（已看由播放进度 ≥85% 推导）；设置对话框的“设为默认”暂为空实现。
 - Linux 桌面不提供视频：MPV 的 Linux 运行时是 GPL-3.0，与 Apache-2.0 定位冲突（ADR-0012 方案 A）。
-- 在线源（C2）：搜索/详情/阅读已打通；在线章节的已读/书签标记与“加入书架”尚未接数据层，下载与备份/同步仍待后续切片。
+- 外挂字幕（.srt/.ass 同名文件）暂不加载：mediamp 0.5.3 两个后端都不应用 `MediaExtraFiles`，待上游支持。
+- 弹幕需要用户自配弹弹play AppId/AppSecret；自动按标题+集号匹配，无匹配则不显示。
+- 第一波在线站：omofun（真站验证）+ 苹果CMS 采集站家族；AGE（PC 播放关闭）等站无头不可行，见 10 号计划的选站记录。
 
 ## 文档
 
