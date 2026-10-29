@@ -62,11 +62,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.miyomu.data.MiyomuData
 import app.miyomu.local.LocalBook
-import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
-import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.LocalNovelContentSource
 import app.miyomu.novel.NovelBlock
+import app.miyomu.novel.NovelContentSource
 import app.miyomu.reader.novel.NovelBookmark
 import app.miyomu.reader.novel.NovelBookmarkStore
 import app.miyomu.reader.novel.NovelBookSearch
@@ -99,10 +99,11 @@ class NovelReaderScreen(
         val navigator = LocalNavigator.currentOrThrow
 
         NovelReaderContent(
-            book = book,
+            bookKey = book.id,
+            bookTitle = book.title,
             initialChapterIndex = chapterIndex,
             initialCharOffset = charOffset,
-            novels = graph.novels,
+            contentSource = LocalNovelContentSource(graph.novels, book),
             bookmarkStore = graph.novelBookmarks,
             data = graph.data,
             deviceId = graph.deviceId,
@@ -125,10 +126,11 @@ internal fun NovelReaderTheme.palette(): NovelPalette = when (this) {
 
 @Composable
 fun NovelReaderContent(
-    book: LocalBook,
+    bookKey: String,
+    bookTitle: String,
     initialChapterIndex: Int,
     initialCharOffset: Int,
-    novels: LocalNovelRepository,
+    contentSource: NovelContentSource,
     bookmarkStore: NovelBookmarkStore,
     data: MiyomuData,
     deviceId: String,
@@ -137,11 +139,11 @@ fun NovelReaderContent(
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val controller = remember(book.id) { NovelReaderController(novels, scope) }
+    val controller = remember(bookKey) { NovelReaderController(contentSource, scope) }
     val state by controller.state.collectAsState()
 
-    LaunchedEffect(book.id) {
-        controller.open(book, initialChapterIndex, initialCharOffset)
+    LaunchedEffect(bookKey) {
+        controller.open(bookKey, initialChapterIndex, initialCharOffset)
     }
     DisposableEffect(controller) {
         onDispose { controller.close() }
@@ -157,11 +159,10 @@ fun NovelReaderContent(
     val volumeKeyPaging by remember(preferences) { preferences.volumeKeyPaging() }.asState(scope)
 
     val palette = theme.palette()
-    val itemId = LibraryItem.idOf("local", book.id)
     var chromeVisible by remember { mutableStateOf(true) }
     var settingsVisible by remember { mutableStateOf(false) }
     var catalogVisible by remember { mutableStateOf(false) }
-    var bookmarks by remember(book.id) { mutableStateOf(bookmarkStore.bookmarks(book.location)) }
+    var bookmarks by remember(bookKey) { mutableStateOf(bookmarkStore.bookmarks(bookKey)) }
 
     // Char offset of the reading position inside the current chapter. Re-synced from the
     // controller when a chapter loads (not keyed on chapterIndex: resuming inside chapter 0
@@ -172,26 +173,26 @@ fun NovelReaderContent(
     }
 
     fun saveProgress(kind: ProgressKind, offset: Int) {
-        if (state.text.isEmpty()) return
+        if (state.text.isEmpty() || state.itemId.isEmpty() || state.entryId.isEmpty()) return
         scope.launch {
             data.progress.save(
                 ReadingProgress(
-                    itemId = itemId,
-                    entryId = LocalNovelRepository.chapterId(book, state.chapterIndex),
+                    itemId = state.itemId,
+                    entryId = state.entryId,
                     kind = kind,
                     position = offset.toDouble().coerceAtLeast(0.0),
                     updatedAt = nowMillis(),
                     deviceId = deviceId,
                 ),
             )
-            data.library.markViewed(itemId, nowMillis())
+            data.library.markViewed(state.itemId, nowMillis())
         }
     }
 
     fun toggleBookmark() {
         val offset = currentOffset.intValue
-        if (bookmarkStore.has(book.id, state.chapterIndex, offset)) {
-            bookmarks = bookmarkStore.remove(book.id, state.chapterIndex, offset)
+        if (bookmarkStore.has(bookKey, state.chapterIndex, offset)) {
+            bookmarks = bookmarkStore.remove(bookKey, state.chapterIndex, offset)
         } else {
             val bookmark = NovelBookmark(
                 chapterIndex = state.chapterIndex,
@@ -199,16 +200,14 @@ fun NovelReaderContent(
                 excerpt = excerptAt(state.text, offset),
                 createdAt = nowMillis(),
             )
-            bookmarks = bookmarkStore.add(book.id, bookmark)
+            bookmarks = bookmarkStore.add(bookKey, bookmark)
         }
     }
 
-    val searchInBook: suspend (String) -> List<NovelBookSearch.Match> = remember(book.id) {
-        { query ->
-            runCatching { novels.parse(book) }
-                .map { parsed -> NovelBookSearch.search(parsed.chapters, query) }
-                .getOrDefault(emptyList())
-        }
+    // In-book search works over locally parsed chapters; online sources search chapter
+    // titles only via the catalog filter (docs/10 known limitation).
+    val searchInBook: suspend (String) -> List<NovelBookSearch.Match> = remember(bookKey) {
+        { _ -> emptyList() }
     }
 
     // ---- Paged mode machinery ----
@@ -318,7 +317,7 @@ fun NovelReaderContent(
                 }
             }
         } else {
-            controller.open(book, chapterIndex, offset)
+            controller.open(bookKey, chapterIndex, offset)
         }
     }
 
@@ -413,7 +412,7 @@ fun NovelReaderContent(
         val pagedCount = pages?.pageCount ?: 0
         NovelReaderChrome(
             visible = chromeVisible,
-            bookTitle = book.title,
+            bookTitle = bookTitle,
             chapterTitle = state.chapterTitle
                 ?: stringResource(MR.strings.novel_chapter_position, state.chapterIndex + 1, state.chapterCount),
             positionLabel = when (readingMode) {
@@ -434,7 +433,7 @@ fun NovelReaderContent(
             },
             hasPreviousChapter = state.hasPreviousChapter,
             hasNextChapter = state.hasNextChapter,
-            bookmarked = bookmarkStore.has(book.id, state.chapterIndex, currentOffset.intValue),
+            bookmarked = bookmarkStore.has(bookKey, state.chapterIndex, currentOffset.intValue),
             palette = palette,
             onBack = onBack,
             onPreviousChapter = controller::previousChapter,
@@ -483,7 +482,7 @@ fun NovelReaderContent(
             onJumpChapter = { index -> jumpTo(index, 0) },
             onJumpMatch = { match -> jumpTo(match.chapterIndex, match.offset) },
             onDeleteBookmark = { bookmark ->
-                bookmarks = bookmarkStore.remove(book.id, bookmark.chapterIndex, bookmark.offset)
+                bookmarks = bookmarkStore.remove(bookKey, bookmark.chapterIndex, bookmark.offset)
             },
             onDismiss = { catalogVisible = false },
         )

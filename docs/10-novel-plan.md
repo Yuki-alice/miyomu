@@ -1,6 +1,6 @@
 # 小说端开发计划(2026-10-29)
 
-- 状态:**N1–N3 完成**(2026-10-30,`feature/novel` 分支);后续增强见第 7 节
+- 状态:**N1–N3 完成 + 插画/格式/legado 在线阅读闭环**(2026-10-30,`feature/novel` 分支);后续增强见第 7 节
 - 决策人:用户(2026-10-29 会话确认)
 - 关联:[00 产品简报](00-product-brief.md) · [M1 清单](checklists/phase-1-m1.md)(N1–N3 条目)· [09 交接文档](09-handoff-2026-10-29.md)
 
@@ -95,7 +95,7 @@ shared/ui/novel      适配层:Novel → 合成 Manga/Chapter → 复用库/详�
 2. ~~**护眼暖色滤镜 / 音量键翻页**~~ ✅ 2026-10-30
 3. ~~**EPUB 插画渲染**~~ ✅ 2026-10-30(内容块架构 NovelBlock.Text/Image,分页/滚动双端渲染,尺寸嗅探)
 4. ~~**更多文件格式**~~ ✅ 2026-10-30(FB2 含 base64 插画与封面、HTML、Markdown;TXT/EPUB 已有)
-5. ~~**legado 书源引擎(读路径)**~~ ✅ 2026-10-30(`shared:source-novel`:书源 JSON 导入、规则子集求值器、搜索/详情/目录/正文;15 测试)——**剩余**:书源仓库管理 UI、网络接线进应用、发现/分类页
+5. ~~**legado 书源引擎(读路径 + 应用内闭环)**~~ ✅ 2026-10-30(`shared:source-novel`:书源 JSON 导入、规则子集求值器、搜索/详情/目录/正文;`NovelContentSource` 抽象让阅读器同时服务本地与在线;浏览 Tab 书源管理/搜索/书架/在线阅读;20+ 测试)——**剩余**:发现/分类页、正文分页抓取(nextContentUrl)、在线书源的书内搜索
 6. **书内长按与注释**:选中文本、高亮/笔记(需要 Room 新表,建议等分支合并后统一动 schema)。
 7. **翻页动画**:覆盖/仿真 page delegate(平移已有)。
 8. **自动翻页与亮度控制**(Android window attributes,expect/actual)。

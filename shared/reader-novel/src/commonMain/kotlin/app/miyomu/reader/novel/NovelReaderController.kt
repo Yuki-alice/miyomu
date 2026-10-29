@@ -1,9 +1,7 @@
 package app.miyomu.reader.novel
 
-import app.miyomu.local.LocalBook
-import app.miyomu.novel.LocalNovelRepository
 import app.miyomu.novel.NovelBlock
-import app.miyomu.novel.NovelParseException
+import app.miyomu.novel.NovelContentSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,19 +9,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Drives the novel reader: parses the book once through [LocalNovelRepository] (which caches),
- * then serves chapter text chapter by chapter. Pagination and char-offset tracking are the
- * UI layer's job; this class only moves between chapters and reports text.
+ * Drives the novel reader over a [NovelContentSource] (local files or online sources):
+ * loads chapter data chapter by chapter, tracks the reading position and reports text and
+ * progress keys. Pagination is the UI layer's job.
  */
 class NovelReaderController(
-    private val novels: LocalNovelRepository,
+    private val contentSource: NovelContentSource,
     private val scope: CoroutineScope,
 ) {
 
     data class State(
         val loading: Boolean = true,
         val error: String? = null,
-        val book: LocalBook? = null,
+        /** Progress bucket; local books use the library id, online books their own scheme. */
+        val itemId: String = "",
+        /** Progress key of the current chapter inside [itemId]. */
+        val entryId: String = "",
+        val bookKey: String = "",
         val chapterCount: Int = 0,
         val chapterIndex: Int = 0,
         val chapterTitle: String? = null,
@@ -42,23 +44,22 @@ class NovelReaderController(
     private val mutableState = MutableStateFlow(State())
     val state: StateFlow<State> = mutableState.asStateFlow()
 
-    private var book: LocalBook? = null
+    private var bookKey: String = ""
 
-    fun open(book: LocalBook, chapterIndex: Int, charOffset: Int) {
-        this.book = book
-        mutableState.value = State(loading = true)
-        scope.launch {
-            loadChapter(book, chapterIndex.coerceAtLeast(0), charOffset.coerceAtLeast(0))
-        }
+    fun open(key: String, chapterIndex: Int, charOffset: Int) {
+        bookKey = key
+        mutableState.value = State(loading = true, bookKey = key)
+        scope.launch { loadChapter(key, chapterIndex, charOffset) }
     }
 
     fun openChapter(index: Int) {
-        val currentBook = book ?: return
+        val key = bookKey
+        if (key.isEmpty()) return
         val current = mutableState.value
         if (index < 0 || (current.chapterCount > 0 && index >= current.chapterCount)) return
         // Set synchronously so callers polling [state] never observe a stale chapter as fresh.
         mutableState.value = current.copy(loading = true)
-        scope.launch { loadChapter(currentBook, index, 0) }
+        scope.launch { loadChapter(key, index, 0) }
     }
 
     fun nextChapter() = openChapter(mutableState.value.chapterIndex + 1)
@@ -68,31 +69,37 @@ class NovelReaderController(
     /** Mirrors the comic controller's lifecycle hook; nothing to release today. */
     fun close() = Unit
 
-    private suspend fun loadChapter(book: LocalBook, index: Int, charOffset: Int) {
+    private suspend fun loadChapter(key: String, index: Int, charOffset: Int) {
         mutableState.value = mutableState.value.copy(loading = true, error = null)
-        runCatching {
-            val parsed = novels.parse(book)
-            val chapters = parsed.chapters
-            val safeIndex = index.coerceIn(0, chapters.lastIndex.coerceAtLeast(0))
-            val chapter = chapters.getOrNull(safeIndex)
-            State(
-                loading = false,
-                book = book,
-                chapterCount = chapters.size,
-                chapterIndex = safeIndex,
-                chapterTitle = chapter?.title,
-                chapterTitles = chapters.map { it.title },
-                text = chapter?.text().orEmpty(),
-                blocks = chapter?.blocks().orEmpty(),
-                pendingOffset = if (safeIndex == index) charOffset else 0,
-            )
-        }.onSuccess { mutableState.value = it }
-            .onFailure { failure ->
-                val message = when (failure) {
-                    is NovelParseException -> failure.message ?: failure.toString()
-                    else -> failure.message ?: failure.toString()
-                }
-                mutableState.value = mutableState.value.copy(loading = false, error = message)
+        val data = runCatching { contentSource.load(key, index, charOffset) }
+            .getOrElse { failure ->
+                return failureState(key, index, failure.message ?: failure.toString())
             }
+        val failureMessage = data.error
+        if (failureMessage != null) return failureState(key, index, failureMessage)
+
+        mutableState.value = State(
+            loading = false,
+            error = null,
+            itemId = data.itemId,
+            entryId = data.entryId,
+            bookKey = key,
+            chapterCount = data.chapterCount,
+            chapterIndex = data.chapterIndex,
+            chapterTitle = data.chapterTitle,
+            chapterTitles = data.chapterTitles,
+            text = data.text,
+            blocks = data.blocks,
+            pendingOffset = data.pendingOffset,
+        )
+    }
+
+    private fun failureState(key: String, index: Int, message: String) {
+        mutableState.value = mutableState.value.copy(
+            loading = false,
+            error = message,
+            bookKey = key,
+            chapterIndex = index,
+        )
     }
 }

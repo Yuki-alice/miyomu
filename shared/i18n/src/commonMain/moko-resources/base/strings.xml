@@ -1029,4 +1029,13 @@
     <string name="novel_volume_key_paging">Page with volume keys</string>
     <string name="novel_illustration">Illustration</string>
     <string name="novel_image_error">[image unavailable]</string>
+    <string name="novel_sources">Novel sources</string>
+    <string name="novel_source_import">Import sources</string>
+    <string name="novel_source_import_hint">Paste legado book-source JSON (object or array)</string>
+    <string name="novel_search_online">Search this source</string>
+    <string name="novel_shelf">Online shelf</string>
+    <string name="novel_add_shelf">Add to shelf</string>
+    <string name="novel_in_shelf">On shelf</string>
+    <string name="novel_online_empty">Import a legado book-source JSON below to search and read online</string>
+    <string name="novel_source_empty">No sources imported yet</string>
 </resources>

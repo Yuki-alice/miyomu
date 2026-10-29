@@ -7,6 +7,7 @@ import app.miyomu.local.LocalLibraryRepository
 import app.miyomu.novel.LocalNovelRepository
 import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.reader.novel.NovelBookmarkStore
+import app.miyomu.source.novel.LegadoSourceStore
 import app.miyomu.reader.novel.NovelReaderPreferences
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -30,6 +31,8 @@ class MiyomuGraph(
     val nowMillis: () -> Long,
     val preferenceStore: PreferenceStore,
     val onOpenLibraryFolder: (() -> Unit)? = null,
+    /** Fetches an online novel URL as text; null disables the legado online flow. */
+    val novelFetcher: (suspend (String) -> String)? = null,
 ) {
     val libraryPreferences: LibraryPreferences = LibraryPreferences(preferenceStore)
 
@@ -38,4 +41,6 @@ class MiyomuGraph(
     val novelReaderPreferences: NovelReaderPreferences = NovelReaderPreferences(preferenceStore)
 
     val novelBookmarks: NovelBookmarkStore = NovelBookmarkStore(preferenceStore)
+
+    val novelSourceStore: LegadoSourceStore = LegadoSourceStore(preferenceStore)
 }

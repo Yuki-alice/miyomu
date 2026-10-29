@@ -14,7 +14,11 @@ import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
 import app.miyomu.novel.LocalNovelRepository
 import app.miyomu.novel.NovelLibraryRepository
+import app.miyomu.network.cookies.FileCookiesStorage
+import app.miyomu.network.createMiyomuHttpClient
 import app.miyomu.ui.MiyomuApp
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import java.awt.Desktop
 import java.io.File
 
@@ -41,6 +45,12 @@ fun main() = application {
         val novels = remember { LocalNovelRepository() }
         val novelLibrary = remember { NovelLibraryRepository() }
         val preferences = remember { JsonPreferenceStore(File(home, "preferences.json")) }
+        val novelClient = remember {
+            createMiyomuHttpClient(FileCookiesStorage(kotlinx.io.files.Path(File(home, "cookies.json").absolutePath)))
+        }
+        val novelFetcher: suspend (String) -> String = { url ->
+            novelClient.get(url).bodyAsText()
+        }
 
         DisposableEffect(data) {
             onDispose { data.close() }
@@ -59,6 +69,7 @@ fun main() = application {
             onOpenLibraryFolder = {
                 runCatching { Desktop.getDesktop().open(libraryRoot) }
             },
+            novelFetcher = novelFetcher,
         )
     }
 }

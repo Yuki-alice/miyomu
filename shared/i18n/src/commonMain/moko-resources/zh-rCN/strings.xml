@@ -883,4 +883,13 @@
     <string name="novel_volume_key_paging">音量键翻页</string>
     <string name="novel_illustration">插画</string>
     <string name="novel_image_error">[图片不可用]</string>
+    <string name="novel_sources">小说书源</string>
+    <string name="novel_source_import">导入书源</string>
+    <string name="novel_source_import_hint">粘贴 legado 书源 JSON(单条或数组)</string>
+    <string name="novel_search_online">搜索本书源</string>
+    <string name="novel_shelf">在线书架</string>
+    <string name="novel_add_shelf">加入书架</string>
+    <string name="novel_in_shelf">已在书架</string>
+    <string name="novel_online_empty">先在下方粘贴并导入 legado 书源 JSON,即可在线搜索阅读</string>
+    <string name="novel_source_empty">还没有导入书源</string>
 </resources>

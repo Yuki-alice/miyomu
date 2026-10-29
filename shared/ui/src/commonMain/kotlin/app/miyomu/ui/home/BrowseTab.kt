@@ -1,5 +1,7 @@
 package app.miyomu.ui.home
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.novel.NovelSourcesSection
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import kotlinx.coroutines.launch
@@ -34,9 +40,13 @@ class BrowseTab(private val graph: MiyomuGraph) : Tab {
     @Composable
     override fun Content() {
         val scope = rememberCoroutineScope()
+        val navigator = LocalNavigator.currentOrThrow
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -69,11 +79,12 @@ class BrowseTab(private val graph: MiyomuGraph) : Tab {
                     Text("刷新书架")
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "在线源浏览与源仓库后续接入。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Spacer(Modifier.height(24.dp))
+
+            // Online novel flow (docs/10): imported legado sources + the online shelf.
+            NovelSourcesSection(
+                graph = graph,
+                onOpenScreen = { screen -> navigator.push(screen) },
             )
         }
     }

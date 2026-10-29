@@ -3,6 +3,7 @@ package app.miyomu.reader.novel
 import app.miyomu.local.LocalBook
 import app.miyomu.local.LocalBookFormat
 import app.miyomu.model.MediaType
+import app.miyomu.novel.LocalNovelContentSource
 import app.miyomu.novel.LocalNovelRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,9 +59,9 @@ class NovelReaderControllerTest {
     @Test
     fun `opens a chapter and navigates between chapters`() {
         val book = writeBook("book.txt", "第一章 甲", "甲的正文", "第二章 乙", "乙的正文")
-        val controller = NovelReaderController(LocalNovelRepository(), scope)
+        val controller = NovelReaderController(LocalNovelContentSource(LocalNovelRepository(), book), scope)
 
-        controller.open(book, chapterIndex = 0, charOffset = 0)
+        controller.open(book.id,chapterIndex = 0, charOffset = 0)
         val state = controller.awaitLoaded()
 
         assertEquals(2, state.chapterCount)
@@ -85,9 +86,9 @@ class NovelReaderControllerTest {
     @Test
     fun `restores pending offset only for the requested chapter`() {
         val book = writeBook("offset.txt", "第一章 甲", "甲的正文内容", "第二章 乙", "乙的正文内容")
-        val controller = NovelReaderController(LocalNovelRepository(), scope)
+        val controller = NovelReaderController(LocalNovelContentSource(LocalNovelRepository(), book), scope)
 
-        controller.open(book, chapterIndex = 1, charOffset = 2)
+        controller.open(book.id,chapterIndex = 1, charOffset = 2)
         val state = controller.awaitLoaded()
 
         assertEquals(1, state.chapterIndex)
@@ -101,9 +102,9 @@ class NovelReaderControllerTest {
     @Test
     fun `out-of-range chapter index is clamped`() {
         val book = writeBook("clamp.txt", "第一章 甲", "甲的正文")
-        val controller = NovelReaderController(LocalNovelRepository(), scope)
+        val controller = NovelReaderController(LocalNovelContentSource(LocalNovelRepository(), book), scope)
 
-        controller.open(book, chapterIndex = 99, charOffset = 0)
+        controller.open(book.id,chapterIndex = 99, charOffset = 0)
         val state = controller.awaitLoaded()
 
         assertEquals(0, state.chapterIndex)
@@ -121,9 +122,9 @@ class NovelReaderControllerTest {
             mediaType = MediaType.NOVEL,
             location = missing.toString(),
         )
-        val controller = NovelReaderController(LocalNovelRepository(), scope)
+        val controller = NovelReaderController(LocalNovelContentSource(LocalNovelRepository(), book), scope)
 
-        controller.open(book, chapterIndex = 0, charOffset = 0)
+        controller.open(book.id,chapterIndex = 0, charOffset = 0)
         runBlocking {
             withTimeout(5_000) {
                 while (controller.state.value.loading) kotlinx.coroutines.delay(10)

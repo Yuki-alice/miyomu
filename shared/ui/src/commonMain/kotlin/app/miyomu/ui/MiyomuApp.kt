@@ -37,6 +37,7 @@ fun MiyomuApp(
      */
     preferenceStore: PreferenceStore? = null,
     onOpenLibraryFolder: (() -> Unit)? = null,
+    novelFetcher: (suspend (String) -> String)? = null,
 ) {
     val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
 
@@ -52,6 +53,7 @@ fun MiyomuApp(
             nowMillis = nowMillis,
             preferenceStore = store,
             onOpenLibraryFolder = onOpenLibraryFolder,
+            novelFetcher = novelFetcher,
         )
     }
 

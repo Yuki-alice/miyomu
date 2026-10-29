@@ -25,6 +25,8 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api(project(":shared:novel"))
+            implementation(project(":shared:domain"))
             implementation(project(":shared:network"))
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
@@ -40,6 +42,7 @@ kotlin {
             kotlin.srcDir("src/jvmShared/kotlin")
             dependencies {
                 implementation(libs.ksoup.android)
+                implementation(libs.quickjs.kt)
             }
         }
         commonTest.dependencies {
