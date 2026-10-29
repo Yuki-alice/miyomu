@@ -4,7 +4,7 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> 状态：**Phase A2 — Aniyomi 界面移植（A2-1 ~ A2-5 完成）**：书架、详情、阅读器三条主链路已跑在移植的 Aniyomi 界面上，自写界面已删除。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
+> 状态：**Phase A2 — Aniyomi 界面移植（A2-1 ~ A2-5 完成）+ 小说端并行开发（2026-10-30）**：书架、详情、阅读器三条主链路已跑在移植的 Aniyomi 界面上；小说端（`feature/novel` 分支）完成 TXT/EPUB 解析、双模式阅读器与库/详情闭环。小说路线见 [docs/10](docs/10-novel-plan.md)，移植路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
 > 许可证：Apache-2.0（2026-10-28 确认，见 [ADR-0004](docs/adr/0004-licensing-and-clean-room.md)）
 > 生产构建位于仓库根目录；Phase 0/1 验证代码在 `experiments/`，使用独立 Gradle 构建。
 
@@ -18,8 +18,10 @@
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
 | `:shared:data` | Room 2.8.5 + KSP；库/进度 schema 与 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
+| `:shared:novel` | 小说解析：TXT（编码回退/章节正则）、EPUB（OPF spine/XHTML/封面）、小说库扫描 |
 | `:shared:reader-comic` | 漫画阅读状态、模式、页配对 |
-| `:shared:ui` | 主题、App 壳、书架/详情/阅读器 |
+| `:shared:reader-novel` | 小说阅读偏好（字号/行距/边距/主题/模式）、分页数学、阅读控制器 |
+| `:shared:ui` | 主题、App 壳、书架/详情/阅读器（漫画 + 小说） |
 | `:androidApp` | Android 应用入口 |
 | `:desktopApp` | 桌面应用入口 |
 
@@ -50,7 +52,7 @@ androidApp/     Android 应用入口（Compose）
 desktopApp/     桌面应用入口（Compose Desktop）
 shared/         共享 KMP 模块
   model/ network/ source-api/ source-runtime/ data/
-  local/ reader-comic/ ui/
+  local/ novel/ reader-comic/ reader-novel/ ui/
 demo-resources/ 本地自造 HTML 源（源运行时 M2）
 tools/          fixture server 与本地样例库生成器
 evidence/       M1 双端读路径截图
@@ -92,9 +94,20 @@ python3 tools/make_sample_library.py
 - 书架：移植的 `LibraryToolbar` + `MangaLibraryContent`，紧凑/舒适网格、列表、显示模式与列数设置、下拉刷新、多选。
 - 详情：移植的 `MangaScreen`（宽屏双栏、窄屏单栏），信息头、章节列表、筛选、继续阅读 FAB。
 - 阅读器：移植的 `ReaderAppBars`（顶栏、章节导航、页码滑条、模式/方向/裁边/设置）、阅读设置三页、阅读模式与方向选择弹窗。
-- 窄屏用底部导航，宽屏（≥720dp）用侧边 NavigationRail。
+- 窄屏用底部导航，宽屏（≥720dp）用侧边 NavigationRail；小说拥有独立的「小说」Tab（对应 Aniyomi 的 anime/manga 双 Tab 结构）。
 
 截图：[书架](evidence/a2-library-port.png) · [详情](evidence/a2-detail-port.png) · [阅读器](evidence/a2-reader-port.png)
+
+### 小说端（feature/novel）
+
+小说 UI 是 Miyomu 自写层：复用移植组件的方式与漫画一致（合成 `Manga` 接入网格与详情），阅读器渲染层按小说场景全新实现。
+
+- 解析：TXT（UTF-8/BOM/GB18030 回退、中文章节正则、卷行折叠、128MB 上限）、EPUB（container→OPF spine→XHTML 段落、EPUB2/EPUB3 封面）。
+- 阅读器：分页（TextMeasurer 按段落度量、超长段落按行切片）与滚动（LazyColumn）双模式；字符偏移进度，续读精确到页。
+- 排版设置：字号、行距、页边距、段落间距、四档主题（浅色/羊皮纸/深色/纯黑），即改即生效，挂全局偏好。
+- chrome：顶栏（书名/章节）、底栏（位置滑条、上一章/下一章、设置）、点击翻页区、桌面键盘翻页。
+
+截图：[小说库](evidence/novel-library.png) · [小说详情](evidence/novel-detail.png) · [小说阅读器](evidence/novel-reader.png)
 
 ## 本地阅读
 
@@ -120,7 +133,7 @@ adb push "Sample Zip Book.cbz" /data/local/tmp/
 adb shell run-as app.miyomu.android cp "/data/local/tmp/Sample Zip Book.cbz" files/library/
 ```
 
-当前切片支持目录与 ZIP/CBZ；7Z/PDF/EPUB/TXT 和小说阅读器在后续任务接入。
+当前切片支持目录与 ZIP/CBZ；7Z/PDF 在后续任务接入。小说支持 TXT/EPUB：把 `.txt` 或 `.epub` 放进同一库目录，「小说」Tab 即可导入阅读。
 
 Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 schema/迁移。
 
@@ -138,12 +151,12 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 
 ## 已知限制
 
-- 本地阅读器当前支持目录与 ZIP/CBZ；7Z/PDF/EPUB/TXT 尚未接入。
+- 本地漫画阅读器当前支持目录与 ZIP/CBZ；7Z/PDF 尚未接入。
 - 阅读器支持 LTR/RTL/纵向/Webtoon、双页、缩放平移、进度续读；裁边开关会记偏好但尚未按它裁图。
 - **章节的已读/书签标记没有持久化**：本地库没有章节表，详情页的"标记已读""书签""删除章节"和阅读器的书签按钮只改界面状态。
 - 分类系统未移植：书架只有一个合成分类，分类 Tab 恒隐藏；多选后的批量操作没有数据层支撑。
-- 阅读器主题未移植（`readerTheme`），chrome 跟随 App 浅色主题而背景为纯黑。
-- 本地小说（TXT/EPUB）尚未开始。
+- 阅读器主题未移植（`readerTheme`），漫画阅读器 chrome 跟随 App 浅色主题而背景为纯黑（小说阅读器有自己的四档主题）。
+- 小说端已知限制：EPUB 只取纯文本与封面（图片/脚注/CSS 后置）；TXT 章节启发式对正文以"第X章"开头的行会误判（legado 同类限制）；单行高于一页的极端段落会被裁剪；无章节标记的超大 TXT 整本单章，按段落度量仍可分页但首次打开偏慢。
 - Android 本地库暂用应用私有目录，SAF 文件选择器待补。
 - 真实 Venera 源尚未零修改验证；源运行时兼容层已冻结到 M2。
 - 下载/追踪/同步、视频播放器与轨道选择在后续里程碑。
@@ -160,6 +173,7 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 - [Phase 1 M0 清单](docs/checklists/phase-1-m0.md)
 - [Phase 1 M1 清单](docs/checklists/phase-1-m1.md)
 - [M1 任务重排](docs/08-m1-task-plan.md)
+- [小说端计划](docs/10-novel-plan.md)
 - [品牌备忘](docs/06-brand.md)
 - [Skills 与参考仓库](docs/07-skills-and-references.md)
 - ADR：[KMP/CMP](docs/adr/0001-kmp-cmp-baseline.md) · [Fork + Strangler](docs/adr/0002-fork-and-strangler.md) · [JS 扩展运行时](docs/adr/0003-js-extension-runtime.md) · [许可证边界](docs/adr/0004-licensing-and-clean-room.md) · [mediamp](docs/adr/0005-mediamp-player.md) · [单轨工具链](docs/adr/0006-unified-android-toolchain.md) · [网络与 Cookie](docs/adr/0007-network-and-cookie-storage.md) · [Venera 源运行时](docs/adr/0008-venera-source-runtime.md) · [Room 数据层](docs/adr/0009-room-kmp-data-layer.md) · [Aniyomi 本地阅读器复用](docs/adr/0010-aniyomi-local-reader-reuse.md)

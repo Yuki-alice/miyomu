@@ -1,6 +1,6 @@
 # 小说端开发计划(2026-10-29)
 
-- 状态:**执行中**(`feature/novel` 分支;N1 进行中)
+- 状态:**N1–N3 完成**(2026-10-30,`feature/novel` 分支);后续增强见第 7 节
 - 决策人:用户(2026-10-29 会话确认)
 - 关联:[00 产品简报](00-product-brief.md) · [M1 清单](checklists/phase-1-m1.md)(N1–N3 条目)· [09 交接文档](09-handoff-2026-10-29.md)
 
@@ -58,10 +58,20 @@ shared/ui/novel      适配层:Novel → 合成 Manga/Chapter → 复用库/详�
 
 | 切片 | 内容 | 验收 | 状态 |
 |---|---|---|---|
-| N0 | 决策记录(本文件)、参考仓库、数据层盘点 | 本文件入库;`reference/` 就位 | ✅ |
-| N1 | `shared/novel`:TXT(UTF-8/BOM/GB18030 回退、中文章节正则、单章回退、128 MB 上限)+ EPUB(container→OPF spine→XHTML 文本、封面提取)+ `NovelLibraryScanner` | jvmTest 全绿:编码/章节数/偏移/EPUB 结构(自造 fixture,不提交版权文本) | 🔄 |
-| N2 | `shared/reader-novel`:分页(`TextMeasurer`)/滚动(`LazyColumn`)、章节导航、字符偏移进度、排版偏好(字号/行距/边距/主题,挂 `JsonPreferenceStore`) | 双端阅读器可翻页/续读;排版即时生效 | |
-| N3 | 库/详情接线:`NovelLibraryScanner` 接入、合成 Manga 复用网格与详情、i18n(en/zh-rCN)、证据截图、NOTICE/README/M1 清单勾选 | 导入 → 库 → 详情 → 阅读 → 续读闭环(Android + 桌面) | |
+| N0 | 决策记录(本文件)、参考仓库、数据层盘点 | 本文件入库;`reference/` 就位 | ✅ 2026-10-29 |
+| N1 | `shared/novel`:TXT(UTF-8/BOM/GB18030 回退、中文章节正则、单章回退、128 MB 上限)+ EPUB(container→OPF spine→XHTML 文本、EPUB2/3 封面)+ `NovelLibraryScanner` | 19 jvmTest 全绿(fixture 代码内生成) | ✅ 2026-10-29 |
+| N2 | `shared/reader-novel`(偏好/分页数学/控制器,9 测试)+ `ui/novel` 阅读器:分页(段落级 TextMeasurer 度量、超长段按行切片)/滚动双模式、章节导航、排版设置(字号/行距/边距/段距/四档主题)、字符偏移进度 | UI 测试:库→详情→阅读→翻页→进度保存→续读落页 | ✅ 2026-10-30 |
+| N3 | `NovelLibraryRepository`、小说 Tab(Aniyomi anime/manga 双 Tab 结构)、库/详情接线(合成 Manga 复用移植网格/详情)、i18n(en/zh-rCN)、封面 fetcher 分流、证据截图、双端构建 | 全模块测试绿;桌面/Android 构建绿;`evidence/novel-*.png` | ✅ 2026-10-30 |
+
+证据:`evidence/novel-library.png` · `novel-detail.png` · `novel-reader.png`(headless 桌面 UI 测试实拍)。
+
+## 5.5 实施记录(2026-10-30 计划外决策)
+
+- 分页实现从"整章一个 TextLayoutResult"改为**段落级度量**:每段单独 layout 后按高度堆叠成页,超长段落按自身行切片;数学在 `shared/reader-novel`(纯函数可测),绘制用 `drawText(topLeft)` 平移 + 裁剪。
+- 阅读器 chrome 为小说专用(`NovelReaderChrome`),不复用漫画的 `ReaderAppBars`(页码滑条语义不同);视觉语言保持 M3 一致。
+- 首页 Tab 结构对齐 Aniyomi 上游的 anime/manga 双 Tab:**小说 Tab 放首位**(对应 AnimeLibraryTab 位置),漫画测试相应加了切 Tab 步骤。
+- 进度键沿用漫画 A2-4 手法:`chapterId(book, index) = "<location>#<index>".hashCode()`,详情页按序号反查;续读恢复走"页包含偏移"二分(`NovelChapterPages.pageIndexForOffset`)。
+- 修复:章节 0 续读时 `remember(chapterIndex)` 不会重建导致偏移丢失,改为 `LaunchedEffect(state.text, chapterIndex)` 显式同步。
 
 估算(设备 A,非全职):N1 约 2 周,N2 约 2.5–3 周,N3 约 1.5 周。
 
@@ -71,10 +81,21 @@ shared/ui/novel      适配层:Novel → 合成 Manga/Chapter → 复用库/详�
 - EPUB v1 只取纯文本与封面;图片、脚注、CSS 排版后置(Alpha 范围一致)。
 - 章节身份 = 书 location + 章节序号;文件内容变化(非重命名)导致的章节漂移不在 v1 处理。
 
-## 6. 验证命令(N1 起)
+## 6. 验证命令
 
 ```bash
-./gradlew :shared:novel:jvmTest
+./gradlew :shared:novel:jvmTest :shared:reader-novel:jvmTest :shared:ui:jvmTest
 # 全量(含漫画侧,确认没碰坏)
-./gradlew :shared:ui:jvmTest :shared:reader-comic:jvmTest :desktopApp:compileKotlin :androidApp:assembleDebug
+./gradlew :shared:ui:jvmTest :shared:reader-comic:jvmTest :shared:presentation:compileKotlinJvm :desktopApp:compileKotlin :androidApp:assembleDebug
 ```
+
+## 7. 后续增强(Alpha 之后,按对标 Google Play Books 排序)
+
+1. **书内长按与注释**:选中文本、高亮/笔记/复制(需要文本选择 + 存储表)。
+2. **书签与目录跳转面板**:阅读器内呼出章节列表直接跳转;书签持久化(依赖章节表)。
+3. **翻页动画**:仿真/平移/无动画三种(平移已有,仿真需自绘翻页效果)。
+4. **EPUB 图片与脚注**:段落内的插图渲染;脚注弹层。
+5. **自动翻页与音量键翻页**;亮度滑条与蓝光滤镜(漫画阅读器 ColorFilter 已有先例)。
+6. **TTS 朗读**(M3 范围,依赖平台 TTS 抽象)。
+7. **流式 TXT 解析**:替换整文件解码(>128 MB 文件当前拒读)。
+8. **在线书源**(M3):JS 源协议的小说扩展。
