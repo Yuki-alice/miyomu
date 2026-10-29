@@ -56,12 +56,19 @@ internal class RoomProgressRepository(
     override suspend fun all(itemId: String): List<ReadingProgress> =
         dao.allProgress(itemId).map { it.toModel() }
 
+    override fun observeAll(): Flow<List<ReadingProgress>> =
+        dao.observeAllProgressRows().map { rows -> rows.map { it.toModel() } }
+
     override suspend fun save(progress: ReadingProgress) {
         dao.upsertProgress(progress.toEntity())
     }
 
     override suspend fun clear(itemId: String) {
         dao.clearProgress(itemId)
+    }
+
+    override suspend fun clearEntry(itemId: String, entryId: String) {
+        dao.clearProgressEntry(itemId, entryId)
     }
 }
 

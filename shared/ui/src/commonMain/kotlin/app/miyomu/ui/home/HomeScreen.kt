@@ -32,6 +32,7 @@ import app.miyomu.local.LocalBook
 import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.model.MediaType
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.history.MangaHistoryTab
 import app.miyomu.ui.entries.MangaDetailScreen
 import app.miyomu.ui.entries.VideoDetailScreen
 import app.miyomu.ui.sources.SourceRepositoryScreen
@@ -64,6 +65,59 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                 }
             }
         }
+        val onHistoryResume: (String, String) -> Unit = remember(navigator) {
+            { itemId, entryId ->
+                val scopeId = itemId.substringBefore(':')
+                val sourceKey = itemId.substringAfter(':')
+                if (scopeId == "local") {
+                    val book = graph.library.books.value.firstOrNull { it.id == sourceKey }
+                    if (book != null) {
+                        navigator.push(app.miyomu.ui.reader.ReaderScreen(graph, book, 0, 0))
+                    }
+                } else {
+                    val item = runCatching { kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) } }.getOrNull()
+                    if (item != null) {
+                        navigator.push(
+                            app.miyomu.ui.sources.SourceDetailScreen(
+                                graph = graph,
+                                sourceId = scopeId,
+                                sourceName = scopeId,
+                                summary = app.miyomu.model.ComicSummary(
+                                    id = sourceKey,
+                                    title = item.title,
+                                    coverUrl = item.coverUrl,
+                                ),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+        val onHistoryOpenDetails: (String) -> Unit = remember(navigator) {
+            { itemId ->
+                val scopeId = itemId.substringBefore(':')
+                val sourceKey = itemId.substringAfter(':')
+                if (scopeId == "local") {
+                    graph.library.books.value.firstOrNull { it.id == sourceKey }?.let(onOpenBook)
+                } else {
+                    val item = runCatching { kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) } }.getOrNull()
+                    if (item != null) {
+                        navigator.push(
+                            app.miyomu.ui.sources.SourceDetailScreen(
+                                graph = graph,
+                                sourceId = scopeId,
+                                sourceName = scopeId,
+                                summary = app.miyomu.model.ComicSummary(
+                                    id = sourceKey,
+                                    title = item.title,
+                                    coverUrl = item.coverUrl,
+                                ),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
         val onOpenSources: () -> Unit = remember(navigator) {
             { navigator.push(SourceRepositoryScreen(graph)) }
         }
@@ -86,7 +140,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
             listOf(
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph),
-                MangaHistoryTab(graph, onOpenBook),
+                MangaHistoryTab(graph, onHistoryResume, onHistoryOpenDetails),
                 BrowseTab(graph, onOpenSource, onOpenSources),
                 MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku),
             )

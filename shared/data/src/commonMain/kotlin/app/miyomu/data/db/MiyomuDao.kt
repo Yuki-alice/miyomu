@@ -85,6 +85,12 @@ interface MiyomuDao {
     @Query("SELECT * FROM reading_progress")
     suspend fun allProgressRows(): List<ReadingProgressEntity>
 
+    @Query("SELECT * FROM reading_progress ORDER BY updatedAt DESC")
+    fun observeAllProgressRows(): Flow<List<ReadingProgressEntity>>
+
+    @Query("DELETE FROM reading_progress WHERE itemId = :itemId AND entryId = :entryId")
+    suspend fun clearProgressEntry(itemId: String, entryId: String)
+
     @Query("SELECT * FROM entry_chapter")
     suspend fun allChapterRows(): List<ChapterEntity>
 

@@ -10,6 +10,13 @@ interface ProgressRepository {
 
     /** Every saved position for an item, newest first (one row per entry). */
     suspend fun all(itemId: String): List<ReadingProgress>
+
+    /** Every progress row across items, newest first — the reading-history source. */
+    fun observeAll(): Flow<List<ReadingProgress>>
+
     suspend fun save(progress: ReadingProgress)
     suspend fun clear(itemId: String)
+
+    /** Removes one entry's history row (Aniyomi "remove from history"). */
+    suspend fun clearEntry(itemId: String, entryId: String)
 }
