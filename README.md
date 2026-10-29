@@ -16,7 +16,7 @@
 | `:shared:network` | Ktor 3.6、OkHttp/CIO、持久 Cookie |
 | `:shared:source-api` | `ComicSource` / `ManagedComicSource` |
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
-| `:shared:source-novel` | legado 书源 JSON 导入、规则求值器(搜索/详情/目录/正文读路径) |
+| `:shared:source-novel` | legado 书源 JSON 导入、规则求值器、在线阅读内容源(搜索/详情/目录/正文) |
 | `:shared:data` | Room 2.8.5 + KSP；库/进度 schema 与 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:novel` | 小说解析：TXT（编码回退/章节正则）、EPUB（OPF spine/XHTML/封面）、小说库扫描 |
@@ -108,6 +108,7 @@ python3 tools/make_sample_library.py
 - 排版设置：字号、行距、页边距、段落间距、四档主题（浅色/羊皮纸/深色/纯黑），即改即生效，挂全局偏好。
 - 目录/书签/书内搜索：阅读器内呼出章节列表（标题过滤、当前章高亮）与书签列表；全书跨章节搜索直达「章节 + 偏移」；书签按书存 JSON 偏好（零 schema 冲突）。
 - 护眼暖色滤镜四档（Play Books Night Light 同类）与音量键翻页（Android 生效）；chrome：顶栏（书名/章节/书签）、底栏（位置滑条、上一章/下一章、目录、设置）、点击翻页区、桌面键盘翻页。
+- 在线阅读（legado 书源）：浏览 Tab 导入书源 JSON → 搜索 → 加入书架 → 目录/正文在线阅读，进度与书签与本地共用同一套存储；规则引擎为 legado 语法的独立实现（无 GPL 代码）。
 
 截图：[小说库](evidence/novel-library.png) · [小说详情](evidence/novel-detail.png) · [小说阅读器](evidence/novel-reader.png)
 
@@ -154,7 +155,7 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 ## 已知限制
 
 - 本地漫画阅读器当前支持目录与 ZIP/CBZ；7Z/PDF 尚未接入。
-- legado 书源当前只有规则引擎与读路径（对已取回响应求值），书源仓库管理 UI 与网络接线进应用在下一批；MOBI/AZW3 暂不支持。
+- legado 在线阅读已接入应用（浏览 Tab）；发现/分类页、`nextContentUrl` 分页目录抓取、在线书源的书内全文搜索待补；MOBI/AZW3 暂不支持；真实第三方书源兼容性需实测（引擎对自造 fixture 全绿）。
 - 阅读器支持 LTR/RTL/纵向/Webtoon、双页、缩放平移、进度续读；裁边开关会记偏好但尚未按它裁图。
 - **章节的已读/书签标记没有持久化**：本地库没有章节表，详情页的"标记已读""书签""删除章节"和阅读器的书签按钮只改界面状态。
 - 分类系统未移植：书架只有一个合成分类，分类 Tab 恒隐藏；多选后的批量操作没有数据层支撑。
