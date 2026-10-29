@@ -41,6 +41,7 @@ jobs:
           :shared:source-runtime:jvmTest
           :shared:data:jvmTest
           :shared:local:jvmTest
+          :shared:novel:jvmTest
           :shared:reader-comic:jvmTest
           :shared:domain:jvmTest
           :shared:ui:jvmTest
