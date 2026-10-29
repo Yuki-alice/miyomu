@@ -3,6 +3,7 @@ package app.miyomu.ui
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -22,6 +23,7 @@ import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -82,14 +84,17 @@ class MiyomuAppTest {
                 onAllNodesWithTag("reader-pager").fetchSemanticsNodes().isNotEmpty()
             }
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithText("1 / 2").fetchSemanticsNodes().isNotEmpty()
+                onAllNodesWithTag("reader-page-0").fetchSemanticsNodes().isNotEmpty()
             }
             onNodeWithTag("reader-pager").performTouchInput { swipeLeft() }
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithText("2 / 2").fetchSemanticsNodes().isNotEmpty()
+                onAllNodesWithTag("reader-page-1").fetchSemanticsNodes().isNotEmpty()
             }
             capture("reader")
-            onNodeWithContentDescription("下一章").assertExists()
+            // Chapter navigation lives in the ported bottom bar.
+            listOf("下一章", "Next chapter").any { label ->
+                onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+            }.let { assertTrue(it, "expected a next-chapter action in the reader chrome") }
         } finally {
             data.close()
         }
@@ -151,8 +156,9 @@ class MiyomuAppTest {
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithTag("reader-pager").fetchSemanticsNodes().isNotEmpty()
             }
+            // Saved position was page index 1, so the reader must open on the second page.
             waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithText("2 / 2").fetchSemanticsNodes().isNotEmpty()
+                onAllNodesWithTag("reader-page-1").fetchSemanticsNodes().isNotEmpty()
             }
         } finally {
             data.close()

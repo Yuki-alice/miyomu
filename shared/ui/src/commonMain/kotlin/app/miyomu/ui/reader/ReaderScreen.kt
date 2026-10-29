@@ -28,6 +28,7 @@ class ReaderScreen(
             data = graph.data,
             deviceId = graph.deviceId,
             nowMillis = graph.nowMillis,
+            readerPreferences = graph.readerPreferences,
             onBack = { navigator.pop() },
         )
     }

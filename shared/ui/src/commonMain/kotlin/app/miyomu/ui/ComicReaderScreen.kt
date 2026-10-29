@@ -104,6 +104,21 @@ import app.miyomu.reader.comic.ComicReadingMode
 import app.miyomu.reader.comic.PageSpread
 import app.miyomu.reader.comic.pageSpreads
 import app.miyomu.reader.comic.spreadIndexForPage
+import app.miyomu.ui.reader.ApplyReaderOrientation
+import app.miyomu.ui.reader.readerTitles
+import app.miyomu.ui.reader.toComicReadingMode
+import app.miyomu.ui.reader.toReaderState
+import app.miyomu.ui.reader.toReadingMode
+import eu.kanade.presentation.reader.OrientationSelectDialog
+import eu.kanade.presentation.reader.ReadingModeSelectDialog
+import eu.kanade.presentation.reader.appbars.ReaderAppBars
+import eu.kanade.presentation.reader.settings.ReaderSettingsDialog
+import eu.kanade.tachiyomi.ui.reader.ReaderViewModel
+import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
+import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
+import tachiyomi.presentation.core.util.collectAsState as collectPreferenceAsState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -203,6 +218,7 @@ fun ComicReaderScreen(
     data: MiyomuData,
     deviceId: String,
     nowMillis: () -> Long,
+    readerPreferences: ReaderPreferences,
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -310,10 +326,32 @@ fun ComicReaderScreen(
         if (isWebtoon) goToWebtoonPage(requested) else goToSpread(requested)
     }
 
+    // Chrome state: the ported app bars read Aniyomi's reader state and preferences.
+    var readingModeDialogVisible by remember { mutableStateOf(false) }
+    var orientationDialogVisible by remember { mutableStateOf(false) }
+    val cropBorders = remember(readerPreferences) { readerPreferences.cropBorders() }
+    val cropEnabled by cropBorders.collectPreferenceAsState()
+    val orientationFlag by remember(readerPreferences) {
+        readerPreferences.defaultOrientationType()
+    }.collectPreferenceAsState()
+    val orientation = ReaderOrientation.fromPreference(orientationFlag)
+    ApplyReaderOrientation(if (orientation == ReaderOrientation.DEFAULT) -1 else orientation.flag)
+
+    val readerState = state.toReaderState(chromeVisible = chromeVisible)
+    val (mangaTitle, chapterTitle) = state.readerTitles()
+    val readingMode = state.mode.toReadingMode()
+    val readerStateFlow = remember { MutableStateFlow(ReaderViewModel.State()) }
+    LaunchedEffect(state, chromeVisible) {
+        readerStateFlow.value = state.toReaderState(chromeVisible = chromeVisible)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            // The ported chrome shows the page as bare digits, so the current index is exposed
+            // here for UI tests and accessibility.
+            .testTag("reader-page-${state.pageIndex}")
             .focusRequester(focusRequester)
             .focusable()
             .onPreviewKeyEvent { event ->
@@ -363,36 +401,71 @@ fun ComicReaderScreen(
             )
         }
 
-        AnimatedVisibility(
+        ReaderAppBars(
             visible = chromeVisible,
-            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            ReaderTopBar(book = book, state = state, onBack = onBack)
-        }
-        AnimatedVisibility(
-            visible = chromeVisible,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            ReaderBottomBar(
-                state = state,
-                sliderIndex = sliderIndex,
-                sliderMax = sliderMax,
-                onSeek = onSeek,
-                onOpenSettings = { settingsVisible = true },
-                controller = controller,
-            )
-        }
+            fullscreen = false,
+            mangaTitle = mangaTitle,
+            chapterTitle = chapterTitle,
+            navigateUp = onBack,
+            onClickTopAppBar = { chromeVisible = !chromeVisible },
+            // No bookmark storage for local chapters yet (see A2-4 notes).
+            bookmarked = false,
+            onToggleBookmarked = {},
+            onOpenInWebView = null,
+            onOpenInBrowser = null,
+            onShare = null,
+            viewer = readerState.viewer,
+            onNextChapter = controller::nextChapter,
+            enabledNext = state.hasNextChapter,
+            onPreviousChapter = controller::previousChapter,
+            enabledPrevious = state.hasPreviousChapter,
+            currentPage = state.pageIndex,
+            totalPages = state.pages.size,
+            onPageIndexChange = { page ->
+                if (isWebtoon) onSeek(page) else onSeek(spreadIndexForPage(spreads, page))
+            },
+            readingMode = readingMode,
+            onClickReadingMode = { readingModeDialogVisible = true },
+            orientation = orientation,
+            onClickOrientation = { orientationDialogVisible = true },
+            cropEnabled = cropEnabled,
+            onClickCropBorder = { cropBorders.set(!cropEnabled) },
+            onClickSettings = { settingsVisible = true },
+        )
+    }
+
+    // The ported settings/chrome screen models start a Voyager scope, so they are only built
+    // when a dialog is actually opened.
+    val settingsModel = remember(readerPreferences) {
+        ReaderSettingsScreenModel(
+            readerState = readerStateFlow,
+            hasDisplayCutout = false,
+            onChangeReadingMode = { mode -> mode.toComicReadingMode()?.let(controller::setMode) },
+            onChangeOrientation = { chosen -> readerPreferences.defaultOrientationType().set(chosen.flagValue) },
+            preferences = readerPreferences,
+        )
     }
 
     if (settingsVisible) {
-        ReaderSettingsSheet(
-            state = state,
-            controller = controller,
-            onDismiss = { settingsVisible = false },
+        ReaderSettingsDialog(
+            onDismissRequest = { settingsVisible = false },
+            onShowMenus = { chromeVisible = true },
+            onHideMenus = { chromeVisible = false },
+            screenModel = settingsModel,
+        )
+    }
+    if (readingModeDialogVisible) {
+        ReadingModeSelectDialog(
+            onDismissRequest = { readingModeDialogVisible = false },
+            screenModel = settingsModel,
+            onChange = { readingModeDialogVisible = false },
+        )
+    }
+    if (orientationDialogVisible) {
+        OrientationSelectDialog(
+            onDismissRequest = { orientationDialogVisible = false },
+            screenModel = settingsModel,
+            onChange = { orientationDialogVisible = false },
         )
     }
 }
@@ -544,270 +617,6 @@ private fun ComicPage(
             else -> CircularProgressIndicator(color = Color.White)
         }
     }
-}
-
-@Composable
-private fun ReaderTopBar(
-    book: LocalBook,
-    state: ComicReaderUiState,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        tonalElevation = 3.dp,
-        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "返回")
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = book.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = state.currentChapter?.title.orEmpty(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (state.pages.isNotEmpty()) {
-                Text(
-                    text = "${state.pageIndex + 1} / ${state.pages.size}",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReaderBottomBar(
-    state: ComicReaderUiState,
-    sliderIndex: Int,
-    sliderMax: Int,
-    onSeek: (Int) -> Unit,
-    onOpenSettings: () -> Unit,
-    controller: ComicReaderController,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        tonalElevation = 3.dp,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = state.currentChapter?.title.orEmpty(),
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = modeLabel(state.mode),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                )
-                if (sliderMax >= 0) {
-                    Text(
-                        text = "${sliderIndex + 1} / ${sliderMax + 1}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            if (sliderMax > 0) {
-                Slider(
-                    value = sliderIndex.toFloat().coerceIn(0f, sliderMax.toFloat()),
-                    onValueChange = { onSeek(it.roundToInt()) },
-                    valueRange = 0f..sliderMax.toFloat(),
-                    steps = (sliderMax - 1).coerceAtLeast(0),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                Spacer(Modifier.height(8.dp))
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
-                    enabled = state.hasPreviousChapter,
-                    onClick = controller::previousChapter,
-                ) {
-                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "上一章")
-                }
-                IconButton(onClick = onOpenSettings) {
-                    Icon(Icons.Outlined.Tune, contentDescription = "阅读设置")
-                }
-                IconButton(
-                    enabled = state.hasNextChapter,
-                    onClick = controller::nextChapter,
-                ) {
-                    Icon(Icons.Outlined.SkipNext, contentDescription = "下一章")
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReaderSettingsSheet(
-    state: ComicReaderUiState,
-    controller: ComicReaderController,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 24.dp),
-        ) {
-            Text(
-                text = "阅读设置",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            Text(
-                text = "阅读模式",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            ReaderModeRow(
-                label = "从左到右",
-                icon = Icons.AutoMirrored.Outlined.ArrowForward,
-                selected = state.mode == ComicReadingMode.LEFT_TO_RIGHT,
-                onClick = { controller.setMode(ComicReadingMode.LEFT_TO_RIGHT) },
-            )
-            ReaderModeRow(
-                label = "从右到左",
-                icon = Icons.AutoMirrored.Outlined.ArrowBack,
-                selected = state.mode == ComicReadingMode.RIGHT_TO_LEFT,
-                onClick = { controller.setMode(ComicReadingMode.RIGHT_TO_LEFT) },
-            )
-            ReaderModeRow(
-                label = "纵向翻页",
-                icon = Icons.Outlined.SwapVert,
-                selected = state.mode == ComicReadingMode.VERTICAL,
-                onClick = { controller.setMode(ComicReadingMode.VERTICAL) },
-            )
-            ReaderModeRow(
-                label = "Webtoon（连续纵向）",
-                icon = Icons.Outlined.ViewStream,
-                selected = state.mode == ComicReadingMode.WEBTOON,
-                onClick = { controller.setMode(ComicReadingMode.WEBTOON) },
-            )
-            if (state.supportsDualPage) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "页面布局",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                SettingToggle(
-                    label = "双页显示",
-                    checked = state.dualPage,
-                    onCheckedChange = { controller.setDualPage(it) },
-                )
-                if (state.dualPage) {
-                    SettingToggle(
-                        label = "首页单独显示",
-                        checked = state.firstPageAlone,
-                        onCheckedChange = { controller.setFirstPageAlone(it) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReaderModeRow(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        )
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        if (selected) {
-            Icon(
-                imageVector = Icons.Outlined.Check,
-                contentDescription = "已选中",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SettingToggle(
-    label: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 4.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-private fun modeLabel(mode: ComicReadingMode): String = when (mode) {
-    ComicReadingMode.LEFT_TO_RIGHT -> "从左到右"
-    ComicReadingMode.RIGHT_TO_LEFT -> "从右到左"
-    ComicReadingMode.VERTICAL -> "纵向翻页"
-    ComicReadingMode.WEBTOON -> "Webtoon"
 }
 
 @Composable
