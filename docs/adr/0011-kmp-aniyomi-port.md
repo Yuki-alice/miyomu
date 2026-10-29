@@ -40,3 +40,22 @@
 - 正面：屏幕代码可逐文件复制，视觉/行为对齐成本大幅下降；上游 Aniyomi 修复可低成本吸收。
 - 负面：与 Aniyomi 的数据模型（Manga/Chapter 等）需要适配层；Aniyomi 基于 Kotlin 2.4，个别语法在 2.3.21 下需小补丁；桌面端缺少部分 Android 专属能力（系统手势排除、IME）为空实现。
 - 现有 Miyomu 本地阅读能力（目录/ZIP、进度持久化）保留为数据后端，不被废弃。
+
+## 实施记录（A2-2 ~ A2-5，2026-10-29）
+
+原表之外，实施过程中确认需要补充的替换点：
+
+| 场景 | 实际做法 |
+|---|---|
+| Kotlin context parameters（`Modifier.animateItemFastScroll`） | 源码原样保留，模块加 `-Xcontext-parameters` 编译参数，避免与上游产生 diff |
+| 每 manga 的 `readingMode` / `readerOrientation` 列 | Room schema 没有这些列，阅读器设置退化为全局 `defaultReadingMode()` / `defaultOrientationType()` |
+| `androidx.core.graphics.{red,green,blue,alpha}` | 自写 ARGB 位运算扩展 |
+| `LocalConfiguration` / `Configuration` | `LocalWindowInfo.current.containerSize`（平板阈值 600dp，横屏按宽 > 高） |
+| Android 对话框窗口（`LocalView` + `DialogWindowProvider` 调 dim） | CMP 无窗口句柄，去掉 dim 调整，只保留菜单显隐 |
+| 封面加载（**两处坑**） | 网格传 `MangaCover`、详情头部传 `Manga`；coil 侧需同时提供 `Fetcher.Factory<MangaCover>` 与 `Mapper<Manga, MangaCover>`（对应 Aniyomi app 模块的 `MangaMapper`，未移植） |
+| 方向锁定 | expect/actual：Android 用 `Activity.requestedOrientation`（`ReaderOrientation.flag` 即 ActivityInfo 常量），桌面空实现 |
+| 阅读器状态 | `ComicReaderUiState` → `ReaderViewModel.State` 适配器，而非重写 chrome |
+| 页码指示 | 移植的 `ChapterNavigator` 用纯数字文本而非 `"1 / 2"`；`PageIndicatorText` 在 `currentPage <= 0` 时不渲染，测试改用页面 tag |
+
+刻意保留的能力缺口（等对应数据层到位再补）：章节已读/书签无存储、分类系统、下载、追踪、`readerTheme`。
+

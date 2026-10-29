@@ -7,20 +7,28 @@ licensed under the Apache License, Version 2.0.
 
 Adapted material currently covers:
 - Material 3 color tokens based on Aniyomi's TachiyomiColorScheme.
-- Library, detail, and reader layout patterns used as visual reference.
 - `shared/i18n` and `shared/i18n-aniyomi`: string/plural resources copied from
   Aniyomi's `i18n` and `i18n-aniyomi` modules (English base + zh-CN locale).
 - `shared/presentation-core`: components, i18n helpers, screens, theme, and util
   classes ported from Aniyomi's `presentation-core` module, with small
   multiplatform substitutions (IME visibility, system-gesture exclusion,
   scrollbar metrics, preview annotations, back handling).
+- `shared/presentation`: the `eu.kanade.presentation` layer copied from
+  Aniyomi — library (toolbar, tabs, pager, compact/comfortable grids, list,
+  settings dialog), entries (manga screen, info header, chapter list items),
+  reader chrome (app bars, chapter navigator, page/settings dialogs) and
+  shared components. Upstream package names and file layout are preserved so
+  the module stays diffable against Aniyomi.
 - `shared/domain`: preference API (interfaces and helpers) copied from
-  Aniyomi's `core/common` preference package, plus a new file-backed store.
+  Aniyomi's `core/common` preference package, plus a new file-backed store;
+  manga/chapter/category domain models and the library/anime sort models.
 - App shell (`shared/ui` home tabs, detail/reader entry screens) structured
-  after Aniyomi's `ui/home` and `ui/entries` navigation code.
+  after Aniyomi's `ui/home` and `ui/entries` navigation code, with the
+  reader's screen-model state adapted to Miyomu's `ComicReaderController`.
 
 Android-only dependencies (Injekt DI, Context-based helpers, Android View
-viewer core, SQLDelight data layer) are replaced by multiplatform equivalents;
-see docs/adr/0011-kmp-aniyomi-port.md for the full substitution map.
+viewer core, SQLDelight data layer, Material motion, drawable resources) are
+replaced by multiplatform equivalents; see
+docs/adr/0011-kmp-aniyomi-port.md for the full substitution map.
 
 The full Apache License 2.0 text is available in LICENSE.

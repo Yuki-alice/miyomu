@@ -11,7 +11,7 @@
 | [06 品牌备忘](06-brand.md) | Miyomu 名称、标识符、看板娘方向 | 名称已确认；域名/商标待清查 |
 | [07 Skills 与参考仓库](07-skills-and-references.md) | 已安装技能、许可、参考仓库与 agent 策略 | 已安装 |
 | [08 M1 任务重排](08-m1-task-plan.md) | M1 本地漫画/小说阅读器、共享 UI、Aniyomi 复用边界 | 里程碑排序被 ADR-0011 取代，工程细节仍可引用 |
-| [09 交接文档](09-handoff-2026-10-29.md) | KMP 版 Aniyomi 移植进度、环境、逐文件待修清单 | 最新（2026-10-29） |
+| [09 交接文档](09-handoff-2026-10-29.md) | KMP 版 Aniyomi 移植进度、环境、逐阶段替换记录 | 最新（2026-10-29） |
 | [Phase 0 清单](checklists/phase-0.md) | 可勾选的任务列表与命令 | 执行中 |
 | [Phase 1 M0 清单](checklists/phase-1-m0.md) | 工具链、Ktor/Cookie、标识符、CI | 核心完成 |
 | [Phase 1 M1 清单](checklists/phase-1-m1.md) | 共享 UI、本地库、漫画/小说阅读器 | 进行中 |
@@ -40,7 +40,7 @@
 | [0008](adr/0008-venera-source-runtime.md) | Venera 风格 JS 源运行时读路径 | 接受（M1 切片；真实源待验证） |
 | [0009](adr/0009-room-kmp-data-layer.md) | Room KMP 作为数据层 | 接受（M1 验证） |
 | [0010](adr/0010-aniyomi-local-reader-reuse.md) | Aniyomi 本地阅读器复用边界 | 接受（M1） |
-| [0011](adr/0011-kmp-aniyomi-port.md) | KMP 版 Aniyomi 大面积移植策略（取代 08 的里程碑排序） | 接受（A1 完成） |
+| [0011](adr/0011-kmp-aniyomi-port.md) | KMP 版 Aniyomi 大面积移植策略（取代 08 的里程碑排序） | 接受（A2-2 ~ A2-5 完成） |
 
 ## 约定
 

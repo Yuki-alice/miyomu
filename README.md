@@ -4,7 +4,7 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> 状态：**Phase 1 — M1 表现层与本地阅读器（进行中）**
+> 状态：**Phase A2 — Aniyomi 界面移植（A2-1 ~ A2-5 完成）**：书架、详情、阅读器三条主链路已跑在移植的 Aniyomi 界面上，自写界面已删除。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
 > 许可证：Apache-2.0（2026-10-28 确认，见 [ADR-0004](docs/adr/0004-licensing-and-clean-room.md)）
 > 生产构建位于仓库根目录；Phase 0/1 验证代码在 `experiments/`，使用独立 Gradle 构建。
 
@@ -87,15 +87,14 @@ python3 tools/make_sample_library.py
 
 ## 界面
 
-视觉层按 Aniyomi 的结构重做（Apache-2.0，见 [NOTICE](NOTICE) 与 [ADR-0010](docs/adr/0010-aniyomi-local-reader-reuse.md)）：
+界面不是"照着画"，而是**逐文件移植** Aniyomi（Apache-2.0）的 `presentation` 层：保留上游包名与文件结构，只替换 Android 绑定点。见 [NOTICE](NOTICE) 与 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
 
-- 主题色沿用 Aniyomi 默认 `TachiyomiColorScheme` 的 M3 token。
-- 书架：顶栏计数 Pill、分类 Tab、紧凑封面网格、格式角标、搜索/刷新/打开目录。
-- 详情：封面头图、作者与格式行、主操作按钮、章节计数与未读圆点。
-- 阅读器：圆角上下浮层、页码 Slider、阅读模式菜单、上一/下一章。
+- 书架：移植的 `LibraryToolbar` + `MangaLibraryContent`，紧凑/舒适网格、列表、显示模式与列数设置、下拉刷新、多选。
+- 详情：移植的 `MangaScreen`（宽屏双栏、窄屏单栏），信息头、章节列表、筛选、继续阅读 FAB。
+- 阅读器：移植的 `ReaderAppBars`（顶栏、章节导航、页码滑条、模式/方向/裁边/设置）、阅读设置三页、阅读模式与方向选择弹窗。
 - 窄屏用底部导航，宽屏（≥720dp）用侧边 NavigationRail。
 
-截图：[书架](evidence/m1-library-anilook.png) · [详情](evidence/m1-detail-anilook.png) · [阅读器](evidence/m1-reader-anilook.png)
+截图：[书架](evidence/a2-library-port.png) · [详情](evidence/a2-detail-port.png) · [阅读器](evidence/a2-reader-port.png)
 
 ## 本地阅读
 
@@ -140,11 +139,14 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 ## 已知限制
 
 - 本地阅读器当前支持目录与 ZIP/CBZ；7Z/PDF/EPUB/TXT 尚未接入。
-- 阅读器已有 LTR/RTL/纵向、翻页、进度续读；缩放、Webtoon/连续、双页、设置面板待补。
+- 阅读器支持 LTR/RTL/纵向/Webtoon、双页、缩放平移、进度续读；裁边开关会记偏好但尚未按它裁图。
+- **章节的已读/书签标记没有持久化**：本地库没有章节表，详情页的"标记已读""书签""删除章节"和阅读器的书签按钮只改界面状态。
+- 分类系统未移植：书架只有一个合成分类，分类 Tab 恒隐藏；多选后的批量操作没有数据层支撑。
+- 阅读器主题未移植（`readerTheme`），chrome 跟随 App 浅色主题而背景为纯黑。
 - 本地小说（TXT/EPUB）尚未开始。
 - Android 本地库暂用应用私有目录，SAF 文件选择器待补。
 - 真实 Venera 源尚未零修改验证；源运行时兼容层已冻结到 M2。
-- 下载/同步、视频播放器与轨道选择在后续里程碑。
+- 下载/追踪/同步、视频播放器与轨道选择在后续里程碑。
 
 ## 文档
 
