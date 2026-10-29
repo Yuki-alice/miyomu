@@ -29,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import app.miyomu.local.LocalBook
+import app.miyomu.model.MediaType
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.entries.MangaDetailScreen
+import app.miyomu.ui.player.VideoPlayerRoute
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -50,7 +52,14 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
         val books by graph.library.books.collectAsState()
 
         val onOpenBook: (LocalBook) -> Unit = remember(navigator) {
-            { book -> navigator.push(MangaDetailScreen(graph, book)) }
+            { book ->
+                // Video books go straight to the player; comics open the detail screen.
+                if (book.mediaType == MediaType.VIDEO) {
+                    navigator.push(VideoPlayerRoute(graph, book))
+                } else {
+                    navigator.push(MangaDetailScreen(graph, book))
+                }
+            }
         }
         val tabs = remember(graph, onOpenBook) {
             listOf(

@@ -9,6 +9,7 @@ enum class LocalBookFormat {
     PDF,
     EPUB,
     TXT,
+    VIDEO,
 }
 
 /**

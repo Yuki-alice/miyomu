@@ -44,4 +44,7 @@ internal fun extensionOf(name: String): String =
 internal fun LocalBookFormat.isComicFormat(): Boolean = when (this) {
     LocalBookFormat.DIRECTORY, LocalBookFormat.ZIP -> true
     LocalBookFormat.SEVEN_ZIP, LocalBookFormat.PDF, LocalBookFormat.EPUB, LocalBookFormat.TXT -> false
+    LocalBookFormat.VIDEO -> false
 }
+
+internal val videoExtensions = setOf("mp4", "m4v", "mkv", "webm", "avi", "mov", "ts", "m2ts")

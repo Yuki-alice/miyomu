@@ -3,11 +3,11 @@ package app.miyomu.local
 import app.miyomu.model.MediaType
 
 /**
- * Discovers readable comic books under a library root.
+ * Discovers readable books under a library root.
  *
- * A directory is one book; each child directory or archive inside it is a chapter.
- * A standalone archive is a book with one chapter. Unsupported formats are skipped
- * until their loaders land.
+ * A directory is one comic book; each child directory or archive inside it is a chapter.
+ * A standalone archive is a comic book with one chapter, and a standalone video file is a
+ * single-entry video book. Unsupported formats are skipped until their loaders land.
  */
 class LocalLibraryScanner {
 
@@ -22,9 +22,22 @@ class LocalLibraryScanner {
     }
 
     private fun bookOf(ref: LocalFileRef): LocalBook? {
+        val extension = if (ref.isDirectory) null else extensionOf(ref.name)
+
+        if (extension != null && extension in videoExtensions) {
+            return LocalBook(
+                id = ref.location,
+                title = ref.name.substringBeforeLast('.'),
+                format = LocalBookFormat.VIDEO,
+                mediaType = MediaType.VIDEO,
+                location = ref.location,
+                lastModified = ref.lastModified,
+            )
+        }
+
         val format = when {
             ref.isDirectory -> LocalBookFormat.DIRECTORY
-            else -> when (extensionOf(ref.name)) {
+            else -> when (extension) {
                 "zip", "cbz" -> LocalBookFormat.ZIP
                 "7z", "cb7" -> LocalBookFormat.SEVEN_ZIP
                 "pdf" -> LocalBookFormat.PDF

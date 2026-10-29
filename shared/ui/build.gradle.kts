@@ -34,6 +34,7 @@ kotlin {
             api(project(":shared:model"))
             api(project(":shared:local"))
             api(project(":shared:reader-comic"))
+            api(project(":shared:player"))
             api(project(":shared:data"))
             api(project(":shared:presentation-core"))
             // Ported Aniyomi screens (ADR-0011). Wired here so the module stays in the build
@@ -50,6 +51,7 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
+            implementation(libs.compose.ui.backhandler)
             implementation(libs.kotlinx.coroutines.core)
         }
         jvmMain.dependencies {

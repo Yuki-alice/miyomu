@@ -26,6 +26,12 @@ Adapted material currently covers:
   after Aniyomi's `ui/home` and `ui/entries` navigation code, with the
   reader's screen-model state adapted to Miyomu's `ComicReaderController`.
 
+The video player in `shared/player` is built on mediamp
+(https://github.com/open-ani/mediamp), Copyright OpenAni and contributors,
+licensed under Apache-2.0, with AndroidX Media3/ExoPlayer (Apache-2.0) as the
+Android backend. No MPV/FFmpeg native binaries are distributed with Miyomu;
+see docs/adr/0012-desktop-video-backend-licensing.md.
+
 Android-only dependencies (Injekt DI, Context-based helpers, Android View
 viewer core, SQLDelight data layer, Material motion, drawable resources) are
 replaced by multiplatform equivalents; see

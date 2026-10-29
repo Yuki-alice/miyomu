@@ -41,6 +41,7 @@
 | [0009](adr/0009-room-kmp-data-layer.md) | Room KMP 作为数据层 | 接受（M1 验证） |
 | [0010](adr/0010-aniyomi-local-reader-reuse.md) | Aniyomi 本地阅读器复用边界 | 接受（M1） |
 | [0011](adr/0011-kmp-aniyomi-port.md) | KMP 版 Aniyomi 大面积移植策略（取代 08 的里程碑排序） | 接受（A2-2 ~ A2-5 完成） |
+| [0012](adr/0012-desktop-video-backend-licensing.md) | 桌面视频后端的许可证边界（MPV 原生库 GPL-3.0） | **待决策** |
 
 ## 约定
 

@@ -2,6 +2,7 @@ package app.miyomu.local
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import app.miyomu.model.MediaType
 import java.io.File
 import java.nio.file.Files
 import java.util.zip.ZipEntry
@@ -74,6 +75,19 @@ class LocalLibraryScannerTest {
     fun `missing root returns empty scan`() {
         val books = LocalLibraryScanner().scan(FileLocalFileRef(File(root, "missing")))
         assertTrue(books.isEmpty())
+    }
+
+    @Test
+    fun `video files become video books`() {
+        writeFile(root, "episode 1.mp4", byteArrayOf(1))
+        writeFile(root, "episode 2.mkv", byteArrayOf(1))
+        writeFile(root, "cover.jpg", byteArrayOf(1))
+
+        val books = LocalLibraryScanner().scan(FileLocalFileRef(root))
+
+        assertEquals(listOf("episode 1", "episode 2"), books.map { it.title })
+        assertTrue(books.all { it.format == LocalBookFormat.VIDEO })
+        assertTrue(books.all { it.mediaType == MediaType.VIDEO })
     }
 
     private fun writeFile(parent: File, name: String, bytes: ByteArray) {

@@ -43,6 +43,7 @@ jobs:
           :shared:local:jvmTest
           :shared:reader-comic:jvmTest
           :shared:domain:jvmTest
+          :shared:player:jvmTest
           :shared:ui:jvmTest
       - name: Ported presentation layer (JVM)
         run: ./gradlew :shared:presentation:compileKotlinJvm
