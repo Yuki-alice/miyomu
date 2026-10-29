@@ -61,6 +61,9 @@ import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
 import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.reader.novel.NovelBookmark
+import app.miyomu.reader.novel.NovelBookmarkStore
+import app.miyomu.reader.novel.NovelBookSearch
 import app.miyomu.reader.novel.NovelReadingMode
 import app.miyomu.reader.novel.NovelReaderController
 import app.miyomu.reader.novel.NovelReaderPreferences
@@ -92,6 +95,7 @@ class NovelReaderScreen(
             initialChapterIndex = chapterIndex,
             initialCharOffset = charOffset,
             novels = graph.novels,
+            bookmarkStore = graph.novelBookmarks,
             data = graph.data,
             deviceId = graph.deviceId,
             nowMillis = graph.nowMillis,
@@ -117,6 +121,7 @@ fun NovelReaderContent(
     initialChapterIndex: Int,
     initialCharOffset: Int,
     novels: LocalNovelRepository,
+    bookmarkStore: NovelBookmarkStore,
     data: MiyomuData,
     deviceId: String,
     nowMillis: () -> Long,
@@ -140,11 +145,15 @@ fun NovelReaderContent(
     val lineHeight by remember(preferences) { preferences.lineHeight() }.asState(scope)
     val pagePadding by remember(preferences) { preferences.pagePadding() }.asState(scope)
     val paragraphSpacing by remember(preferences) { preferences.paragraphSpacing() }.asState(scope)
+    val warmFilter by remember(preferences) { preferences.warmFilter() }.asState(scope)
+    val volumeKeyPaging by remember(preferences) { preferences.volumeKeyPaging() }.asState(scope)
 
     val palette = theme.palette()
     val itemId = LibraryItem.idOf("local", book.id)
     var chromeVisible by remember { mutableStateOf(true) }
     var settingsVisible by remember { mutableStateOf(false) }
+    var catalogVisible by remember { mutableStateOf(false) }
+    var bookmarks by remember(book.id) { mutableStateOf(bookmarkStore.bookmarks(book.location)) }
 
     // Char offset of the reading position inside the current chapter. Re-synced from the
     // controller when a chapter loads (not keyed on chapterIndex: resuming inside chapter 0
@@ -168,6 +177,29 @@ fun NovelReaderContent(
                 ),
             )
             data.library.markViewed(itemId, nowMillis())
+        }
+    }
+
+    fun toggleBookmark() {
+        val offset = currentOffset.intValue
+        if (bookmarkStore.has(book.id, state.chapterIndex, offset)) {
+            bookmarks = bookmarkStore.remove(book.id, state.chapterIndex, offset)
+        } else {
+            val bookmark = NovelBookmark(
+                chapterIndex = state.chapterIndex,
+                offset = offset,
+                excerpt = excerptAt(state.text, offset),
+                createdAt = nowMillis(),
+            )
+            bookmarks = bookmarkStore.add(book.id, bookmark)
+        }
+    }
+
+    val searchInBook: suspend (String) -> List<NovelBookSearch.Match> = remember(book.id) {
+        { query ->
+            runCatching { novels.parse(book) }
+                .map { parsed -> NovelBookSearch.search(parsed.chapters, query) }
+                .getOrDefault(emptyList())
         }
     }
 
@@ -247,6 +279,41 @@ fun NovelReaderContent(
         scope.launch { listState.scrollToItem(paragraphIndexForOffset(paragraphs, offset)) }
     }
 
+    fun stepForward() {
+        when (readingMode) {
+            NovelReadingMode.PAGED -> pagedStep(+1)
+            NovelReadingMode.SCROLL -> scope.launch {
+                listState.animateScrollBy(containerSize.height * 0.85f)
+            }
+        }
+    }
+
+    fun stepBackward() {
+        when (readingMode) {
+            NovelReadingMode.PAGED -> pagedStep(-1)
+            NovelReadingMode.SCROLL -> scope.launch {
+                listState.animateScrollBy(-containerSize.height * 0.85f)
+            }
+        }
+    }
+
+    fun jumpTo(chapterIndex: Int, offset: Int) {
+        catalogVisible = false
+        if (chapterIndex == state.chapterIndex) {
+            currentOffset.intValue = offset
+            when (readingMode) {
+                NovelReadingMode.PAGED -> pages?.let { target ->
+                    scope.launch { pagerState.scrollToPage(target.pageIndexForOffset(offset)) }
+                }
+                NovelReadingMode.SCROLL -> scope.launch {
+                    listState.scrollToItem(paragraphIndexForOffset(paragraphs, offset))
+                }
+            }
+        } else {
+            controller.open(book, chapterIndex, offset)
+        }
+    }
+
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -259,34 +326,22 @@ fun NovelReaderContent(
             .focusable()
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                when (event.key) {
-                    Key.DirectionRight, Key.DirectionDown, Key.PageDown, Key.Spacebar -> {
-                        when (readingMode) {
-                            NovelReadingMode.PAGED -> {
-                                pagedStep(+1)
-                                true
-                            }
-                            NovelReadingMode.SCROLL -> {
-                                scope.launch {
-                                    listState.animateScrollBy(containerSize.height * 0.85f)
-                                }
-                                true
-                            }
-                        }
+                val forward = when (event.key) {
+                    Key.DirectionRight, Key.DirectionDown, Key.PageDown, Key.Spacebar -> true
+                    Key.VolumeDown -> volumeKeyPaging
+                    else -> false
+                }
+                val backward = when (event.key) {
+                    Key.DirectionLeft, Key.DirectionUp, Key.PageUp -> true
+                    Key.VolumeUp -> volumeKeyPaging
+                    else -> false
+                }
+                when {
+                    forward -> {
+                        stepForward(); true
                     }
-                    Key.DirectionLeft, Key.DirectionUp, Key.PageUp -> {
-                        when (readingMode) {
-                            NovelReadingMode.PAGED -> {
-                                pagedStep(-1)
-                                true
-                            }
-                            NovelReadingMode.SCROLL -> {
-                                scope.launch {
-                                    listState.animateScrollBy(-containerSize.height * 0.85f)
-                                }
-                                true
-                            }
-                        }
+                    backward -> {
+                        stepBackward(); true
                     }
                     else -> false
                 }
@@ -371,6 +426,7 @@ fun NovelReaderContent(
             },
             hasPreviousChapter = state.hasPreviousChapter,
             hasNextChapter = state.hasNextChapter,
+            bookmarked = bookmarkStore.has(book.id, state.chapterIndex, currentOffset.intValue),
             palette = palette,
             onBack = onBack,
             onPreviousChapter = controller::previousChapter,
@@ -387,13 +443,41 @@ fun NovelReaderContent(
                 }
             },
             onOpenSettings = { settingsVisible = true },
+            onOpenCatalog = { catalogVisible = true },
+            onToggleBookmark = { toggleBookmark() },
         )
+
+        // Warm (eye-comfort) overlay above everything, like Play Books' Night Light; a plain
+        // Box does not consume pointer events, so taps still reach the pager below.
+        if (warmFilter > 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFFF9800).copy(alpha = warmFilter * 0.08f))
+                    .testTag("novel-warm-filter"),
+            )
+        }
     }
 
     if (settingsVisible) {
         NovelReaderSettingsSheet(
             preferences = preferences,
             onDismiss = { settingsVisible = false },
+        )
+    }
+
+    if (catalogVisible) {
+        NovelCatalogSheet(
+            chapterTitles = state.chapterTitles,
+            currentChapterIndex = state.chapterIndex,
+            bookmarks = bookmarks,
+            search = searchInBook,
+            onJumpChapter = { index -> jumpTo(index, 0) },
+            onJumpMatch = { match -> jumpTo(match.chapterIndex, match.offset) },
+            onDeleteBookmark = { bookmark ->
+                bookmarks = bookmarkStore.remove(book.id, bookmark.chapterIndex, bookmark.offset)
+            },
+            onDismiss = { catalogVisible = false },
         )
     }
 }
@@ -437,7 +521,7 @@ private fun NovelPageView(
 @Composable
 private fun NovelScrollContent(
     paragraphs: List<Pair<Int, String>>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    listState: LazyListState,
     fontSize: Int,
     lineHeight: Float,
     pagePadding: Int,
@@ -492,6 +576,15 @@ private fun NovelReaderError(
             Text(stringResource(MR.strings.action_retry), color = palette.text)
         }
     }
+}
+
+internal fun excerptAt(text: String, offset: Int, radius: Int = 22): String {
+    if (text.isEmpty()) return ""
+    val start = (offset - radius / 2).coerceAtLeast(0)
+    val end = (offset + radius).coerceAtMost(text.length)
+    val prefix = if (start > 0) "…" else ""
+    val suffix = if (end < text.length) "…" else ""
+    return prefix + text.substring(start, end).replace('\n', ' ') + suffix
 }
 
 /** Paragraph whose range contains [offset]; clamps to the last paragraph. */

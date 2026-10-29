@@ -27,6 +27,15 @@ class NovelReaderPreferences(
     /** Extra spacing between paragraphs in dp. */
     fun paragraphSpacing() = store.getInt("novel_reader_paragraph_spacing", DEFAULT_PARAGRAPH_SPACING)
 
+    /**
+     * Warm (eye-comfort) overlay strength, 0 off, 1–3 increasing amber tint.
+     * Cross-platform pure-Compose overlay, the Play Books "Night Light" equivalent.
+     */
+    fun warmFilter() = store.getInt("novel_reader_warm_filter", FILTER_OFF)
+
+    /** Page with the hardware volume keys (Android; a no-op on desktop). */
+    fun volumeKeyPaging() = store.getBoolean("novel_reader_volume_key_paging", false)
+
     companion object {
         const val DEFAULT_FONT_SIZE = 18
         const val MIN_FONT_SIZE = 12
@@ -43,6 +52,9 @@ class NovelReaderPreferences(
         const val DEFAULT_PARAGRAPH_SPACING = 8
         const val MIN_PARAGRAPH_SPACING = 0
         const val MAX_PARAGRAPH_SPACING = 32
+
+        const val FILTER_OFF = 0
+        const val FILTER_MAX = 3
 
         fun clampFontSize(value: Int) = value.coerceIn(MIN_FONT_SIZE, MAX_FONT_SIZE)
         fun clampLineHeight(value: Float) = value.coerceIn(MIN_LINE_HEIGHT, MAX_LINE_HEIGHT)

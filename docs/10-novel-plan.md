@@ -89,13 +89,14 @@ shared/ui/novel      适配层:Novel → 合成 Manga/Chapter → 复用库/详�
 ./gradlew :shared:ui:jvmTest :shared:reader-comic:jvmTest :shared:presentation:compileKotlinJvm :desktopApp:compileKotlin :androidApp:assembleDebug
 ```
 
-## 7. 后续增强(Alpha 之后,按对标 Google Play Books 排序)
+## 7. 后续增强(按对标 Google Play Books 排序;2026-10-30 对标调研见 [11](11-novel-benchmark.md))
 
-1. **书内长按与注释**:选中文本、高亮/笔记/复制(需要文本选择 + 存储表)。
-2. **书签与目录跳转面板**:阅读器内呼出章节列表直接跳转;书签持久化(依赖章节表)。
-3. **翻页动画**:仿真/平移/无动画三种(平移已有,仿真需自绘翻页效果)。
-4. **EPUB 图片与脚注**:段落内的插图渲染;脚注弹层。
-5. **自动翻页与音量键翻页**;亮度滑条与蓝光滤镜(漫画阅读器 ColorFilter 已有先例)。
-6. **TTS 朗读**(M3 范围,依赖平台 TTS 抽象)。
-7. **流式 TXT 解析**:替换整文件解码(>128 MB 文件当前拒读)。
-8. **在线书源**(M3):JS 源协议的小说扩展。
+1. ~~**目录/书签/书内搜索**~~ ✅ 2026-10-30(目录面板 + JSON 偏好书签 + 全书搜索)
+2. ~~**护眼暖色滤镜 / 音量键翻页**~~ ✅ 2026-10-30
+3. **书内长按与注释**:选中文本、高亮/笔记(需要 Room 新表,建议等分支合并后统一动 schema)。
+4. **翻页动画**:覆盖/仿真 page delegate(平移已有)。
+5. **EPUB 图片与脚注**:解析层升级为内容块(text/image),分页器支持图片块;轻小说刚需。
+6. **自动翻页与亮度控制**(Android window attributes,expect/actual)。
+7. **TTS 朗读**(M3 范围,依赖平台 TTS 抽象)。
+8. **流式 TXT 解析**:替换整文件解码(>128 MB 文件当前拒读)。
+9. **在线书源**(M3):JS 源协议的小说扩展。

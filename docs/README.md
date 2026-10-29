@@ -13,6 +13,7 @@
 | [08 M1 任务重排](08-m1-task-plan.md) | M1 本地漫画/小说阅读器、共享 UI、Aniyomi 复用边界 | 里程碑排序被 ADR-0011 取代，工程细节仍可引用 |
 | [09 交接文档](09-handoff-2026-10-29.md) | KMP 版 Aniyomi 移植进度、环境、逐阶段替换记录 | 最新（2026-10-29） |
 | [10 小说端计划](10-novel-plan.md) | 双设备分工决策、小说参考仓库与许可边界、N1–N3 切片与实施记录 | N1–N3 完成（2026-10-30，`feature/novel`） |
+| [11 小说端对标调研](11-novel-benchmark.md) | 对标 Google Play Books / legado / NovelDokusha / Book's Story 的功能矩阵与优先级 | 本批功能已实现（2026-10-30） |
 | [Phase 0 清单](checklists/phase-0.md) | 可勾选的任务列表与命令 | 执行中 |
 | [Phase 1 M0 清单](checklists/phase-1-m0.md) | 工具链、Ktor/Cookie、标识符、CI | 核心完成 |
 | [Phase 1 M1 清单](checklists/phase-1-m1.md) | 共享 UI、本地库、漫画/小说阅读器 | 进行中 |

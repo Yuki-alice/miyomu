@@ -1015,4 +1015,16 @@
     <string name="novel_page_position">%1$d / %2$d</string>
     <string name="novel_previous_chapter">Previous chapter</string>
     <string name="novel_next_chapter">Next chapter</string>
+    <string name="novel_catalog">Contents</string>
+    <string name="novel_bookmarks">Bookmarks</string>
+    <string name="novel_search_in_book">Search chapters and content</string>
+    <string name="novel_add_bookmark">Add bookmark</string>
+    <string name="novel_remove_bookmark">Remove bookmark</string>
+    <string name="novel_no_bookmarks">No bookmarks yet</string>
+    <string name="novel_search_no_results">No matches</string>
+    <string name="novel_warm_filter">Warm filter</string>
+    <string name="novel_filter_low">Low</string>
+    <string name="novel_filter_mid">Medium</string>
+    <string name="novel_filter_high">Strong</string>
+    <string name="novel_volume_key_paging">Page with volume keys</string>
 </resources>

@@ -6,6 +6,7 @@ import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
 import app.miyomu.novel.LocalNovelRepository
 import app.miyomu.novel.NovelLibraryRepository
+import app.miyomu.reader.novel.NovelBookmarkStore
 import app.miyomu.reader.novel.NovelReaderPreferences
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -35,4 +36,6 @@ class MiyomuGraph(
     val readerPreferences: ReaderPreferences = ReaderPreferences(preferenceStore)
 
     val novelReaderPreferences: NovelReaderPreferences = NovelReaderPreferences(preferenceStore)
+
+    val novelBookmarks: NovelBookmarkStore = NovelBookmarkStore(preferenceStore)
 }

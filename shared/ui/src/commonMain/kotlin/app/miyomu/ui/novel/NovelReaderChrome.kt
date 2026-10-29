@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.NavigateBefore
 import androidx.compose.material.icons.outlined.NavigateNext
 import androidx.compose.material.icons.outlined.Tune
@@ -42,12 +45,15 @@ fun NovelReaderChrome(
     positionFraction: Float,
     hasPreviousChapter: Boolean,
     hasNextChapter: Boolean,
+    bookmarked: Boolean,
     palette: NovelPalette,
     onBack: () -> Unit,
     onPreviousChapter: () -> Unit,
     onNextChapter: () -> Unit,
     onPositionChange: (Float) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenCatalog: () -> Unit,
+    onToggleBookmark: () -> Unit,
 ) {
     if (!visible) return
     val chromeSurface = palette.background.copy(alpha = 0.96f)
@@ -80,6 +86,15 @@ fun NovelReaderChrome(
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.text.copy(alpha = 0.7f),
                     maxLines = 1,
+                )
+            }
+            IconButton(onClick = onToggleBookmark) {
+                Icon(
+                    if (bookmarked) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = stringResource(
+                        if (bookmarked) MR.strings.novel_remove_bookmark else MR.strings.novel_add_bookmark,
+                    ),
+                    tint = palette.text,
                 )
             }
         }
@@ -120,6 +135,13 @@ fun NovelReaderChrome(
                 Icon(
                     Icons.Outlined.NavigateNext,
                     contentDescription = stringResource(MR.strings.novel_next_chapter),
+                    tint = palette.text,
+                )
+            }
+            IconButton(onClick = onOpenCatalog) {
+                Icon(
+                    Icons.Outlined.FormatListBulleted,
+                    contentDescription = stringResource(MR.strings.novel_catalog),
                     tint = palette.text,
                 )
             }

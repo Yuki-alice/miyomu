@@ -16,6 +16,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,6 +69,8 @@ internal fun NovelReaderSettingsContent(
     val lineHeight by remember(preferences) { preferences.lineHeight() }.asState(scope)
     val pagePadding by remember(preferences) { preferences.pagePadding() }.asState(scope)
     val paragraphSpacing by remember(preferences) { preferences.paragraphSpacing() }.asState(scope)
+    val warmFilter by remember(preferences) { preferences.warmFilter() }.asState(scope)
+    val volumeKeyPaging by remember(preferences) { preferences.volumeKeyPaging() }.asState(scope)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
@@ -176,6 +179,44 @@ internal fun NovelReaderSettingsContent(
                 )
             },
         )
+
+        SettingsLabel(stringResource(MR.strings.novel_warm_filter))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = warmFilter == NovelReaderPreferences.FILTER_OFF,
+                onClick = { scope.launchSet(preferences.warmFilter(), NovelReaderPreferences.FILTER_OFF) },
+                label = { Text(stringResource(MR.strings.off)) },
+            )
+            FilterChip(
+                selected = warmFilter == 1,
+                onClick = { scope.launchSet(preferences.warmFilter(), 1) },
+                label = { Text(stringResource(MR.strings.novel_filter_low)) },
+            )
+            FilterChip(
+                selected = warmFilter == 2,
+                onClick = { scope.launchSet(preferences.warmFilter(), 2) },
+                label = { Text(stringResource(MR.strings.novel_filter_mid)) },
+            )
+            FilterChip(
+                selected = warmFilter == 3,
+                onClick = { scope.launchSet(preferences.warmFilter(), 3) },
+                label = { Text(stringResource(MR.strings.novel_filter_high)) },
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsLabel(stringResource(MR.strings.novel_volume_key_paging))
+            Switch(
+                checked = volumeKeyPaging,
+                onCheckedChange = { checked ->
+                    scope.launchSet(preferences.volumeKeyPaging(), checked)
+                },
+            )
+        }
     }
 }
 

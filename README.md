@@ -105,7 +105,8 @@ python3 tools/make_sample_library.py
 - 解析：TXT（UTF-8/BOM/GB18030 回退、中文章节正则、卷行折叠、128MB 上限）、EPUB（container→OPF spine→XHTML 段落、EPUB2/EPUB3 封面）。
 - 阅读器：分页（TextMeasurer 按段落度量、超长段落按行切片）与滚动（LazyColumn）双模式；字符偏移进度，续读精确到页。
 - 排版设置：字号、行距、页边距、段落间距、四档主题（浅色/羊皮纸/深色/纯黑），即改即生效，挂全局偏好。
-- chrome：顶栏（书名/章节）、底栏（位置滑条、上一章/下一章、设置）、点击翻页区、桌面键盘翻页。
+- 目录/书签/书内搜索：阅读器内呼出章节列表（标题过滤、当前章高亮）与书签列表；全书跨章节搜索直达「章节 + 偏移」；书签按书存 JSON 偏好（零 schema 冲突）。
+- 护眼暖色滤镜四档（Play Books Night Light 同类）与音量键翻页（Android 生效）；chrome：顶栏（书名/章节/书签）、底栏（位置滑条、上一章/下一章、目录、设置）、点击翻页区、桌面键盘翻页。
 
 截图：[小说库](evidence/novel-library.png) · [小说详情](evidence/novel-detail.png) · [小说阅读器](evidence/novel-reader.png)
 

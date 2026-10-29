@@ -1,17 +1,21 @@
 package app.miyomu.ui.novel
 
 import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.swipeLeft
 import app.miyomu.data.JvmMiyomuDatabaseFactory
@@ -49,7 +53,7 @@ class NovelFlowTest {
         }
         append("第二章 转折\n")
         repeat(100) { index ->
-            append("第二章的第 $index 个段落,继续撑长正文,保证章节边界可以导航。\n")
+            append("这是第二章的第 $index 个段落,继续撑长正文,保证章节边界可以导航。\n")
         }
     }
 
@@ -200,6 +204,68 @@ class NovelFlowTest {
                         node.config.getOrNull(SemanticsProperties.Text)
                             ?.any { label -> label.contains("/") && !label.startsWith("1 /") } == true
                     }
+            }
+        } finally {
+            data.close()
+        }
+    }
+
+    @Test
+    fun novelCatalogJumpsChapters() = runComposeUiTest {
+        writeNovelFixture()
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "catalog.db").absolutePath))
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试小说").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("测试小说").performClick()
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第一章 起点").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第一章 起点").performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            // Open the catalog via the bottom-bar button and jump to chapter 2.
+            val catalogLabels = listOf("目录", "Contents")
+            waitUntil(timeoutMillis = 10_000) {
+                catalogLabels.any { label ->
+                    onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+                }
+            }
+            onNodeWithContentDescription(
+                catalogLabels.first { label ->
+                    onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+                },
+            ).performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-catalog-chapters").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第二章 转折").performClick()
+
+            // The reader moved to chapter 2: page 0 reappears and the top bar shows the title.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第二章 转折").fetchSemanticsNodes().isNotEmpty()
+            }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-0").fetchSemanticsNodes().isNotEmpty()
             }
         } finally {
             data.close()

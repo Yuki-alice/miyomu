@@ -26,6 +26,8 @@ class NovelReaderController(
         val chapterCount: Int = 0,
         val chapterIndex: Int = 0,
         val chapterTitle: String? = null,
+        /** All chapter titles (null = untitled), for the catalog panel. */
+        val chapterTitles: List<String?> = emptyList(),
         val text: String = "",
         /** Char offset to restore inside the current chapter; consumed once by the UI. */
         val pendingOffset: Int = 0,
@@ -76,6 +78,7 @@ class NovelReaderController(
                 chapterCount = chapters.size,
                 chapterIndex = safeIndex,
                 chapterTitle = chapter?.title,
+                chapterTitles = chapters.map { it.title },
                 text = chapter?.text().orEmpty(),
                 pendingOffset = if (safeIndex == index) charOffset else 0,
             )

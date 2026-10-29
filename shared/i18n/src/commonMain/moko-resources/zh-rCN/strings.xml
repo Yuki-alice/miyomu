@@ -869,4 +869,16 @@
     <string name="novel_page_position">%1$d / %2$d</string>
     <string name="novel_previous_chapter">上一章</string>
     <string name="novel_next_chapter">下一章</string>
+    <string name="novel_catalog">目录</string>
+    <string name="novel_bookmarks">书签</string>
+    <string name="novel_search_in_book">搜索章节与内容</string>
+    <string name="novel_add_bookmark">添加书签</string>
+    <string name="novel_remove_bookmark">移除书签</string>
+    <string name="novel_no_bookmarks">暂无书签</string>
+    <string name="novel_search_no_results">无匹配结果</string>
+    <string name="novel_warm_filter">护眼滤镜</string>
+    <string name="novel_filter_low">弱</string>
+    <string name="novel_filter_mid">中</string>
+    <string name="novel_filter_high">强</string>
+    <string name="novel_volume_key_paging">音量键翻页</string>
 </resources>
