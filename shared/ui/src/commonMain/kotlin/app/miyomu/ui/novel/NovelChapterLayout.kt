@@ -6,21 +6,27 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
+import app.miyomu.novel.NovelBlock
 import kotlinx.coroutines.yield
 
 /**
  * A chapter laid out for the paged reader. Paragraphs are measured individually (one
  * [TextLayoutResult] each) and stacked into pages; a paragraph taller than the page is
- * split by its own lines. Global char offsets are preserved so progress survives
- * configuration changes.
+ * split by its own lines. Illustrations are pieces with a height derived from the image
+ * aspect ratio. Global char offsets are preserved so progress survives configuration
+ * changes (images do not advance the text offset).
  */
 data class NovelChapterPages(
     val chapterIndex: Int,
     val pieces: List<Piece>,
     val pages: List<Page>,
 ) {
-    /** One measured paragraph (or a chunk of an unbroken mega-paragraph). */
-    data class Piece(val startChar: Int, val layout: TextLayoutResult)
+    /** One measured paragraph (or a chunk of an unbroken mega-paragraph), or an image. */
+    data class Piece(
+        val startChar: Int,
+        val layout: TextLayoutResult?,
+        val image: NovelBlock.Image?,
+    )
 
     /** Where a piece (or a slice of it) sits on a page. */
     data class Placement(
@@ -77,12 +83,13 @@ internal fun splitParagraphs(text: String): List<Pair<Int, String>> {
 }
 
 /**
- * Measures [text] into [NovelChapterPages]. Yields between paragraphs so a long chapter
- * cannot starve the frame. [paragraphSpacingPx] is the gap inserted between paragraphs.
+ * Measures a chapter's [NovelBlock]s into [NovelChapterPages]. Yields between text
+ * paragraphs so a long chapter cannot starve the frame. [paragraphSpacingPx] is the gap
+ * inserted between text pieces and around images.
  */
 internal suspend fun measureChapter(
     chapterIndex: Int,
-    text: String,
+    blocks: List<NovelBlock>,
     measurer: TextMeasurer,
     density: Density,
     usableWidthPx: Int,
@@ -97,21 +104,35 @@ internal suspend fun measureChapter(
     )
 
     val pieces = mutableListOf<NovelChapterPages.Piece>()
-    for ((start, paragraph) in splitParagraphs(text)) {
-        var chunkStart = 0
-        while (chunkStart < paragraph.length) {
-            val chunk = paragraph.substring(
-                chunkStart,
-                (chunkStart + SECTION_MAX_CHARS).coerceAtMost(paragraph.length),
+    for (block in blocks) {
+        when (block) {
+            is NovelBlock.Text -> {
+                var chunkStart = 0
+                val paragraph = block.text
+                while (chunkStart < paragraph.length) {
+                    val chunk = paragraph.substring(
+                        chunkStart,
+                        (chunkStart + SECTION_MAX_CHARS).coerceAtMost(paragraph.length),
+                    )
+                    val layout = measurer.measure(
+                        text = chunk,
+                        style = style,
+                        constraints = Constraints(maxWidth = usableWidthPx.coerceAtLeast(1)),
+                        maxLines = Int.MAX_VALUE,
+                    )
+                    pieces += NovelChapterPages.Piece(
+                        startChar = block.startChar + chunkStart,
+                        layout = layout,
+                        image = null,
+                    )
+                    chunkStart += SECTION_MAX_CHARS
+                }
+            }
+            is NovelBlock.Image -> pieces += NovelChapterPages.Piece(
+                startChar = block.startChar,
+                layout = null,
+                image = block,
             )
-            val layout = measurer.measure(
-                text = chunk,
-                style = style,
-                constraints = Constraints(maxWidth = usableWidthPx.coerceAtLeast(1)),
-                maxLines = Int.MAX_VALUE,
-            )
-            pieces += NovelChapterPages.Piece(start + chunkStart, layout)
-            chunkStart += SECTION_MAX_CHARS
         }
         yield()
     }
@@ -119,12 +140,23 @@ internal suspend fun measureChapter(
     return NovelChapterPages(
         chapterIndex = chapterIndex,
         pieces = pieces,
-        pages = paginatePieces(pieces, usableHeightPx, paragraphSpacingPx),
+        pages = paginatePieces(pieces, usableWidthPx, usableHeightPx, paragraphSpacingPx),
     )
+}
+
+/** Height an image piece occupies at full [widthPx]; unknown aspect falls back to 3:4. */
+internal fun imagePieceHeight(image: NovelBlock.Image, widthPx: Int, pageHeightPx: Int): Int {
+    val natural = if (image.width > 0 && image.height > 0) {
+        (widthPx.toLong() * image.height / image.width).toInt()
+    } else {
+        widthPx * 4 / 3
+    }
+    return natural.coerceIn(1, pageHeightPx)
 }
 
 private fun paginatePieces(
     pieces: List<NovelChapterPages.Piece>,
+    usableWidthPx: Int,
     pageHeightPx: Int,
     paragraphSpacingPx: Int,
 ): List<NovelChapterPages.Page> {
@@ -144,7 +176,11 @@ private fun paginatePieces(
     }
 
     for ((pieceIndex, piece) in pieces.withIndex()) {
-        val pieceHeight = piece.layout.size.height.toFloat()
+        val pieceHeight = when {
+            piece.layout != null -> piece.layout.size.height.toFloat()
+            piece.image != null -> imagePieceHeight(piece.image, usableWidthPx, pageHeightPx).toFloat()
+            else -> 0f
+        }
 
         if (pieceHeight <= pageHeight) {
             if (current.isNotEmpty() && yInPage + pieceHeight > pageHeight) closePage()
@@ -157,9 +193,9 @@ private fun paginatePieces(
             )
             yInPage += pieceHeight + spacing
         } else {
-            // A paragraph taller than the page is sliced by its own lines; each slice
+            // A piece taller than the page is sliced by its own lines; each slice
             // opens a fresh page.
-            val layout = piece.layout
+            val layout = piece.layout ?: continue
             var line = 0
             while (line < layout.lineCount) {
                 closePage()

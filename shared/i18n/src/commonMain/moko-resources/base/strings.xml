@@ -1027,4 +1027,6 @@
     <string name="novel_filter_mid">Medium</string>
     <string name="novel_filter_high">Strong</string>
     <string name="novel_volume_key_paging">Page with volume keys</string>
+    <string name="novel_illustration">Illustration</string>
+    <string name="novel_image_error">[image unavailable]</string>
 </resources>

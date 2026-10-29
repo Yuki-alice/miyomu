@@ -2,6 +2,7 @@ package app.miyomu.reader.novel
 
 import app.miyomu.local.LocalBook
 import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelBlock
 import app.miyomu.novel.NovelParseException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,8 @@ class NovelReaderController(
         /** All chapter titles (null = untitled), for the catalog panel. */
         val chapterTitles: List<String?> = emptyList(),
         val text: String = "",
+        /** Content blocks of the current chapter (text paragraphs interleaved with images). */
+        val blocks: List<NovelBlock> = emptyList(),
         /** Char offset to restore inside the current chapter; consumed once by the UI. */
         val pendingOffset: Int = 0,
     ) {
@@ -80,6 +83,7 @@ class NovelReaderController(
                 chapterTitle = chapter?.title,
                 chapterTitles = chapters.map { it.title },
                 text = chapter?.text().orEmpty(),
+                blocks = chapter?.blocks().orEmpty(),
                 pendingOffset = if (safeIndex == index) charOffset else 0,
             )
         }.onSuccess { mutableState.value = it }

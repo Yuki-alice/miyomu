@@ -272,6 +272,120 @@ class NovelFlowTest {
         }
     }
 
+    @Test
+    fun novelEpubIllustrationFlow() = runComposeUiTest {
+        val epubFile = File(root, "测试画集.epub")
+        epubFile.writeBytes(epubWithIllustration())
+
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "art.db").absolutePath))
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试画集").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("测试画集").performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第一章 插画").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第一章 插画").performClick()
+
+            // The illustrated chapter paginates with the image block reserved.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-0").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(600)
+            capture("novel-epub-art")
+
+            // The illustration takes its own page after the leading text.
+            onNodeWithTag("novel-reader-pager").performTouchInput { swipeLeft() }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-1").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(600)
+            capture("novel-epub-art-2")
+        } finally {
+            data.close()
+        }
+    }
+
+    /** Builds a minimal EPUB whose only chapter contains one real PNG illustration. */
+    private fun epubWithIllustration(): ByteArray {
+        val illustration = java.io.ByteArrayOutputStream().use { out ->
+            val image = java.awt.image.BufferedImage(24, 36, java.awt.image.BufferedImage.TYPE_INT_RGB)
+            val graphics = image.createGraphics()
+            graphics.color = java.awt.Color.BLUE
+            graphics.fillRect(0, 0, 24, 36)
+            graphics.dispose()
+            javax.imageio.ImageIO.write(image, "png", out)
+            out.toByteArray()
+        }
+        fun zipOf(vararg entries: Pair<String, ByteArray>): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(out).use { zip ->
+                entries.forEach { (name, bytes) ->
+                    zip.putNextEntry(java.util.zip.ZipEntry(name))
+                    zip.write(bytes)
+                    zip.closeEntry()
+                }
+            }
+            return out.toByteArray()
+        }
+        fun t(text: String) = text.toByteArray(Charsets.UTF_8)
+
+        val opf = """
+            <?xml version="1.0"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+              <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                <dc:title>测试画集</dc:title>
+                <dc:creator>插画师</dc:creator>
+              </metadata>
+              <manifest>
+                <item id="c1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+                <item id="art" href="art/illus.png" media-type="image/png"/>
+              </manifest>
+              <spine><itemref idref="c1"/></spine>
+            </package>
+        """.trimIndent()
+        val container = """
+            <?xml version="1.0"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+              <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+            </container>
+        """.trimIndent()
+        val chapter = """
+            <html><head><title>第一章 插画</title></head><body>
+            <h1>第一章 插画</h1>
+            <p>这是插画前的段落,用来验证图片块前后的文本排布。</p>
+            <div><img src="art/illus.png"/></div>
+            <p>这是插画后的段落,翻页应当同时容纳文本与图片块。</p>
+            </body></html>
+        """.trimIndent()
+
+        return zipOf(
+            "META-INF/container.xml" to t(container),
+            "OEBPS/content.opf" to t(opf),
+            "OEBPS/ch1.xhtml" to t(chapter),
+            "OEBPS/art/illus.png" to illustration,
+        )
+    }
+
     private fun androidx.compose.ui.test.ComposeUiTest.capture(name: String) {
         val directory = File("build/reports/miyomu-ui").apply { mkdirs() }
         val bitmap = onRoot().captureToImage().asSkiaBitmap()

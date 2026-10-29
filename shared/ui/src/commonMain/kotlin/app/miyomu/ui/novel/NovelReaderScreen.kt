@@ -1,5 +1,6 @@
 package app.miyomu.ui.novel
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,12 +49,14 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +66,7 @@ import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
 import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelBlock
 import app.miyomu.reader.novel.NovelBookmark
 import app.miyomu.reader.novel.NovelBookmarkStore
 import app.miyomu.reader.novel.NovelBookSearch
@@ -68,6 +74,7 @@ import app.miyomu.reader.novel.NovelReadingMode
 import app.miyomu.reader.novel.NovelReaderController
 import app.miyomu.reader.novel.NovelReaderPreferences
 import app.miyomu.reader.novel.NovelReaderTheme
+import app.miyomu.ui.decodeImageBitmap
 import app.miyomu.ui.MiyomuGraph
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -77,6 +84,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
+import kotlin.math.roundToInt
 
 /** Port of the reader entry as a full-screen Voyager Screen (mirrors the manga ReaderScreen). */
 class NovelReaderScreen(
@@ -212,15 +220,15 @@ fun NovelReaderContent(
 
     val pages by produceState<NovelChapterPages?>(
         null,
-        state.text, state.chapterIndex, containerSize, fontSize, lineHeight, paddingPx, spacingPx,
+        state.blocks, state.chapterIndex, containerSize, fontSize, lineHeight, paddingPx, spacingPx,
     ) {
-        if (state.text.isEmpty() || containerSize == IntSize.Zero) {
+        if (state.blocks.isEmpty() || containerSize == IntSize.Zero) {
             value = null
             return@produceState
         }
         value = measureChapter(
             chapterIndex = state.chapterIndex,
-            text = state.text,
+            blocks = state.blocks,
             measurer = measurer,
             density = density,
             usableWidthPx = (containerSize.width - 2 * paddingPx).coerceAtLeast(1),
@@ -257,26 +265,26 @@ fun NovelReaderContent(
     }
 
     // ---- Scroll mode machinery ----
-    val paragraphs = remember(state.text) { splitParagraphs(state.text) }
+    val scrollContent = remember(state.blocks) { scrollItems(state.blocks) }
     val listState = rememberLazyListState()
-    LaunchedEffect(paragraphs, readingMode, state.chapterIndex) {
-        if (readingMode == NovelReadingMode.SCROLL && paragraphs.isNotEmpty()) {
-            listState.scrollToItem(paragraphIndexForOffset(paragraphs, currentOffset.intValue))
+    LaunchedEffect(scrollContent, readingMode, state.chapterIndex) {
+        if (readingMode == NovelReadingMode.SCROLL && scrollContent.isNotEmpty()) {
+            listState.scrollToItem(scrollItemIndexForOffset(scrollContent, currentOffset.intValue))
         }
     }
     LaunchedEffect(listState, readingMode) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .drop(1)
             .collect { index ->
-                if (readingMode == NovelReadingMode.SCROLL && index in paragraphs.indices) {
-                    currentOffset.intValue = paragraphs[index].first
+                if (readingMode == NovelReadingMode.SCROLL && index in scrollContent.indices) {
+                    currentOffset.intValue = scrollContent[index].offset
                 }
             }
     }
     fun scrollSeek(fraction: Float) {
-        if (paragraphs.isEmpty()) return
+        if (scrollContent.isEmpty()) return
         val offset = (fraction * state.text.length).toInt()
-        scope.launch { listState.scrollToItem(paragraphIndexForOffset(paragraphs, offset)) }
+        scope.launch { listState.scrollToItem(scrollItemIndexForOffset(scrollContent, offset)) }
     }
 
     fun stepForward() {
@@ -306,7 +314,7 @@ fun NovelReaderContent(
                     scope.launch { pagerState.scrollToPage(target.pageIndexForOffset(offset)) }
                 }
                 NovelReadingMode.SCROLL -> scope.launch {
-                    listState.scrollToItem(paragraphIndexForOffset(paragraphs, offset))
+                    listState.scrollToItem(scrollItemIndexForOffset(scrollContent, offset))
                 }
             }
         } else {
@@ -359,7 +367,7 @@ fun NovelReaderContent(
             )
 
             readingMode == NovelReadingMode.SCROLL -> NovelScrollContent(
-                paragraphs = paragraphs,
+                items = scrollContent,
                 listState = listState,
                 fontSize = fontSize,
                 lineHeight = lineHeight,
@@ -492,6 +500,14 @@ private fun NovelPageView(
     modifier: Modifier = Modifier,
 ) {
     val page = chapterPages.pages[pageIndex.coerceIn(0, chapterPages.pages.lastIndex)]
+    // Illustrations on this page are decoded once per page composition; the snippet-sized
+    // images typical of EPUB books keep this well under a frame.
+    val bitmaps = remember(page.placements) {
+        page.placements
+            .map { it.pieceIndex to chapterPages.pieces[it.pieceIndex].image }
+            .filter { it.second != null }
+            .associate { (pieceIndex, image) -> pieceIndex to decodeImageBitmap(image!!.bytes) }
+    }
     Box(
         modifier = modifier
             .padding(pagePadding.dp)
@@ -508,11 +524,19 @@ private fun NovelPageView(
                 drawRect(palette.background)
                 page.placements.forEach { placement ->
                     val piece = chapterPages.pieces[placement.pieceIndex]
-                    drawText(
-                        textLayoutResult = piece.layout,
-                        color = palette.text,
-                        topLeft = Offset(0f, placement.yInPage - placement.topInPiece),
-                    )
+                    val bitmap = bitmaps[placement.pieceIndex]
+                    when {
+                        bitmap != null -> drawImage(
+                            image = bitmap,
+                            dstOffset = IntOffset(0, placement.yInPage.roundToInt()),
+                            dstSize = IntSize(size.width.roundToInt(), placement.height.roundToInt()),
+                        )
+                        piece.layout != null -> drawText(
+                            textLayoutResult = piece.layout,
+                            color = palette.text,
+                            topLeft = Offset(0f, placement.yInPage - placement.topInPiece),
+                        )
+                    }
                 }
             },
     )
@@ -520,7 +544,7 @@ private fun NovelPageView(
 
 @Composable
 private fun NovelScrollContent(
-    paragraphs: List<Pair<Int, String>>,
+    items: List<ScrollItem>,
     listState: LazyListState,
     fontSize: Int,
     lineHeight: Float,
@@ -544,18 +568,43 @@ private fun NovelScrollContent(
         verticalArrangement = Arrangement.spacedBy(paragraphSpacing.dp),
     ) {
         items(
-            count = paragraphs.size,
-            key = { index -> paragraphs[index].first },
+            count = items.size,
+            key = { index -> "${items[index].offset}-${items[index].ordinal}" },
         ) { index ->
-            Text(
-                text = paragraphs[index].second,
-                color = palette.text,
-                style = TextStyle(
-                    fontSize = fontSize.sp,
-                    lineHeight = (fontSize * lineHeight).sp,
-                ),
-            )
+            when (val item = items[index]) {
+                is ScrollItem.TextItem -> Text(
+                    text = item.text,
+                    color = palette.text,
+                    style = TextStyle(
+                        fontSize = fontSize.sp,
+                        lineHeight = (fontSize * lineHeight).sp,
+                    ),
+                )
+                is ScrollItem.ImageItem -> NovelScrollImage(item.image)
+            }
         }
+    }
+}
+
+@Composable
+private fun NovelScrollImage(image: NovelBlock.Image) {
+    val bitmap = remember(image) { decodeImageBitmap(image.bytes) }
+    if (bitmap != null) {
+        val aspect = if (image.width > 0 && image.height > 0) {
+            image.width.toFloat() / image.height.toFloat()
+        } else {
+            3f / 4f
+        }
+        Image(
+            bitmap = bitmap,
+            contentDescription = stringResource(MR.strings.novel_illustration),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(aspect),
+            contentScale = ContentScale.Fit,
+        )
+    } else {
+        Text(text = stringResource(MR.strings.novel_image_error), color = Color.Gray)
     }
 }
 
@@ -587,15 +636,42 @@ internal fun excerptAt(text: String, offset: Int, radius: Int = 22): String {
     return prefix + text.substring(start, end).replace('\n', ' ') + suffix
 }
 
-/** Paragraph whose range contains [offset]; clamps to the last paragraph. */
-internal fun paragraphIndexForOffset(paragraphs: List<Pair<Int, String>>, offset: Int): Int {
-    if (paragraphs.isEmpty()) return 0
+/** One LazyColumn entry in scroll mode: a text line or an inline illustration. */
+internal sealed interface ScrollItem {
+    val offset: Int
+    val ordinal: String
+
+    data class TextItem(override val offset: Int, val text: String) : ScrollItem {
+        override val ordinal: String get() = "t"
+    }
+
+    data class ImageItem(override val offset: Int, val image: NovelBlock.Image) : ScrollItem {
+        override val ordinal: String get() = "i${image.startChar}"
+    }
+}
+
+internal fun scrollItems(blocks: List<NovelBlock>): List<ScrollItem> = buildList {
+    for (block in blocks) {
+        when (block) {
+            is NovelBlock.Text -> {
+                for ((start, line) in splitParagraphs(block.text)) {
+                    add(ScrollItem.TextItem(block.startChar + start, line))
+                }
+            }
+            is NovelBlock.Image -> add(ScrollItem.ImageItem(block.startChar, block))
+        }
+    }
+}
+
+/** Item whose range contains [offset]; clamps to the last item. */
+internal fun scrollItemIndexForOffset(items: List<ScrollItem>, offset: Int): Int {
+    if (items.isEmpty()) return 0
     var low = 0
-    var high = paragraphs.lastIndex
+    var high = items.lastIndex
     var result = 0
     while (low <= high) {
         val mid = (low + high) / 2
-        if (paragraphs[mid].first <= offset) {
+        if (items[mid].offset <= offset) {
             result = mid
             low = mid + 1
         } else {

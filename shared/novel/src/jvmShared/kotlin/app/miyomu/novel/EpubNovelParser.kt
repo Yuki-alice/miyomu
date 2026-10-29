@@ -9,11 +9,13 @@ import java.util.zip.ZipInputStream
 
 /**
  * Parses an EPUB file into chapters: `META-INF/container.xml` → OPF package → spine
- * documents → plain text. Cover extraction follows EPUB 2 (`meta name="cover"`) and
- * EPUB 3 (`properties` containing `cover-image`). Paragraphs are the text of block
- * elements joined with newlines; CSS, images and footnotes are out of scope for v1
- * (see docs/10-novel-plan.md). Extraction behavior was cross-checked against Myne's
- * EPUB reader (Apache-2.0).
+ * documents → content blocks. Body markup is walked in document order so text paragraphs
+ * and `<img>`/`<image>` illustrations interleave the way they appear in the book (the
+ * light-novel case); image dimensions come from the file header so the reader can reserve
+ * space before decoding. Cover extraction follows EPUB 2 (`meta name="cover"`) and EPUB 3
+ * (`properties` containing `cover-image`). CSS, footnotes and CSS-based layout are out of
+ * scope for v1 (docs/10). Extraction behavior was cross-checked against Myne's EPUB reader
+ * (Apache-2.0).
  */
 class EpubNovelParser {
 
@@ -46,10 +48,11 @@ class EpubNovelParser {
             val resolved = resolveHref(baseDir, href)
             val docText = zipEntryText(bytes, resolved) ?: return@mapIndexedNotNull null
             val doc = Ksoup.parse(docText, "")
-            val body = extractBody(doc) ?: return@mapIndexedNotNull null
+            val content = chapterBlocks(doc, resolved.substringBeforeLast('/', ""), bytes)
+            if (content.isEmpty()) return@mapIndexedNotNull null
             EpubChapter(
                 title = docTitleOf(doc) ?: defaultTitle(index),
-                value = body,
+                content = content,
             )
         }
 
@@ -72,10 +75,73 @@ class EpubNovelParser {
             ?.attr("full-path")
             ?.takeIf { it.isNotBlank() }
 
-    private fun coverHrefOf(
-        opf: Document,
-        manifest: Map<String, ManifestItem>,
-    ): String? {
+    /** Pre-order walk of the spine document body, interleaving paragraphs and illustrations. */
+    private fun chapterBlocks(doc: Document, baseDir: String, epubBytes: ByteArray): List<NovelBlock> {
+        val body = doc.body() ?: return emptyList()
+        val sink = mutableListOf<Raw>()
+        walk(body, baseDir, epubBytes, sink)
+        if (sink.none { it is Raw.Text }) {
+            // Degenerate documents without recognizable block markup still keep their text.
+            val fallback = body.text().trim()
+            if (fallback.isNotBlank()) sink.add(Raw.Text(fallback))
+        }
+
+        var offset = 0
+        val blocks = mutableListOf<NovelBlock>()
+        for (raw in sink) {
+            when (raw) {
+                is Raw.Text -> {
+                    blocks += NovelBlock.Text(offset, raw.text)
+                    offset += raw.text.length + 1 // +1 for the joining newline in text()
+                }
+                is Raw.Image -> blocks += NovelBlock.Image(
+                    startChar = offset,
+                    bytes = raw.bytes,
+                    format = raw.format,
+                    width = raw.width,
+                    height = raw.height,
+                )
+            }
+        }
+        return blocks
+    }
+
+    private fun walk(el: Element, baseDir: String, epubBytes: ByteArray, sink: MutableList<Raw>) {
+        val name = el.normalName()
+        if (name == "img" || name == "image") {
+            imageOf(el, baseDir, epubBytes)?.let(sink::add)
+            return
+        }
+        val hasBlockChild = el.children().any { it.normalName() in BLOCK_TAGS }
+        if (name in TEXT_TAGS && !hasBlockChild) {
+            val text = el.text().trim()
+            if (text.isNotBlank()) {
+                sink += Raw.Text(text)
+                return
+            }
+            // Empty paragraph that may still carry an illustration — fall through.
+        }
+        el.children().forEach { walk(it, baseDir, epubBytes, sink) }
+    }
+
+    private fun imageOf(el: Element, baseDir: String, epubBytes: ByteArray): Raw.Image? {
+        val src = el.attr("src").ifBlank { el.attr("xlink:href") }.ifBlank { el.attr("href") }
+        if (src.isBlank()) return null
+        val resolved = resolveHref(baseDir, src)
+        val imageBytes: ByteArray = runCatching { zipEntryBytes(epubBytes, resolved) }
+            .getOrNull()
+            ?.takeIf { it.isNotEmpty() }
+            ?: return null
+        val info = ImageHeaderSniffer.sniff(imageBytes)
+        return Raw.Image(
+            bytes = imageBytes,
+            format = info?.format ?: "img",
+            width = info?.width ?: 0,
+            height = info?.height ?: 0,
+        )
+    }
+
+    private fun coverHrefOf(opf: Document, manifest: Map<String, ManifestItem>): String? {
         // EPUB 2: <meta name="cover" content="<manifest id>" />.
         val epub2Id = opf.select("meta")
             .firstOrNull { it.attr("name") == "cover" }
@@ -89,22 +155,6 @@ class EpubNovelParser {
     private fun docTitleOf(doc: Document): String? =
         doc.body()?.selectFirst("h1, h2, h3, h4")?.text()?.trim()?.takeIf { it.isNotEmpty() }
             ?: doc.selectFirst("title")?.text()?.trim()?.takeIf { it.isNotEmpty() }
-
-    /**
-     * Text of the body as block paragraphs joined with `\n`. Inline markup collapses
-     * into the paragraph text; documents without block elements fall back to the
-     * whole body text.
-     */
-    private fun extractBody(doc: Document): String? {
-        val body = doc.body() ?: return null
-        val blocks = body.select(BLOCK_SELECTOR)
-        if (blocks.isEmpty()) {
-            return body.text().trim().takeIf { it.isNotEmpty() }
-        }
-        return blocks.mapNotNull { it.text().trim().takeIf(String::isNotEmpty) }
-            .joinToString("\n")
-            .takeIf { it.isNotEmpty() }
-    }
 
     private fun resolveHref(baseDir: String, href: String): String {
         val decoded = runCatching { URLDecoder.decode(href, "UTF-8") }.getOrDefault(href)
@@ -132,9 +182,17 @@ class EpubNovelParser {
 
     private class EpubChapter(
         override val title: String?,
-        private val value: String,
+        private val content: List<NovelBlock>,
     ) : NovelChapter {
-        override fun text(): String = value
+        override fun text(): String =
+            content.filterIsInstance<NovelBlock.Text>().joinToString("\n") { it.text }
+
+        override fun blocks(): List<NovelBlock> = content
+    }
+
+    private sealed class Raw {
+        data class Text(val text: String) : Raw()
+        data class Image(val bytes: ByteArray, val format: String, val width: Int, val height: Int) : Raw()
     }
 
     private data class ManifestItem(val href: String, val mediaType: String, val properties: String)
@@ -145,8 +203,14 @@ class EpubNovelParser {
         const val CONTAINER_PATH = "META-INF/container.xml"
         const val DEFAULT_BOOK_TITLE = "EPUB"
 
-        // Headings are excluded: the first one becomes the chapter title and would
-        // otherwise duplicate it at the top of the body text.
-        const val BLOCK_SELECTOR = "p, blockquote, li"
+        val TEXT_TAGS = setOf(
+            "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "li", "dd", "dt", "pre",
+            "figcaption", "div", "section", "article", "aside", "header", "footer", "td",
+        )
+        val BLOCK_TAGS = setOf(
+            "p", "div", "section", "article", "figure", "header", "footer", "aside",
+            "blockquote", "li", "ul", "ol", "table", "tr", "td", "th", "dl", "main", "nav",
+            "center", "h1", "h2", "h3", "h4", "h5", "h6", "body",
+        )
     }
 }

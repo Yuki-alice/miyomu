@@ -881,4 +881,6 @@
     <string name="novel_filter_mid">中</string>
     <string name="novel_filter_high">强</string>
     <string name="novel_volume_key_paging">音量键翻页</string>
+    <string name="novel_illustration">插画</string>
+    <string name="novel_image_error">[图片不可用]</string>
 </resources>
