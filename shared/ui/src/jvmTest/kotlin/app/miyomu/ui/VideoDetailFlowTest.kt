@@ -15,6 +15,7 @@ import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.player.isVideoPlaybackAvailable
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.junit.jupiter.api.Test
@@ -70,11 +71,18 @@ class VideoDetailFlowTest {
             }
             onNodeWithText(actionLabel).performClick()
 
-            // Desktop has no MPV runtime bundled (ADR-0012), so the player explains itself.
-            waitUntil(timeoutMillis = 5_000) {
-                onAllNodesWithText("此版本未内置桌面播放器").fetchSemanticsNodes().isNotEmpty()
+            // macOS/Windows bundle the LGPL MPV runtime (ADR-0012 option A); Linux does not.
+            if (isVideoPlaybackAvailable()) {
+                waitUntil(timeoutMillis = 5_000) {
+                    onAllNodesWithContentDescription("返回").fetchSemanticsNodes().isNotEmpty()
+                }
+                capture("video-player")
+            } else {
+                waitUntil(timeoutMillis = 5_000) {
+                    onAllNodesWithText("此版本未内置桌面播放器").fetchSemanticsNodes().isNotEmpty()
+                }
+                capture("video-player-unavailable")
             }
-            capture("video-player-unavailable")
         } finally {
             data.close()
         }

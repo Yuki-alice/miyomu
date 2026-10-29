@@ -3,7 +3,8 @@ package app.miyomu.player
 /**
  * Desktop playback depends on the MPV native binaries being on the classpath. mediamp's loader
  * looks for `mpv-natives-<os>-<arch>.txt`; probing for the same resource lets the UI say why
- * playback is unavailable instead of throwing from the player constructor.
+ * playback is unavailable instead of throwing from the player constructor. macOS/Windows ship
+ * the runtime (ADR-0012 option A); Linux does not, so the probe stays false there.
  */
 actual fun isVideoPlaybackAvailable(): Boolean =
     runCatching {

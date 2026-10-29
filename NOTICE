@@ -34,8 +34,14 @@ Adapted material currently covers:
 The video player in `shared/player` is built on mediamp
 (https://github.com/open-ani/mediamp), Copyright OpenAni and contributors,
 licensed under Apache-2.0, with AndroidX Media3/ExoPlayer (Apache-2.0) as the
-Android backend. No MPV/FFmpeg native binaries are distributed with Miyomu;
-see docs/adr/0012-desktop-video-backend-licensing.md.
+Android backend.
+
+Desktop (macOS arm64/x64, Windows x64/arm64) bundles the mediamp MPV runtime
+artifacts. They contain libmpv (https://github.com/mpv-player/mpv) and FFmpeg
+(https://ffmpeg.org), built without GPL components and distributed under
+LGPL-2.1-or-later, dynamically linked and replaceable. The Linux runtime is
+GPL-3.0 and is not distributed. See
+docs/adr/0012-desktop-video-backend-licensing.md for details.
 
 Android-only dependencies (Injekt DI, Context-based helpers, Android View
 viewer core, SQLDelight data layer, Material motion, drawable resources) are

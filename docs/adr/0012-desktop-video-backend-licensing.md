@@ -1,6 +1,6 @@
 # ADR-0012: 桌面视频后端的许可证边界
 
-- 状态：**待决策**（2026-10-29）
+- 状态：**接受**（2026-10-29，方案 A）
 - 关联：[ADR-0004](0004-licensing-and-clean-room.md)（Apache-2.0 与 GPL 清洁边界）· [ADR-0005](0005-mediamp-player.md)（mediamp 播放器）· [ADR-0011](0011-kmp-aniyomi-port.md)（Phase B）
 
 ## 背景
@@ -43,3 +43,28 @@ Phase B 引入 mediamp 作为跨平台播放器（ADR-0005）。在落地时发�
 
 - 在决策前，桌面端打开视频文件会看到明确的"未内置桌面播放器"说明页，不会崩溃。
 - 无论选哪个方案，`NOTICE` 都需要登记 MPV/FFmpeg 组件及其许可证，并说明获取源码的途径。
+
+## 决策（2026-10-29）：方案 A — 按平台分发 LGPL 运行时
+
+- `shared/player` 的 `jvmMain` 只依赖 macOS（arm64/x64）与 Windows（x64/arm64）的
+  `mediamp-mpv-runtime-*`；**不依赖** `mediamp-mpv-runtime-linux-x64` 与聚合包
+  `mediamp-mpv-runtime`（两者都是 GPL-3.0）。
+- 这些平台包的 POM 标注 Apache-2.0，实际内容包含 libmpv 与 FFmpeg，许可证为
+  **Apache-2.0 + LGPL-2.1-or-later**（mediamp README 的许可矩阵），动态链接、可替换。
+- `isVideoPlaybackAvailable()` 继续按 `mpv-natives-<os>-<arch>.txt` 探测；Linux 缺少运行时，
+  播放页显示说明而不是崩溃。
+- LGPL 合规：根 `NOTICE` 登记 MPV/FFmpeg 组件与源码地址；原生库以独立 `.jar`/`.dylib`/`.dll`
+  分发，用户可替换；不修改 LGPL 组件源码。
+
+## 验证
+
+- `shared/player` 的 `DesktopRuntimeTest`：macOS 上探测到运行时、`MediampPlayer` 可启动，
+  并用自造的 2 秒 `test-video.mp4` 播放到 >500ms（`currentPositionMillis`）。
+- `shared/ui` 的 `VideoDetailFlowTest`：桌面端点击“开始”进入真实播放器（运行时可用时），
+  Linux 分支回退到说明页。
+- CI 的 desktop job 在 macOS 上运行 `:shared:player:jvmTest`，覆盖上述冒烟测试。
+
+## 仍不接受的做法
+
+- 依赖聚合包 `mediamp-mpv-runtime` 或 Linux 运行时（GPL-3.0），除非项目整体转为 GPL。
+- 把 MPV/FFmpeg 二进制静态链接进应用。

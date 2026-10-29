@@ -277,10 +277,11 @@ private fun PlayerUnavailable(onBack: () -> Unit) {
             modifier = Modifier.align(Alignment.Center).padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(text = "此版本未内置桌面播放器", color = Color.White)
+            Text(text = "此平台未内置桌面播放器", color = Color.White)
             Text(
-                text = "桌面端的 MPV 原生库是 GPL-3.0，与项目的 Apache-2.0 许可证冲突，" +
-                    "因此默认不打包。详见 docs/adr/0012-desktop-video-backend-licensing.md。",
+                text = "macOS / Windows 版本内置 MPV 运行时；Linux 的 MPV 构建是 GPL-3.0，" +
+                    "与项目的 Apache-2.0 冲突，因此不分发。详见 " +
+                    "docs/adr/0012-desktop-video-backend-licensing.md。",
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodySmall,
             )

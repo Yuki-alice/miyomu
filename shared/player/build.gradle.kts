@@ -47,10 +47,13 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(libs.mediamp.mpv)
-            // The native MPV binaries are NOT bundled: the aggregate `mediamp-mpv-runtime`
-            // artifact is GPL-3.0 (its Linux build), which would force the desktop app out of
-            // Apache-2.0. See docs/adr/0012-desktop-video-backend-licensing.md.
-            // Desktop playback therefore requires a runtime the distributor adds explicitly.
+            // macOS/Windows runtimes are Apache-2.0 + LGPL-2.1-or-later (dynamically linked,
+            // replaceable). The Linux runtime and the aggregate artifact are GPL-3.0, so Linux
+            // is deliberately left without a bundled runtime. See ADR-0012 (option A).
+            runtimeOnly(libs.mediamp.mpv.runtime.macos.arm64)
+            runtimeOnly(libs.mediamp.mpv.runtime.macos.x64)
+            runtimeOnly(libs.mediamp.mpv.runtime.windows.x64)
+            runtimeOnly(libs.mediamp.mpv.runtime.windows.arm64)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

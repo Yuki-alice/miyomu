@@ -4,9 +4,8 @@ package app.miyomu.player
  * Whether this build can actually play video.
  *
  * Android ships the ExoPlayer backend (Apache-2.0) as a normal dependency, so it is always
- * available. The desktop backend needs the native MPV binaries, which Miyomu does not bundle
- * because the aggregate `mediamp-mpv-runtime` artifact is GPL-3.0 — see
- * docs/adr/0012-desktop-video-backend-licensing.md. A distributor that accepts those terms (or
- * points the player at a system MPV via `MpvMediampPlayer.prepareLibraries`) flips this to true.
+ * available. Desktop bundles the MPV runtime only for macOS and Windows: those artifacts are
+ * LGPL-2.1-or-later, while the Linux runtime (and the aggregate artifact) is GPL-3.0 and is
+ * deliberately not distributed. See docs/adr/0012-desktop-video-backend-licensing.md.
  */
 expect fun isVideoPlaybackAvailable(): Boolean

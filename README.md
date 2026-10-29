@@ -4,7 +4,7 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> 状态：**Phase A2 + Phase B 完成**：书架、漫画/视频详情、阅读器、播放器全部跑在移植的 Aniyomi 界面上；Android 本地视频可按目录多集/季组织，可播放、切音轨/字幕、逐集续播。桌面播放器受许可证决策阻断，见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
+> 状态：**Phase A2 + Phase B 完成**：书架、漫画/视频详情、阅读器、播放器全部跑在移植的 Aniyomi 界面上；Android 与桌面（macOS/Windows）都能播放本地视频，按目录多集/季组织、切音轨/字幕、逐集续播。桌面运行时方案见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)（方案 A）。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)。
 > 许可证：Apache-2.0（2026-10-28 确认，见 [ADR-0004](docs/adr/0004-licensing-and-clean-room.md)）
 > 生产构建位于仓库根目录；Phase 0/1 验证代码在 `experiments/`，使用独立 Gradle 构建。
 
@@ -137,7 +137,7 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 
 点开进入 anime 风格的详情页，点“开始/继续观看”进入播放器，支持播放/暂停、进度条、双击左右 ±10 秒、倍速、音轨与内嵌字幕轨选择；进度按集保存，退出后再打开从上次位置继续。封面会优先使用目录里的 `cover`/`folder`/`poster` 图片（或与视频同名的图片）。详情页的筛选按钮可设置过滤、排序、显示方式与季徽标，设置按书保存。
 
-Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端需要 MPV 原生库，而聚合运行时是 GPL-3.0，默认不打包（见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)）；桌面打开视频会显示说明页而不是崩溃。
+Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端 macOS（arm64/x64）与 Windows（x64/arm64）内置 MPV 运行时（Apache-2.0 + LGPL-2.1+，见 [ADR-0012](docs/adr/0012-desktop-video-backend-licensing.md)）；Linux 的 MPV 构建是 GPL-3.0，不随应用分发，打开视频会显示说明页而不是崩溃。
 
 ## 源运行时（M2）
 
@@ -163,7 +163,7 @@ Android 使用 ExoPlayer（`mediamp-exoplayer`）。桌面端需要 MPV 原生�
 - 真实 Venera 源尚未零修改验证；源运行时兼容层已冻结到 M2。
 - 视频（Android）：倍速与轨道选择不持久化；不加载外挂字幕文件；无集数导航、手势调亮度/音量、锁屏与画中画。
 - 视频详情：混合目录（直接视频 + 季子目录）只取直接视频；没有下一集/自动连播；下载与追踪入口未接线；剧集书签无存储（已看由播放进度 ≥85% 推导）；设置对话框的“设为默认”暂为空实现。
-- 桌面视频未启用：MPV 原生运行时是 GPL-3.0，等待 ADR-0012 决策。
+- Linux 桌面不提供视频：MPV 的 Linux 运行时是 GPL-3.0，与 Apache-2.0 定位冲突（ADR-0012 方案 A）。
 - 下载/追踪/同步在后续里程碑。
 
 ## 文档
