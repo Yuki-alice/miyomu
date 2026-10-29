@@ -16,6 +16,7 @@
 | `:shared:network` | Ktor 3.6、OkHttp/CIO、持久 Cookie |
 | `:shared:source-api` | `ComicSource` / `ManagedComicSource` |
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
+| `:shared:source-novel` | legado 书源 JSON 导入、规则求值器(搜索/详情/目录/正文读路径) |
 | `:shared:data` | Room 2.8.5 + KSP；库/进度 schema 与 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:novel` | 小说解析：TXT（编码回退/章节正则）、EPUB（OPF spine/XHTML/封面）、小说库扫描 |
@@ -102,7 +103,7 @@ python3 tools/make_sample_library.py
 
 小说 UI 是 Miyomu 自写层：复用移植组件的方式与漫画一致（合成 `Manga` 接入网格与详情），阅读器渲染层按小说场景全新实现。
 
-- 解析：TXT（UTF-8/BOM/GB18030 回退、中文章节正则、卷行折叠、128MB 上限）、EPUB（container→OPF spine→XHTML 段落、EPUB2/EPUB3 封面）。
+- 解析：TXT（编码回退、章节正则）、EPUB（spine→内容块、封面）、FB2（分节章节、base64 插画与封面）、HTML、Markdown；文内插画按内容块渲染（EPUB `<img>`、FB2 `<binary>`），分页预留图片空间、滚动模式混排。
 - 阅读器：分页（TextMeasurer 按段落度量、超长段落按行切片）与滚动（LazyColumn）双模式；字符偏移进度，续读精确到页。
 - 排版设置：字号、行距、页边距、段落间距、四档主题（浅色/羊皮纸/深色/纯黑），即改即生效，挂全局偏好。
 - 目录/书签/书内搜索：阅读器内呼出章节列表（标题过滤、当前章高亮）与书签列表；全书跨章节搜索直达「章节 + 偏移」；书签按书存 JSON 偏好（零 schema 冲突）。
@@ -153,6 +154,7 @@ Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 sc
 ## 已知限制
 
 - 本地漫画阅读器当前支持目录与 ZIP/CBZ；7Z/PDF 尚未接入。
+- legado 书源当前只有规则引擎与读路径（对已取回响应求值），书源仓库管理 UI 与网络接线进应用在下一批；MOBI/AZW3 暂不支持。
 - 阅读器支持 LTR/RTL/纵向/Webtoon、双页、缩放平移、进度续读；裁边开关会记偏好但尚未按它裁图。
 - **章节的已读/书签标记没有持久化**：本地库没有章节表，详情页的"标记已读""书签""删除章节"和阅读器的书签按钮只改界面状态。
 - 分类系统未移植：书架只有一个合成分类，分类 Tab 恒隐藏；多选后的批量操作没有数据层支撑。
