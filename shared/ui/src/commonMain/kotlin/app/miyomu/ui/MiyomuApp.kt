@@ -11,6 +11,7 @@ import app.miyomu.data.MiyomuData
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.repo.SourceInstallManager
 import app.miyomu.ui.home.HomeScreen
 import app.miyomu.ui.library.installLocalCoverLoader
 import app.miyomu.ui.library.localCoverResolver
@@ -31,6 +32,7 @@ fun MiyomuApp(
      * previews fall back to an in-memory store.
      */
     preferenceStore: PreferenceStore? = null,
+    sourceInstalls: SourceInstallManager,
     onOpenLibraryFolder: (() -> Unit)? = null,
 ) {
     val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
@@ -44,6 +46,7 @@ fun MiyomuApp(
             deviceId = deviceId,
             nowMillis = nowMillis,
             preferenceStore = store,
+            sourceInstalls = sourceInstalls,
             onOpenLibraryFolder = onOpenLibraryFolder,
         )
     }

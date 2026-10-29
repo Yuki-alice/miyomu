@@ -19,6 +19,7 @@ import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.File
+import kotlinx.io.files.Path
 import javax.imageio.ImageIO
 
 @OptIn(ExperimentalTestApi::class)
@@ -59,6 +61,7 @@ class MiyomuAppTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                 )
             }
 
@@ -134,6 +137,7 @@ class MiyomuAppTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 2_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                 )
             }
 

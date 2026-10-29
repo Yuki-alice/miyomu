@@ -4,6 +4,7 @@ import app.miyomu.data.MiyomuData
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.repo.SourceInstallManager
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.library.service.LibraryPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
@@ -23,6 +24,7 @@ class MiyomuGraph(
     val deviceId: String,
     val nowMillis: () -> Long,
     val preferenceStore: PreferenceStore,
+    val sourceInstalls: SourceInstallManager,
     val onOpenLibraryFolder: (() -> Unit)? = null,
 ) {
     val libraryPreferences: LibraryPreferences = LibraryPreferences(preferenceStore)

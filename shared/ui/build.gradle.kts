@@ -35,6 +35,7 @@ kotlin {
             api(project(":shared:local"))
             api(project(":shared:reader-comic"))
             api(project(":shared:player"))
+            api(project(":shared:source-repo"))
             api(project(":shared:data"))
             api(project(":shared:presentation-core"))
             // Ported Aniyomi screens (ADR-0011). Wired here so the module stays in the build

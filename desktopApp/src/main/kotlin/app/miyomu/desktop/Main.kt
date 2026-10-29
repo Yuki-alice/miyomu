@@ -12,9 +12,11 @@ import app.miyomu.domain.preferences.JsonPreferenceStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.MiyomuApp
 import java.awt.Desktop
 import java.io.File
+import kotlinx.io.files.Path
 
 fun main() = application {
     Window(
@@ -37,6 +39,9 @@ fun main() = application {
         val comics = remember { FileLocalComicRepository() }
         val library = remember { LocalLibraryRepository() }
         val preferences = remember { JsonPreferenceStore(File(home, "preferences.json")) }
+        val sourceInstalls = remember {
+            FileSourceInstallManager(Path(File(home, "sources").absolutePath))
+        }
 
         DisposableEffect(data) {
             onDispose { data.close() }
@@ -50,6 +55,7 @@ fun main() = application {
             deviceId = "desktop",
             nowMillis = System::currentTimeMillis,
             preferenceStore = preferences,
+            sourceInstalls = sourceInstalls,
             onOpenLibraryFolder = {
                 runCatching { Desktop.getDesktop().open(libraryRoot) }
             },

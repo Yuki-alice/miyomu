@@ -15,12 +15,14 @@ import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.player.isVideoPlaybackAvailable
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import kotlinx.io.files.Path
 
 @OptIn(ExperimentalTestApi::class)
 class VideoDetailFlowTest {
@@ -45,6 +47,7 @@ class VideoDetailFlowTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                 )
             }
 
@@ -107,6 +110,7 @@ class VideoDetailFlowTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                 )
             }
 
@@ -148,6 +152,7 @@ class VideoDetailFlowTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                 )
             }
 
@@ -188,6 +193,7 @@ class VideoDetailFlowTest {
                     root = FileLocalFileRef(root),
                     deviceId = "test",
                     nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
                 )
             }
 

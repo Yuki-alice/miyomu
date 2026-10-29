@@ -33,6 +33,7 @@ import app.miyomu.model.MediaType
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.entries.MangaDetailScreen
 import app.miyomu.ui.entries.VideoDetailScreen
+import app.miyomu.ui.sources.SourceRepositoryScreen
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -61,13 +62,16 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                 }
             }
         }
-        val tabs = remember(graph, onOpenBook) {
+        val onOpenSources: () -> Unit = remember(navigator) {
+            { navigator.push(SourceRepositoryScreen(graph)) }
+        }
+        val tabs = remember(graph, onOpenBook, onOpenSources) {
             listOf(
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph),
                 MangaHistoryTab(graph, onOpenBook),
                 BrowseTab(graph),
-                MoreTab(graph),
+                MoreTab(graph, onOpenSources),
             )
         }
 

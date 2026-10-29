@@ -1,5 +1,6 @@
 package app.miyomu.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
@@ -25,7 +27,10 @@ import app.miyomu.ui.MiyomuGraph
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 
-class MoreTab(private val graph: MiyomuGraph) : Tab {
+class MoreTab(
+    private val graph: MiyomuGraph,
+    private val onOpenSources: () -> Unit,
+) : Tab {
 
     override val options: TabOptions
         @Composable get() = TabOptions(index = 4u, title = "更多")
@@ -40,6 +45,13 @@ class MoreTab(private val graph: MiyomuGraph) : Tab {
             )
             MoreRow(icon = Icons.Outlined.FolderOpen, title = "本地库", subtitle = graph.root.location)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            MoreRow(
+                icon = Icons.Outlined.Extension,
+                title = "源仓库",
+                subtitle = "添加索引 JSON，安装 JS 源",
+                onClick = onOpenSources,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MoreRow(icon = Icons.Outlined.Settings, title = "阅读设置", subtitle = "阅读模式、方向与排版（后续）")
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MoreRow(icon = Icons.Outlined.Info, title = "关于 Miyomu", subtitle = "0.1.0 · Apache-2.0")
@@ -48,9 +60,17 @@ class MoreTab(private val graph: MiyomuGraph) : Tab {
 }
 
 @Composable
-private fun MoreRow(icon: ImageVector, title: String, subtitle: String) {
+private fun MoreRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: (() -> Unit)? = null,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
