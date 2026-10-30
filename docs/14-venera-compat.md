@@ -1,6 +1,6 @@
 # 14 Venera 源零改验证
 
-> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes`、cookie API 与异步 rejection 兜底均已补齐，**13/13 构造成功、13/13 静态兼容**；hitomi 已在桌面 JVM 跑通真站 search → details → pages，Android 与其余源待验。
+> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes`、cookie API 与异步 rejection 兜底均已补齐，**13/13 构造成功、13/13 静态兼容**；hitomi 已在桌面 JVM 与 Android 模拟器跑通真站 search → details → pages（含图片加载），其余源待验。
 > 关联：[ADR-0008](adr/0008-venera-source-runtime.md)（源运行时）、[ADR-0003](adr/0003-js-extension-runtime.md)、[03 风险登记](03-risk-register.md) R4
 
 ## 为什么需要这份验证
@@ -56,14 +56,16 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 
 | 源 | 结果 | 说明 |
 |---|---|---|
-| hitomi.js | **PASS** | search 25 条 → details 1 章 → pages 30 页；本机网络可达 |
+| hitomi.js | **PASS** | search 25 条 → details 1 章 → pages 30 页；桌面 JVM 与 Android 模拟器均通过，图片正常渲染 |
 | comick.js | 环境阻塞 | HTTP 522（站点/边缘） |
 | manga_dex.js | 环境阻塞 | TLS `ProtocolVersion` alert（本机网络） |
 
-hitomi 这次真站往返暴露并修复了两个适配缺陷：源不调用 `dispose()` 时会撞上 16 个
+hitomi 这次真站往返暴露并修复了三个适配缺陷：源不调用 `dispose()` 时会撞上 16 个
 `HtmlDocument` 硬上限（现在到上限淘汰最旧文档）；单画廊源只返回 `maxPage`/`thumbnails`、
-不返回章节（现在合成一个默认章节，并在取页时映射回 `epId=null`）。
+不返回章节（现在合成一个默认章节，并在取页时映射回 `epId=null`）；图片 CDN 需要源声明的
+`Referer`（现在取页时调用 `onImageLoad` 并把 URL/headers 带进 `PageRef`）。
 comick / manga_dex 的失败发生在网络/站点层，与适配无关；换网络后可重跑。
+真站截图含第三方内容，不提交到仓库。
 
 ## 已补齐的 API
 
@@ -80,6 +82,7 @@ comick / manga_dex 的失败发生在网络/站点层，与适配无关；换网
 | `Network.fetchBytes` | 1 个源（hitomi） | 二进制响应；宿主返回 `status`/小写 `headers`/`body(ArrayBuffer)`，body 经 token 暂存避免把二进制塞进 JSON |
 | `Network.setCookies/getCookies/deleteCookies` | 6 个源 | 复用持久 cookie jar；URL 支持裸域名，`deleteCookies` 按 URL 匹配清除 |
 | 未处理 Promise rejection | 1 个源（jm） | 包装源实例的异步方法，给返回的 Promise 挂 no-op catch；`await` 方仍能收到 rejection |
+| `onImageLoad` | 1 个源（hitomi） | 取页时调用源钩子，合并 `url`/`headers` 到 `PageRef`；兼容字符串与对象两种 page 形状 |
 
 ## 剩余缺口
 
@@ -96,6 +99,6 @@ comick / manga_dex 的失败发生在网络/站点层，与适配无关；换网
 
 ## 已知边界
 
-- 构造与静态 API 面已覆盖；真站往返目前只验了 hitomi（桌面 JVM，2026-10-30）。其余源与 Android 端仍待验；真站可用性受站点稳定性、反爬与地区影响，不属于"兼容性"。逐源冒烟仍是手动 canary 的事。
+- 构造与静态 API 面已覆盖；真站往返目前只验了 hitomi（桌面 JVM + Android 模拟器，2026-10-30）。其余源仍待验；真站可用性受站点稳定性、反爬与地区影响，不属于"兼容性"。逐源冒烟仍是手动 canary 的事。
 - 参考源集合在 `reference/` 本地保存，**不提交**（第三方脚本，许可证与内容均不属于本项目）。文档只记录测量结果与文件名。
 - 清单会随上游 `init.js` 变化失效；`tools/venera_compat.py` 每次从当前 preamble 重新推导，因此换 preamble 后重跑即可得到新结论。

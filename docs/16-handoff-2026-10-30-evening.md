@@ -7,9 +7,9 @@
 ## 1. 一句话状态
 
 CI 门禁已恢复并全绿；三种媒介同仓；**204 个 JVM 测试全绿**；Venera 参考源
-**13/13 零改构造 + 13/13 静态 API 全兼容**，hitomi 已在桌面 JVM 跑通真站
-search → details → pages。按用户 2026-10-30 的决定，**打包/发布延后**，
-近期目标是完成度而非出产物。
+**13/13 零改构造 + 13/13 静态 API 全兼容**，hitomi 已在桌面 JVM 与 Android 模拟器
+跑通真站 search → details → pages（含图片渲染）。按用户 2026-10-30 的决定，
+**打包/发布延后**，近期目标是完成度而非出产物。
 
 ## 2. 这一批提交做了什么
 
@@ -22,6 +22,7 @@ search → details → pages。按用户 2026-10-30 的决定，**打包/发布�
 | `65f815e` | 回归：`await` 方仍能收到 rejection |
 | `1c79480` | UI 测试竞态：删除前清空搜索过滤 |
 | `32816b8` | 真站暴露的两个适配缺陷：DOM 上限淘汰最旧文档；单画廊源合成默认章节 |
+| `c40dd68` | `onImageLoad` 钩子：把源声明的图片 URL/headers 带进 `PageRef`（hitomi 的 Referer） |
 | 文档 | `docs/14` 结果更新、README/AGENTS 状态同步、本文件 |
 
 ## 3. 验证基线
@@ -49,8 +50,9 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 ```
 
 当前：**13/13 真实源零改构造成功**；静态审计 **13 个真实源全部 OK、0 缺口**
-（`_template_` 另计）。`reference/` 仍是本地 gitignored 目录，换机器需自行克隆，
-否则兼容测试会 skip。
+（`_template_` 另计）。真站：hitomi 在桌面 JVM 与 Android 模拟器均通过
+（search → details → 30 页含图片，2026-10-30）；截图含第三方内容，不入库。
+`reference/` 仍是本地 gitignored 目录，换机器需自行克隆，否则兼容测试会 skip。
 
 ## 4. 非显然的坑
 
@@ -72,12 +74,14 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 7. **单画廊源没有 `chapters`**：hitomi 只返回 `maxPage`/`thumbnails`。适配层合成
    `SingleChapterId` 的默认章节，取页时把它映射回 `epId=null`；改 `JsComicSource.pages`
    时保留这个映射。
+8. **图片 CDN 依赖源声明的 headers**：hitomi 图片不带 `Referer` 会 404。取页时必须调用
+   `onImageLoad` 并把 `url`/`headers` 带进 `PageRef`，不能只取 `result.images` 的字符串。
 
 ## 5. 下一步队列（按完成度）
 
 | 顺序 | 任务 | 说明 |
 |---|---|---|
-| 1 | 真实源桌面 + Android 真站往返 | hitomi 桌面 JVM 已跑通 search → details → pages（2026-10-30）；Android 端与 comick/manga_dex 仍待验（后两者本机网络/站点不可达），留 `evidence/` |
+| 1 | 真实源桌面 + Android 真站往返 | hitomi 桌面 JVM + Android 模拟器均已跑通 search → details → pages（含图片，2026-10-30）；comick/manga_dex 本机网络/站点不可达，其余源待验。真站截图含第三方内容，不入库 |
 | 2 | 大库性能基准（1,000 部 / 10,000 章） | 启动、书架滚动、全局搜索、DB 查询；设预算并修热点 |
 | 3 | 产品完整性 | 小说发现/分类页、`nextContentUrl`、在线正文搜索；播放器 MediaSession/PiP/锁屏；本地 7z/PDF；备份补设置与分类 |
 | 4 | canary 自动化 / Windows job | 把手动 `-Pcanary` 变成定期任务；Windows MPV 与安装包验证 |
