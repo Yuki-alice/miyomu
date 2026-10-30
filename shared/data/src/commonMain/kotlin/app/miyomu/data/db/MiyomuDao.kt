@@ -114,6 +114,9 @@ interface MiyomuDao {
     @Query("DELETE FROM library_item")
     suspend fun clearAllLibrary()
 
+    @Query("DELETE FROM video_resolve_cache")
+    suspend fun clearResolveCache()
+
     @Query("SELECT * FROM video_resolve_cache WHERE key = :key LIMIT 1")
     suspend fun resolveEntry(key: String): VideoResolveEntity?
 

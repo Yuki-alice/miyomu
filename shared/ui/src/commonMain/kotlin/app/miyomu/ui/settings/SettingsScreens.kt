@@ -8,8 +8,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,8 +74,18 @@ class SettingsMainRoute(private val graph: MiyomuGraph) : Screen {
                     }
                 }
                 item {
+                    SettingsEntry(Icons.Outlined.Download, "下载") {
+                        navigator.push(SettingsDownloadRoute(graph))
+                    }
+                }
+                item {
                     SettingsEntry(Icons.Outlined.CloudSync, "备份与同步") {
                         navigator.push(app.miyomu.ui.backup.BackupSyncRoute(graph))
+                    }
+                }
+                item {
+                    SettingsEntry(Icons.Outlined.Settings, "数据与存储") {
+                        navigator.push(SettingsDataRoute(graph))
                     }
                 }
                 item {

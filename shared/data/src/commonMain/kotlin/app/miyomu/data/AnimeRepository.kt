@@ -20,6 +20,9 @@ interface AnimeRepository {
     fun observeEpisodes(itemId: String): Flow<List<EpisodeRecord>>
     suspend fun episodes(itemId: String): List<EpisodeRecord>
 
+    /** Removes every episode row incl. seen/bookmark marks (data settings). */
+    suspend fun clearAll()
+
     /**
      * Upserts `episodes` and deletes stored keys not present in the list. Marks (seen/bookmark)
      * of surviving keys are preserved, so a refresh never wipes user state.
@@ -49,6 +52,9 @@ interface ChapterRepository {
     suspend fun setRead(itemId: String, keys: List<String>, read: Boolean)
     suspend fun setBookmarked(itemId: String, keys: List<String>, bookmarked: Boolean)
     suspend fun clear(itemId: String)
+
+    /** Removes every chapter row incl. read/bookmark marks (data settings). */
+    suspend fun clearAll()
 }
 
 interface VideoResolveRepository {
@@ -56,6 +62,9 @@ interface VideoResolveRepository {
     suspend fun get(key: String, maxAgeMillis: Long, now: Long): ResolvedVideo?
     suspend fun put(key: String, video: ResolvedVideo, now: Long)
     suspend fun clearExpired(now: Long, maxAgeMillis: Long)
+
+    /** Removes every cached resolve (data settings). */
+    suspend fun clearAll()
 }
 
 internal fun EpisodeEntity.toRecord(): EpisodeRecord = EpisodeRecord(

@@ -35,6 +35,9 @@ interface DownloadStore {
 
     fun deleteChapter(itemId: String, chapterKey: String)
 
+    /** Removes every downloaded chapter (data settings). */
+    fun clearAll()
+
     fun pageSource(itemId: String, chapterKey: String, chapterTitle: String): app.miyomu.local.ReaderPageSource?
 }
 

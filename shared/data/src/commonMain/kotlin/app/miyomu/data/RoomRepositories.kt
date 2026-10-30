@@ -70,6 +70,10 @@ internal class RoomProgressRepository(
     override suspend fun clearEntry(itemId: String, entryId: String) {
         dao.clearProgressEntry(itemId, entryId)
     }
+
+    override suspend fun clearAll() {
+        dao.clearAllProgress()
+    }
 }
 
 internal class RoomAnimeRepository(
@@ -81,6 +85,10 @@ internal class RoomAnimeRepository(
 
     override suspend fun episodes(itemId: String): List<EpisodeRecord> =
         dao.episodes(itemId).map(EpisodeEntity::toRecord)
+
+    override suspend fun clearAll() {
+        dao.clearAllEpisodes()
+    }
 
     override suspend fun replaceEpisodes(itemId: String, episodes: List<EpisodeRecord>, fetchedAt: Long) {
         val existing = dao.episodes(itemId).associateBy { it.key }
@@ -158,6 +166,10 @@ internal class RoomChapterRepository(
     override suspend fun clear(itemId: String) {
         dao.clearChapters(itemId)
     }
+
+    override suspend fun clearAll() {
+        dao.clearAllChapters()
+    }
 }
 
 internal class RoomVideoResolveRepository(
@@ -179,6 +191,10 @@ internal class RoomVideoResolveRepository(
                 fetchedAt = now,
             ),
         )
+    }
+
+    override suspend fun clearAll() {
+        dao.clearResolveCache()
     }
 
     override suspend fun clearExpired(now: Long, maxAgeMillis: Long) {

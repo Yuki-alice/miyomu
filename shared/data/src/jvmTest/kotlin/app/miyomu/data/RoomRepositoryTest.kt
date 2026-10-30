@@ -185,6 +185,43 @@ class RoomRepositoryTest {
     }
 
     @Test
+    fun clearAllWipesHistoryMarksAndCache() = runBlocking {
+        val itemId = "html_fixture:demo-1"
+        data.progress.save(
+            ReadingProgress(
+                itemId = itemId,
+                entryId = "c1",
+                kind = ProgressKind.PAGE,
+                position = 1.0,
+                updatedAt = 100,
+                deviceId = "test",
+            ),
+        )
+        data.chapters.replaceChapters(
+            itemId,
+            listOf(ChapterRecord(key = "c1", name = "第1话", url = "c1", sourceOrder = 0)),
+            fetchedAt = 100,
+        )
+        data.chapters.setRead(itemId, listOf("c1"), read = true)
+        data.anime.replaceEpisodes(
+            "local:show",
+            listOf(EpisodeRecord(key = "e1", name = "E01", url = "e1", sourceOrder = 0)),
+            fetchedAt = 100,
+        )
+        data.videoResolve.put("e1", ResolvedVideo(), now = 100)
+
+        data.progress.clearAll()
+        data.chapters.clearAll()
+        data.anime.clearAll()
+        data.videoResolve.clearAll()
+
+        assertEquals(emptyList(), data.progress.all(itemId))
+        assertEquals(emptyList(), data.chapters.chapters(itemId))
+        assertEquals(emptyList(), data.anime.episodes("local:show"))
+        assertNull(data.videoResolve.get("e1", maxAgeMillis = Long.MAX_VALUE, now = 0))
+    }
+
+    @Test
     fun resolveCacheRespectsTtl() = runBlocking {
         val video = ResolvedVideo(
             streams = listOf(ResolvedStream(url = "https://cdn.example.invalid/e1.m3u8", quality = "1080P")),

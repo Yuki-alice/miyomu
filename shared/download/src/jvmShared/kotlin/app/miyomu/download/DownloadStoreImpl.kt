@@ -24,6 +24,10 @@ class FileDownloadStore(
         chapterDir(itemId, chapterKey).deleteRecursively()
     }
 
+    override fun clearAll() {
+        root.listFiles()?.forEach { it.deleteRecursively() }
+    }
+
     fun chapterDir(itemId: String, chapterKey: String): File =
         File(root, "${itemId.hash32()}/${chapterKey.hash32()}")
 

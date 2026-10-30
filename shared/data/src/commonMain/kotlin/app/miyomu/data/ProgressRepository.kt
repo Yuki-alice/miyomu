@@ -17,6 +17,9 @@ interface ProgressRepository {
     suspend fun save(progress: ReadingProgress)
     suspend fun clear(itemId: String)
 
+    /** Removes the whole reading history (data settings). */
+    suspend fun clearAll()
+
     /** Removes one entry's history row (Aniyomi "remove from history"). */
     suspend fun clearEntry(itemId: String, entryId: String)
 }
