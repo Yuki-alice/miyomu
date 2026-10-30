@@ -49,9 +49,9 @@ Rules:
 
 - **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). See `docs/11-handoff-2026-10-30.md` §5.
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
-- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), legado discovery/category pages, no release artifacts, CI red since the first commit. Venera source compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/14-venera-compat.md`; the remaining host gap is the cookie API (`setCookies` / `getCookies` / `deleteCookies`), and `jm.js` still fails construction.
+- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), legado discovery/category pages, no release artifacts, CI green since 2026-10-30. Venera source compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/14-venera-compat.md`; the remaining host gap is the cookie API (`setCookies` / `getCookies` / `deleteCookies`), and `jm.js` still fails construction.
 - **Novel wiring**: `HomeScreen` has six tabs with `NovelLibraryTab` at index 0 (manga/updates/history/browse/more shifted by one). Novel bookmarks, reader prefs and legado sources all live in the JSON `PreferenceStore`, so the novel side still has **zero Room schema impact** — keep it that way unless a migration is planned.
-- **CI gaps**: all jobs currently fail at KSP `2.3.12` resolution on GitHub runners (works locally); `download`/`danmaku` tests are not in CI; no Windows job; no packaging smoke.
+- **CI gaps**: CI is green as of 2026-10-30 (canonical repositories on runners; `download`/`danmaku` tests included); no Windows job; no packaging smoke.
 
 ## Canonical files
 
