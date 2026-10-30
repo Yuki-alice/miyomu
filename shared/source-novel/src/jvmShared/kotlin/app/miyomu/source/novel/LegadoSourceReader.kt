@@ -93,6 +93,17 @@ class LegadoSourceReader(
             .joinToString("\n")
     }
 
+    /** Next page of a split chapter, resolved against the page that declared it. */
+    suspend fun nextContentUrl(body: String, baseUrl: String): String? {
+        val rule = source.ruleContent?.nextContentUrl ?: return null
+        val (element, jsonText) = singleContext(body)
+        val raw = evaluator.itemString(rule, element, jsonText, baseUrl) ?: return null
+        val next = absolutize(raw, baseUrl)
+        return next.takeIf {
+            it != baseUrl && (it.startsWith("http://") || it.startsWith("https://"))
+        }
+    }
+
     // ---- Item context helpers ----
 
     private data class ItemContext(val element: com.fleeksoft.ksoup.nodes.Element?, val jsonText: String?)

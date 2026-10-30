@@ -48,7 +48,7 @@ class LegadoContentSource(
 
             val safeIndex = chapterIndex.coerceIn(0, toc.lastIndex)
             val chapter = toc[safeIndex]
-            val text = reader.content(fetch(chapter.url), chapter.url)
+            val text = chapterText(chapter.url)
                 ?.takeIf { it.isNotBlank() }
                 ?: return fallback.copy(
                     chapterCount = toc.size,
@@ -72,7 +72,22 @@ class LegadoContentSource(
         }
     }
 
+    private suspend fun chapterText(url: String): String? {
+        val parts = mutableListOf<String>()
+        val visited = mutableSetOf<String>()
+        var current: String? = url
+        while (current != null && parts.size < MaxContentPages && visited.add(current)) {
+            val body = fetch(current)
+            val text = reader.content(body, current)?.takeIf { it.isNotBlank() } ?: break
+            parts += text
+            current = reader.nextContentUrl(body, current)
+        }
+        return parts.joinToString("\n").takeIf { it.isNotBlank() }
+    }
+
     companion object {
+        private const val MaxContentPages = 20
+
         /** Progress key for an online chapter; positional like the local side. */
         fun chapterEntryId(bookUrl: String, chapterIndex: Int): String =
             "$bookUrl#$chapterIndex".hashCode().toString()

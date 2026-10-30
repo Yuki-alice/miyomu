@@ -80,6 +80,42 @@ class LegadoContentSourceTest {
     }
 
     @Test
+    fun `follows nextContentUrl across pages`() = runTest {
+        val pagedSourceJson = sourceJson.replace(
+            "\"ruleContent\": { \"content\": \"#content@textNodes\" }",
+            "\"ruleContent\": { \"content\": \"#content@textNodes\", \"nextContentUrl\": \"#next@href\" }",
+        )
+        val bodies = mutableMapOf(
+            "https://s.example/b/1/toc" to tocPage,
+            "https://s.example/b/1/c1" to """
+                <html><body>
+                  <div id="content"><p>上半段。</p></div>
+                  <a id="next" href="/b/1/c1?page=2">下一页</a>
+                </body></html>
+            """.trimIndent(),
+            "https://s.example/b/1/c1?page=2" to contentPage("下半段。"),
+        )
+        val contentSource = LegadoContentSource(
+            source = LegadoBookSource.fromJson(pagedSourceJson),
+            book = LegadoOnlineBook(
+                name = "测试在线书",
+                author = "作者",
+                bookUrl = "https://s.example/b/1",
+                tocUrl = "https://s.example/b/1/toc",
+                coverUrl = null,
+                sourceUrl = "https://s.example",
+            ),
+            fetch = { url -> bodies[url] ?: error("no fixture for $url") },
+            js = LegadoQuickJsEngine(),
+        )
+
+        val data = contentSource.load("book-key", 0, 0)
+
+        assertNull(data.error)
+        assertEquals("上半段。\n下半段。", data.text)
+    }
+
+    @Test
     fun `fetch failures surface as error data`() = runTest {
         val contentSource = store(mutableMapOf())
 
