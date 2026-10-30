@@ -61,8 +61,7 @@ class LocalNovelRepository(
         /**
          * Stable progress key for a chapter: book location plus chapter position,
          * hashed the same way the comic side keys chapters (A2-4). Positional identity
-         * is stable for an unchanged file; see docs/00-current-status.md for the known
-         * limitation around edited files.
+         * is stable for an unchanged file; edited files can shift chapter positions.
          */
         fun chapterId(book: LocalBook, chapterIndex: Int): String =
             "${book.location}#${chapterIndex}".hashCode().toString()
