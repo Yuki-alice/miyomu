@@ -44,10 +44,13 @@ fun MiyomuApp(
     downloadStore: FileDownloadStore? = null,
     backupFile: java.io.File? = null,
     onOpenLibraryFolder: (() -> Unit)? = null,
+    onPickLibraryDirectory: (() -> Unit)? = null,
 ) {
     val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
 
-    val graph = remember {
+    // The graph rebuilds when the library root changes (SAF directory switch); source runtimes
+    // reload on the next access, which is acceptable for this rare operation.
+    val graph = remember(root.location, store) {
         MiyomuGraph(
             library = library,
             comics = comics,
@@ -62,6 +65,7 @@ fun MiyomuApp(
             downloadStore = downloadStore,
             backupFile = backupFile,
             onOpenLibraryFolder = onOpenLibraryFolder,
+            onPickLibraryDirectory = onPickLibraryDirectory,
         )
     }
 

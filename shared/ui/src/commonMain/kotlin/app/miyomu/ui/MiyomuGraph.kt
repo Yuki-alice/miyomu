@@ -36,6 +36,7 @@ class MiyomuGraph(
     val downloadStore: FileDownloadStore? = null,
     val backupFile: java.io.File? = null,
     val onOpenLibraryFolder: (() -> Unit)? = null,
+    val onPickLibraryDirectory: (() -> Unit)? = null,
 ) {
     val libraryPreferences: LibraryPreferences = LibraryPreferences(preferenceStore)
 
