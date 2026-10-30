@@ -6,7 +6,7 @@
 
 ## 1. 一句话状态
 
-CI 门禁已恢复并全绿；三种媒介同仓；**209 个 JVM 测试全绿**；Venera 参考源
+CI 门禁已恢复并全绿；三种媒介同仓；**210 个 JVM 测试全绿**；Venera 参考源
 **13/13 零改构造 + 13/13 静态 API 全兼容**，hitomi 已在桌面 JVM 与 Android 模拟器
 跑通真站 search → details → pages（含图片渲染）。按用户 2026-10-30 的决定，
 **打包/发布延后**，近期目标是完成度而非出产物。
@@ -25,6 +25,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**209 个 JVM 测试全绿**�
 | `c40dd68` | `onImageLoad` 钩子：把源声明的图片 URL/headers 带进 `PageRef`（hitomi 的 Referer） |
 | `d7cedd1` | 小说正文 `nextContentUrl` 多页合并（去重 + 20 页上限） |
 | `aec24d8` | 小说发现/分类页：解析 `exploreUrl`/`ruleExplore`，浏览 Tab 增加「发现」入口与 UI 流程测试 |
+| `e27eb7c` | 修复 BrowseTab 把普通 Screen push 到 TabNavigator 的崩溃；根导航回调从 HomeScreen 下发 |
 | 文档 | `docs/14` 结果更新、README/AGENTS 状态同步、本文件 |
 
 ## 3. 验证基线
@@ -38,7 +39,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**209 个 JVM 测试全绿**�
   :desktopApp:compileKotlin :androidApp:assembleDebug
 ```
 
-当前：**209 tests / 0 failures**。分布：`ui` 42、`novel` 30、`source-novel` 29、
+当前：**210 tests / 0 failures**。分布：`ui` 43、`novel` 30、`source-novel` 29、
 `source-runtime` 22、`reader-novel` 16、`player` 12、`data` 10、`network` 10、
 `source-repo` 9、`reader-comic` 8、`local` 7、`danmaku` 4、`download` 4、
 `source-manager` 3、`domain` 3。
@@ -78,6 +79,10 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
    时保留这个映射。
 8. **图片 CDN 依赖源声明的 headers**：hitomi 图片不带 `Referer` 会 404。取页时必须调用
    `onImageLoad` 并把 `url`/`headers` 带进 `PageRef`，不能只取 `result.images` 的字符串。
+9. **Tab 里的 `LocalNavigator` 是 TabNavigator**：在 `BrowseTab` 内直接
+   `navigator.push(NovelExploreScreen(...))` 会把普通 Screen 当成 Tab，`TabNavigator.getCurrent`
+   强转崩溃。打开跨 Tab 页面必须用 `HomeScreen` 下发的根导航回调；回归测试
+   `NovelExploreFlowTest.browseDiscoverUsesTheRootNavigator`。
 
 ## 5. 下一步队列（按完成度）
 
@@ -97,7 +102,17 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 - 不要在未跑静态审计 + `VeneraSourceCompatTest` 的情况下声称兼容性变化。
 - 不要把打包/发布排进近期队列，除非用户重新开启。
 
-## 7. 关键文件
+## 7. 实机走查（2026-10-30，Android 模拟器）
+
+- 本地 TXT：扫描 → 详情（2 章）→ 阅读器，OK。
+- legado 本地 fixture：浏览 → 发现 → 分类 → 书籍 → 详情 → 章节 → 阅读，OK；
+  期间发现并修复了 BrowseTab 的 TabNavigator 崩溃。
+- hitomi 真站：搜索 25 → 详情 1 章 → 30 页图片，OK。
+- 本地 MKV（30s 测试片）：详情 → 播放器，OK。
+- UX 观察（未在本批修复）：在线阅读器首段文字被顶栏覆盖（chrome 隐藏后可见）；
+  本地 TXT 详情有 "Missing 1 item" 封面占位；底部 Tab 中文、小说 UI 英文，语言不一致。
+
+## 8. 关键文件
 
 - 宿主 API：`shared/source-runtime/src/commonMain/kotlin/app/miyomu/source/runtime/SourcePreamble.kt`
 - 宿主绑定：`.../JsSourceRuntime.kt`
