@@ -4,26 +4,8 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> **当前状态（2026-10-30，用户实机测试后）**：项目**未达到可用/可发布状态**。用户实机测试的结论是“功能基本上就是做做样子，在真实的使用环境下完全不可用”。功能开发已暂停，打包/发布暂停。
->
-> **不要用测试数量判断可用性**：当前测试以模块级 fixture、源构造和静态审计为主，只能证明部分代码路径能跑，**不能证明**全新安装后导入真实书/真实源、搜索、阅读/播放、重启持久化等真实流程可用。
-
-## 能确认的事实
-
-- Android 与桌面代码能编译，桌面 App 能启动窗口。
-- 213 个模块/fixture 测试通过（数量不等于可用性）。
-- Venera：13 个参考源能零改构造；静态 API 审计 0 缺口；hitomi 单源 search → details → pages 能取到数据（仅桌面/模拟器单路径）。
-- 用预置数据 + 本地 fixture 做过少量冒烟：本地 TXT、legado 发现链路、本地 MKV、设置/备份/源仓库页面。
-
-详细范围见 [03 验证记录](docs/03-verification.md) 与 [00 当前状态](docs/00-current-status.md)。
-
-## 未验证 / 已知失败面
-
-- **真实用户路径**：全新安装 → 导入本地书/真实源 → 搜索/详情 → 阅读/播放 → 重启 → 进度/书架/源保留。
-- 用户已判定整体不可用；目前没有整理出完整的失败清单，需要按真实路径逐项复现。
-- 除 hitomi 单路径外的真实第三方源、登录态、错误处理、长时稳定性。
-- 性能、Windows、iOS、安装包/发布产物。
-- 已观察的 UX 问题：阅读器首段文字被顶栏遮挡；本地 TXT 详情有 “Missing 1 item” 封面占位；底部 Tab 中文、小说 UI 英文。
+> **当前状态（2026-10-30）**：项目**未达到可用 / 可发布状态**；用户实机测试判定整体不可用。功能开发与打包/发布暂停。
+> 测试数量、源构造和静态审计都不是可用性证据。详见 [00 当前状态](docs/00-current-status.md)。
 
 ## 代码结构
 
@@ -31,7 +13,7 @@
 |---|---|
 | `:shared:model` | 领域模型、源描述、章节/页面 |
 | `:shared:network` | Ktor 3.6、OkHttp/CIO、持久 Cookie |
-| `:shared:source-api` | `ComicSource` / `ManagedComicSource`、`AnimeSource` / `ManagedAnimeSource` |
+| `:shared:source-api` | `ComicSource` / `AnimeSource` 及其托管接口 |
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
 | `:shared:source-repo` | 源仓库索引、安装/更新/卸载与本地清单 |
 | `:shared:source-manager` | 已安装源的运行时加载与搜索/详情/页面/图片/视频解析 |
@@ -39,7 +21,7 @@
 | `:shared:download` | 漫画章节下载队列、离线页源 |
 | `:shared:danmaku` | dandanplay 弹幕客户端（用户自配凭据） |
 | `:shared:contract` | UI 端口：仓储接口与记录类型（无 Room / 网络 / 平台代码） |
-| `:shared:data` | Room 2.8.5 + KSP（schema v4）；库/进度/章节/剧集/分类/更新/下载/解析缓存 |
+| `:shared:data` | Room 2.8.5 + KSP（schema v4）；实现 `:shared:contract` 的仓储 |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:novel` | 小说解析：TXT/EPUB/FB2/HTML/Markdown、小说库扫描 |
 | `:shared:reader-comic` | 漫画阅读状态、模式、页配对 |
@@ -61,7 +43,7 @@
 ## 构建与运行
 
 ```bash
-# 桌面
+# 桌面（先生成一个样例书库）
 python3 tools/make_sample_library.py
 ./gradlew :app:desktop:run
 
@@ -69,18 +51,15 @@ python3 tools/make_sample_library.py
 ./gradlew :app:android:assembleDebug
 
 # 模块测试（不代表可用性验收）
-./gradlew :shared:ui:jvmTest :shared:source-runtime:jvmTest :shared:source-novel:jvmTest \
-  :shared:novel:jvmTest :shared:reader-novel:jvmTest :shared:data:jvmTest
+./gradlew jvmTest
 ```
 
-`experiments/` 是独立的 Phase 0/1 验证构建，使用 `./gradlew -p experiments ...`。
+## 原则
 
-## 实现记录（代码路径，未验收）
-
-- 漫画/视频/小说本地与在线阅读、播放器的代码路径存在。
-- 源运行时、源仓库、下载、备份/WebDAV、弹幕的代码路径存在。
-- 小说端 legado 书源、发现/分类页、`nextContentUrl` 的代码路径存在。
-- 上述都不代表真实使用可用；验收状态以 [00 当前状态](docs/00-current-status.md) 为准。
+- **一个源引擎**：JS/QuickJS，不再维护两套扩展模型。
+- **一个播放器抽象**：mediamp，按平台后端实现。
+- **一套数据层**：库、进度、下载、同步共享。
+- **清洁实现**：不复制 GPL 代码，不内置任何内容源，不托管内容。
 
 ## 文档
 
@@ -89,15 +68,6 @@ python3 tools/make_sample_library.py
 - [02 关键决策](docs/02-decisions.md)
 - [03 验证记录](docs/03-verification.md)
 - [文档索引](docs/README.md)
-
-旧 ADR、计划、交接、清单与 Spike 文档已于 2026-10-30 删除，正文可在 git 历史 `14c495e` 查看。
-
-## 原则
-
-- **一个源引擎**：JS/QuickJS，不再维护两套扩展模型。
-- **一个播放器抽象**：mediamp，按平台后端实现。
-- **一套数据层**：库、进度、下载、同步共享。
-- **清洁实现**：不复制 GPL 代码，不内置任何内容源，不托管内容。
 
 ## 许可证与免责声明
 

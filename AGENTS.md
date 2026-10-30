@@ -5,17 +5,15 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- **2026-10-30 (evening): the code compiles, but the project is NOT usable.** The user's real-device test found it "基本不可用"; do not claim feature completeness from fixture/construction/static tests. Start from `docs/00-current-status.md`. Android + desktop compile; iOS is not started; 213 module-level/fixture tests pass; all 13 reference Venera sources construct and hitomi's single real-site path works, but none of these prove a user can import data/sources and actually read or play. Feature work is paused; prioritize reproducing real-use failures and hardening import → use → restart flows. The old ADR/plan/handoff docs were deleted on 2026-10-30; the decision digest is `docs/02-decisions.md`. **Packaging/release is deferred.**
-- Old ADRs, plans, handoffs and checklists were deleted on 2026-10-30. If their content is needed, recover it from git history `14c495e`; the current minimal docs are `docs/00-current-status.md` through `docs/03-verification.md`.
-- Production build lives at the repository root (`app/android/`, `app/desktop/`, `shared/`, `build-logic/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
-- Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
+- **2026-10-30 (evening): the code compiles, but the project is NOT usable.** The user's real-device test found it "基本不可用"; do not claim feature completeness from fixture/construction/static tests. Start from `docs/00-current-status.md`. Android + desktop compile; iOS is not started; 213 module-level/fixture tests pass; all 13 reference Venera sources construct and hitomi's single real-site path works, but none of these prove a user can import data/sources and actually read or play. Feature work is paused; prioritize reproducing real-use failures and hardening import → use → restart flows. **Packaging/release is deferred.**
+- Production build lives at the repository root (`app/android/`, `app/desktop/`, `shared/`, `build-logic/`).
 
 ## Skill policy (temporarily disabled)
 
-**Disabled 2026-10-29**: the `.qoder/skills/` library is not present on this machine, so the previously mandatory skill policy (read `INDEX.md` before Compose / Kotlin / Gradle tasks; select 1–3 skills; route by task) is suspended.
+**Disabled 2026-10-29**: the previously mandatory skill policy (read `INDEX.md` before Compose / Kotlin / Gradle tasks; select 1–3 skills; route by task) is suspended.
 
-- Do not attempt to read `.qoder/skills/**`; rely on project docs, ADRs, and standard best practice instead.
-- To restore: re-sync the `.qoder/` directory, then recover the original "Skill policy", "Skill entry points", and "Routing by task" sections from git history (`git log -p -- AGENTS.md`, before the 2026-10-29 removal; uncommitted working tree: `git diff -- AGENTS.md`).
+- Do not attempt to read `.qoder/skills/**`; rely on project docs and standard best practice instead.
+- To restore: recover the original "Skill policy", "Skill entry points", and "Routing by task" sections from git history (`git log -p -- AGENTS.md`, before the 2026-10-29 removal).
 
 ## Reference repositories
 
@@ -47,7 +45,7 @@ Rules:
 
 ## Current focus (2026-10-30)
 
-- **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). The old handoff with those rules was deleted; recover it from git `14c495e` if needed.
+- **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push).
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
 - **Known gaps**: **real-usage validation failed (user, 2026-10-30); detailed failure list pending**; Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), online novel body search, no release artifacts. Venera compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/03-verification.md`; the 13/13 numbers cover construction + static API only, and hitomi covers one search → details → pages path; **they are not usability evidence**, and the remaining sources are unverified.
 - **Validation rule**: only claim a feature works after a fresh-data UI walkthrough (import → use → restart → persistence). Module/fixture tests, source construction, and static audits are not evidence of usability.
@@ -80,7 +78,7 @@ Rules:
   Keys carry ids only — never `MiyomuGraph`, `LocalBook` instances or lambdas; resolve those in the
   entry with `remember(key)`. Voyager survives only as `ScreenModel` inside `:shared:presentation`.
 - **Novel wiring**: `HomeScreen` has six tabs with `NovelLibraryTab` at index 0 (manga/updates/history/browse/more shifted by one). Novel bookmarks, reader prefs and legado sources all live in the JSON `PreferenceStore`, so the novel side still has **zero Room schema impact** — keep it that way unless a migration is planned.
-- **CI gaps**: CI is runnable as of 2026-10-30 (canonical repositories on runners; `download`/`danmaku` tests included), but it only validates compilation and module tests, not real usability; no Windows job; no packaging smoke.
+- **CI (2026-10-30)**: runs `./gradlew jvmTest`, `:app:desktop:compileKotlin` and `:app:android:assembleDebug`; it validates compilation and module tests only, not real usability. No Windows job, no packaging smoke.
 
 ## Canonical files
 
@@ -89,4 +87,3 @@ Rules:
 - Decisions: `docs/02-decisions.md`
 - Verification: `docs/03-verification.md`
 - Docs index: `docs/README.md`
-- Old docs: deleted 2026-10-30; recover from git `14c495e` if needed

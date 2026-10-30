@@ -1,11 +1,11 @@
 # 架构概览
 
-> 这是代码结构说明，不是可用性声明。当前真实状态见 [00-current-status.md](00-current-status.md)。
+> 代码结构说明，不是可用性声明。当前真实状态见 [00-current-status.md](00-current-status.md)。
 
 ## 产品范围
 
 - 三种媒介：漫画 / 视频 / 小说，共用库、源与进度模型。
-- 平台：Android + 桌面（Compose Desktop）为首发目标；iOS 未开始，也没有 `iosMain` 目标。
+- 平台：Android + 桌面（Compose Desktop）；iOS 未开始，没有 `iosMain` 目标。
 - 技术栈：Kotlin Multiplatform 共享核心，Compose Multiplatform 构建 UI。
 - 扩展模型：JavaScript 源，QuickJS 运行时；不内置、不托管任何内容源。
 
@@ -32,16 +32,16 @@
 | `:shared:domain` | Aniyomi 域模型、偏好 API、排序/集号识别 |
 | `:shared:i18n` / `:shared:i18n-aniyomi` | moko-resources 字符串资源（en + zh-CN） |
 | `:shared:presentation-core` / `:shared:presentation` | 移植的 Aniyomi 组件与屏幕层 |
-| `:shared:ui-core` | `MiyomuGraph`、主题、共享组件、Navigation 3 键与导航器、库更新与视频解析助手 |
-| `:shared:ui-library` | 书架、分类、历史、更新（`library/` `history/` `updates/`） |
+| `:shared:ui-core` | `MiyomuGraph`、主题、Navigation 3 键与导航器、共享组件 |
+| `:shared:ui-library` | 书架、分类、历史、更新 |
 | `:shared:ui-entries` | 漫画/视频详情页 |
 | `:shared:ui-novel` | 小说书架、详情、在线阅读与发现 |
-| `:shared:ui-reader` | 漫画阅读器（含 `ComicReaderScreen`） |
+| `:shared:ui-reader` | 漫画阅读器 |
 | `:shared:ui-sources` | 已安装源的搜索/详情、全局搜索、源仓库 |
 | `:shared:ui-player` | 本地/在线播放器路由与播放器 chrome |
 | `:shared:ui-settings` | 设置、备份同步、下载队列 |
 | `:shared:ui` | App 壳：`MiyomuApp`、`MiyomuNavHost`、`HomeScreen` 与六个 Tab |
-| `:shared:application` | 组合根：构造数据/偏好/源运行时/下载/小说抓取，接收平台 `MiyomuAppEnvironment` |
+| `:shared:application` | 组合根：数据、偏好、源运行时、下载、小说抓取的统一装配 |
 | `:app:android` / `:app:desktop` | Android / 桌面入口，只提供平台环境与回调 |
 
 ## UI 模块分层
@@ -65,15 +65,15 @@
 - 功能模块之间**只允许单向**：`library → entries → reader`，`library → novel`，`library → sources`。反向依赖会成环。
 - 只有 shell 可以同时依赖全部功能模块；`MiyomuNavHost` 是唯一的键→界面映射。
 - `:shared:application` 是唯一的组合根：它构造 `MiyomuData`、`JsonPreferenceStore`、源仓库/运行时、
-  下载队列和小说的 HTTP 客户端。平台入口不再重复这套装配，只提供 `MiyomuAppEnvironment`
+  下载队列和小说的 HTTP 客户端。平台入口只提供 `MiyomuAppEnvironment`
   （`dataDir`、`libraryRoot`、`MiyomuDatabaseFactory`、`deviceId`、`nowMillis`、平台回调）。
 - `ui-core` 的 `api` 只留 6 个：`model`、`contract`、`presentation`、`presentation-core`、`i18n`、`i18n-aniyomi`。
-  其余 11 个实现模块都是 `implementation`，功能模块要用哪个就自己声明哪个。
+  其余实现模块都是 `implementation`，功能模块要用哪个就自己声明哪个。
 - 持久化只能通过 `:shared:contract` 的端口访问：`MiyomuGraph.data` 的类型是 `DataPort`，不是 `MiyomuData`。
   Room、DAO、实体类型不会出现在任何功能模块的 classpath 上。
 - 测试跟着代码走：单元测试放在所属模块的 `jvmTest`，跨模块的端到端流程测试留在 shell。
-- Android 的 SAF 目录 URI 存在平台专用的 `SharedPreferences`（`miyomu-platform`），不再和 JSON
-  `PreferenceStore` 写同一个文件。
+- Android 的 SAF 目录 URI 存在平台专用的 `SharedPreferences`（`miyomu-platform`），不与 JSON
+  `PreferenceStore` 共用文件。
 
 ## 导航
 
@@ -115,14 +115,11 @@
   - `miyomu.jvm-compose`：桌面 JVM + Compose Desktop。
 - 模块脚本只保留插件、`namespace`、模块特有配置和依赖；不再重复 `jvmToolchain`、`compileSdk`、
   Android 测试配置。
-- 依赖引用使用 typesafe project accessors（`projects.shared.uiCore`）；字符串
-  `project(":shared:...")` 不再出现。
-- 源集保持 KMP 标准布局 `src/<sourceSet>/kotlin`，没有采用 animeko 的扁平源集；JVM 与 Android
-  共用的 JVM 实现放在 `src/jvmShared/kotlin`，由约定插件同时挂到两个目标。
+- 依赖引用使用 typesafe project accessors（`projects.shared.uiCore`）。
+- 源集保持 KMP 标准布局 `src/<sourceSet>/kotlin`；JVM 与 Android 共用的 JVM 实现放在
+  `src/jvmShared/kotlin`，由约定插件同时挂到两个目标。
 
 ## 构建布局
 
-- 生产构建在仓库根目录：`app/`（`android/`、`desktop/`）、`shared/`、`build-logic/`。
-- `experiments/` 是独立的 Phase 0/1 验证构建，使用 `./gradlew -p experiments ...`。
-
-当前哪些路径真的被验证、哪些没有，见 [03-verification.md](03-verification.md) 与 [00-current-status.md](00-current-status.md)。
+- 生产构建：`app/`（`android/`、`desktop/`）、`shared/`、`build-logic/`。
+- `tools/` 存放开发脚本（样例库、Venera 静态审计、fixture server），不属于生产构建。

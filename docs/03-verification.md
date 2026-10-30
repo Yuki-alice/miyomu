@@ -8,16 +8,16 @@
 - 分布：`novel` 30、`source-novel` 29、`source-runtime` 22、`ui` 21、`reader-novel` 16、`player` 12、`network` 10、`data` 10、`source-repo` 9、`ui-entries` 9、`reader-comic` 8、`ui-reader` 7、`local` 7、`ui-novel` 4、`danmaku` 4、`ui-library` 4、`download` 4、`domain` 3、`source-manager` 3、`ui-core` 1。
 - 这些测试主要用 fixture、内存数据或 headless UI，**不覆盖**真实用户导入、真实第三方源、真实网络稳定性或重启后的完整状态。
 
-## 架构重构（2026-10-30，仅构建验证）
+## 架构（构建验证）
 
-- build-logic 约定插件接管 30 个模块的 toolchain / compileSdk / Android / JUnit 配置。
-- 入口迁移到 `:app:android` / `:app:desktop`，新增 `:shared:application` 组合根。
-- 验证命令：`:app:desktop:compileKotlin`、`:app:android:assembleDebug`、各模块 `jvmTest`。
-- 这只证明结构改动可以编译和跑通既有模块测试，**不证明**真实导入、阅读/播放或重启持久化。
+- `build-logic` 约定插件接管 30 个模块的 toolchain / compileSdk / Android / JUnit 配置。
+- 入口为 `:app:android` / `:app:desktop`，组合根为 `:shared:application`。
+- 验证命令：`./gradlew jvmTest`、`:app:desktop:compileKotlin`、`:app:android:assembleDebug`。
+- 这只证明结构改动可以编译并跑通既有模块测试，**不证明**真实导入、阅读/播放或重启持久化。
 
 ## 导航走查（2026-10-30，真实点击 + 真实图 + 真实 Room）
 
-`NavWalkthroughTest`（3 个用例）在真实 `MiyomuApp` / `MiyomuNavHost` 上逐页点击，截图见 `evidence/nav-*.png`：
+`NavWalkthroughTest`（3 个用例）在真实 `MiyomuApp` / `MiyomuNavHost` 上逐页点击：
 
 - 六个 Tab 都能切换，窄/宽两种壳（底部栏 / 侧栏）都正常。
 - 设置链：设置 → 外观 / 阅读 / 下载 / 数据与存储 / 弹幕 / 关于 Miyomu，**每一页都能打开并 pop 回设置页**。
@@ -64,8 +64,7 @@
 
 ```bash
 # 模块测试（不代表可用性验收）
-./gradlew :shared:ui:jvmTest :shared:source-runtime:jvmTest :shared:source-novel:jvmTest \
-  :shared:novel:jvmTest :shared:reader-novel:jvmTest :shared:data:jvmTest
+./gradlew jvmTest
 
 # 入口编译
 ./gradlew :app:desktop:compileKotlin :app:android:assembleDebug

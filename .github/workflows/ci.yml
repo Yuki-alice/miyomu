@@ -14,11 +14,10 @@ permissions:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false
-  FIXTURE_URL: http://127.0.0.1:18080
 
 jobs:
   desktop:
-    name: Product tests and desktop build
+    name: Module tests and desktop build
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -34,17 +33,13 @@ jobs:
       - name: Install SDK platforms
         run: sdkmanager --install "platforms;android-36" "platforms;android-37.0" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Shared module tests
+      - name: Module tests
         run: ./gradlew jvmTest
-      - name: Ported presentation layer (JVM)
-        run: ./gradlew :shared:presentation:compileKotlinJvm
       - name: Desktop shell
         run: ./gradlew :app:desktop:compileKotlin
-      - name: Phase 0 JVM spikes
-        run: ./gradlew -p experiments :spikes:s3-ui:build :spikes:s1-player:build :spikes:s2-js-runtime:build
 
   android:
-    name: Android app and experiments
+    name: Android app
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,50 +53,5 @@ jobs:
       - name: Install SDK platforms
         run: sdkmanager --install "platforms;android-36" "platforms;android-37.0" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: M0 toolchain probe
-        run: ./gradlew -p experiments/phase1/toolchain-probe assembleDebug
-      - name: M0 network probe
-        run: ./gradlew -p experiments/phase1/network-probe jvmTest assemble
-      - name: S1 Android player spike
-        run: ./gradlew -p experiments/spikes/s1-player-android assembleDebug
-      - name: S2 Android source runtime spike
-        run: ./experiments/spikes/s2-js-runtime-android/gradlew -p experiments/spikes/s2-js-runtime-android assembleDebug
       - name: Miyomu Android shell
         run: ./gradlew :app:android:assembleDebug
-
-  ios:
-    name: iOS source runtime tests
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: gradle/actions/setup-gradle@v4
-      # The S2 iOS test reads a source served over HTTP; the fixture server must
-      # be running on 127.0.0.1:18080 before the simulator test starts.
-      - name: Start fixture server
-        run: |
-          ./gradlew -p experiments :spikes:s2-js-runtime:runFixtureServer > fixture-server.log 2>&1 &
-          for attempt in $(seq 1 60); do
-            if curl -sf "$FIXTURE_URL/api/search?q=ci" > /dev/null; then
-              echo "fixture server ready after ${attempt} attempts"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "fixture server did not start"
-          cat fixture-server.log
-          exit 1
-      - name: S2 iOS simulator tests
-        run: ./experiments/spikes/s2-js-runtime-ios/gradlew -p experiments/spikes/s2-js-runtime-ios iosSimulatorArm64Test
-      - name: Upload iOS test report on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-s2-test-report
-          path: |
-            experiments/spikes/s2-js-runtime-ios/build/reports/tests/iosSimulatorArm64Test/
-            fixture-server.log
-          if-no-files-found: ignore
