@@ -214,7 +214,7 @@ chrome，页面与图片经源运行时加载）。
 - 小说在线阅读（legado 书源）：发现/分类页、`nextContentUrl` 分页目录抓取、在线书源的书内全文搜索待补；真实第三方书源兼容性需实测（引擎对自造 fixture 全绿）。
 - 在线源：Venera 兼容性已量化（13 个社区源全部零改构造通过、静态审计 13/13 全兼容，见 [14](docs/14-venera-compat.md)）；真站往返仍需手动 canary 验证；第一波为 omofun + 苹果CMS 采集站家族；canary 需手动 `-Pcanary`；站点改版维护由项目承担；tracker 未实现；WebDAV 仅 Basic 认证；弹幕需自配弹弹play AppId/AppSecret。
 - 平台：Windows 端 MPV 播放与安装包（jpackage msi）尚未实机验证；桌面暂无自动更新；iOS 生产壳/AVKit 未开始。
-- CI：KSP 2.3.12 在 GitHub runner 上解析失败导致所有 job 红（本地可解析）；`download`/`danmaku` 测试尚未加入；无 Windows job 与安装包冒烟。
+- CI：2026-10-30 已恢复全绿（runner 使用规范 Maven 仓库；`download`/`danmaku` 已加入）；无 Windows job 与安装包冒烟。
 
 ## 文档
 

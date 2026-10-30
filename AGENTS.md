@@ -5,7 +5,7 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- **2026-10-30 (afternoon): the novel line is merged and pushed; see `git log -1` for the baseline.** Start from `docs/15-handoff-2026-10-30-afternoon.md`. Android + desktop are the production targets (both builds green); iOS is not started. All three media (comic / video / novel) now live on one branch. The Phase-D handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; the novel plan is `docs/12-novel-plan.md`; decisions are ADR-0011/0012/0013/0014.
+- **2026-10-30 (evening): CI is green and the Venera host APIs are complete; see `git log -1` for the baseline.** Start from `docs/16-handoff-2026-10-30-evening.md`. Android + desktop are the production targets (both builds green); iOS is not started. All three media (comic / video / novel) live on one branch; 202 JVM tests pass; all 13 reference Venera sources construct unmodified. The Phase-D handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; the novel plan is `docs/12-novel-plan.md`; decisions are ADR-0011/0012/0013/0014. **Packaging/release is deferred by the user until completeness improves.**
 - `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, and `docs/09-handoff-2026-10-29.md` are **historical** (pre-Phase-D) and are kept for implementation records only.
 - Production build lives at the repository root (`androidApp/`, `desktopApp/`, `shared/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
 - Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
@@ -57,7 +57,7 @@ Rules:
 
 - Product: `docs/00-product-brief.md`
 - Architecture: `docs/01-architecture.md` (note: module list predates Phase D; see README/11)
-- Current handoff: `docs/15-handoff-2026-10-30-afternoon.md` (Phase-D era: `docs/11-handoff-2026-10-30.md`)
+- Current handoff: `docs/16-handoff-2026-10-30-evening.md` (previous: `docs/15-handoff-2026-10-30-afternoon.md`; Phase-D era: `docs/11-handoff-2026-10-30.md`)
 - Anime/player plan: `docs/10-anime-source-and-player-plan.md`
 - Novel plan: `docs/12-novel-plan.md` (benchmark research: `docs/13-novel-benchmark.md`)
 - Brand: `docs/06-brand.md`
