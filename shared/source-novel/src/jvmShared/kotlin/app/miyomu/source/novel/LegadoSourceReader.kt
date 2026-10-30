@@ -19,17 +19,33 @@ class LegadoSourceReader(
 
     fun searchUrl(keyword: String, page: Int = 1): String? {
         val template = source.searchUrlTemplate() ?: return null
-        val absolute = absolutize(template, source.bookSourceUrl ?: return null)
-        return absolute
+        val filled = template
             .replace("{{key}}", urlEncode(keyword))
             .replace("{{page}}", page.toString())
             .replace("{{pageSize}}", "20")
+        return absolutize(filled, source.bookSourceUrl ?: return null)
     }
 
-    // ---- Search ----
+    fun exploreUrl(category: LegadoExploreCategory, page: Int = 1): String =
+        absolutize(
+            category.url.replace("{{page}}", page.toString()),
+            source.bookSourceUrl.orEmpty(),
+        )
 
-    suspend fun search(body: String, baseUrl: String): List<LegadoSearchBook> {
-        val rules = source.ruleSearch ?: return emptyList()
+    // ---- Search / explore ----
+
+    suspend fun search(body: String, baseUrl: String): List<LegadoSearchBook> =
+        books(source.ruleSearch, body, baseUrl)
+
+    suspend fun explore(body: String, baseUrl: String): List<LegadoSearchBook> =
+        books(source.ruleExplore, body, baseUrl)
+
+    private suspend fun books(
+        rules: LegadoRuleSet?,
+        body: String,
+        baseUrl: String,
+    ): List<LegadoSearchBook> {
+        rules ?: return emptyList()
         val result = mutableListOf<LegadoSearchBook>()
         for (item in itemList(rules.bookList, body)) {
             val name = evaluator.itemString(rules.name, item.element, item.jsonText, baseUrl)

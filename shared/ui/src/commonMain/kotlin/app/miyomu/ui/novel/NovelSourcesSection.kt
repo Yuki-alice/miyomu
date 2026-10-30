@@ -66,19 +66,29 @@ fun NovelSourcesSection(
             )
         }
         sources.forEach { source ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenScreen(NovelSourceSearchScreen(graph, source)) }
-                    .padding(vertical = 4.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(source.bookSourceName ?: source.bookSourceUrl.orEmpty(), maxLines = 1)
-                Text(
-                    text = source.bookSourceGroup ?: source.bookSourceUrl.orEmpty(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onOpenScreen(NovelSourceSearchScreen(graph, source)) }
+                        .padding(vertical = 4.dp),
+                ) {
+                    Text(source.bookSourceName ?: source.bookSourceUrl.orEmpty(), maxLines = 1)
+                    Text(
+                        text = source.bookSourceGroup ?: source.bookSourceUrl.orEmpty(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+                if (source.exploreCategories().isNotEmpty()) {
+                    TextButton(onClick = { onOpenScreen(NovelExploreScreen(graph, source)) }) {
+                        Text(stringResource(MR.strings.novel_explore))
+                    }
+                }
             }
         }
 

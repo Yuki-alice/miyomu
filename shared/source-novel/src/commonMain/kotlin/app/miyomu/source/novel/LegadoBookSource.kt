@@ -2,9 +2,11 @@ package app.miyomu.source.novel
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -22,6 +24,9 @@ data class LegadoBookSource(
     /** String form, or the newer object form with a `url` member. */
     val searchUrl: JsonElement? = null,
     val ruleSearch: LegadoRuleSet? = null,
+    /** Discovery categories: `分类::url` lines, or a JSON array/object of them. */
+    val exploreUrl: JsonElement? = null,
+    val ruleExplore: LegadoRuleSet? = null,
     val ruleBookInfo: LegadoRuleSet? = null,
     val ruleToc: LegadoRuleSet? = null,
     val ruleContent: LegadoRuleSet? = null,
@@ -31,6 +36,9 @@ data class LegadoBookSource(
         is JsonObject -> value["url"]?.jsonPrimitive?.content
         else -> null
     }
+
+    fun exploreCategories(): List<LegadoExploreCategory> =
+        parseExploreValue(exploreUrl ?: return emptyList())
 
     companion object {
         private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -44,6 +52,65 @@ data class LegadoBookSource(
             else -> listOf(fromJson(raw))
         }
     }
+}
+
+data class LegadoExploreCategory(val title: String, val url: String)
+
+private fun parseExploreValue(value: JsonElement): List<LegadoExploreCategory> {
+    return when (value) {
+        is JsonPrimitive -> {
+            val text = value.contentOrNull.orEmpty()
+            val trimmed = text.trim()
+            if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+                runCatching { Json.parseToJsonElement(trimmed) }
+                    .getOrNull()
+                    ?.let(::parseExploreValue)
+                    ?: parseExploreLines(text)
+            } else {
+                parseExploreLines(text)
+            }
+        }
+        is JsonArray -> value.flatMap(::parseExploreValue)
+        is JsonObject -> {
+            val directUrl = value["url"]?.jsonPrimitive?.contentOrNull
+            if (directUrl != null) {
+                val title = value["title"]?.jsonPrimitive?.contentOrNull
+                    ?: value["name"]?.jsonPrimitive?.contentOrNull
+                    ?: return emptyList()
+                listOfNotNull(exploreCategory(title, directUrl))
+            } else {
+                value.mapNotNull { (title, rawUrl) ->
+                    val url = (rawUrl as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+                    exploreCategory(title, url)
+                }
+            }
+        }
+        else -> emptyList()
+    }
+}
+
+private fun parseExploreLines(text: String): List<LegadoExploreCategory> =
+    text.lineSequence().mapNotNull(::parseExploreLine).toList()
+
+private fun parseExploreLine(line: String): LegadoExploreCategory? {
+    val trimmed = line.trim()
+    if (trimmed.isEmpty()) return null
+    val separator = when {
+        trimmed.contains("::") -> "::"
+        trimmed.contains("##") -> "##"
+        else -> return null
+    }
+    val index = trimmed.indexOf(separator)
+    return exploreCategory(
+        trimmed.substring(0, index),
+        trimmed.substring(index + separator.length),
+    )
+}
+
+private fun exploreCategory(title: String, url: String): LegadoExploreCategory? {
+    val name = title.trim()
+    val link = url.trim()
+    return if (name.isEmpty() || link.isEmpty()) null else LegadoExploreCategory(name, link)
 }
 
 /** Rule strings for one read stage; absent rules skip the stage. */

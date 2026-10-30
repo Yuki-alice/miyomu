@@ -107,6 +107,76 @@ class LegadoSourceReaderTest {
         assertEquals("凡人修仙传", books[1].name)
     }
 
+    private val exploreSourceJson = """
+        {
+          "bookSourceUrl": "https://s.example",
+          "bookSourceName": "发现源",
+          "exploreUrl": "玄幻::/list/xh?p={{page}}\n都市::https://s.example/list/ds",
+          "ruleExplore": {
+            "bookList": "div.book-item",
+            "name": "h3 a@text",
+            "author": ".author@text",
+            "bookUrl": "h3 a@href",
+            "coverUrl": "img@src",
+            "intro": ".intro@text"
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `explore categories parse from lines and json`() {
+        val lineSource = LegadoBookSource.fromJson(exploreSourceJson)
+        assertEquals(
+            listOf("玄幻" to "/list/xh?p={{page}}", "都市" to "https://s.example/list/ds"),
+            lineSource.exploreCategories().map { it.title to it.url },
+        )
+
+        val jsonSource = LegadoBookSource.fromJson(
+            """
+            {
+              "bookSourceUrl": "https://s.example",
+              "exploreUrl": [
+                { "title": "科幻", "url": "/list/kh" },
+                { "name": "悬疑", "url": "/list/xy" }
+              ]
+            }
+            """.trimIndent(),
+        )
+        assertEquals(
+            listOf("科幻" to "/list/kh", "悬疑" to "/list/xy"),
+            jsonSource.exploreCategories().map { it.title to it.url },
+        )
+    }
+
+    @Test
+    fun `explore url substitutes page and resolves against the source`() {
+        val source = LegadoBookSource.fromJson(exploreSourceJson)
+        val exploreReader = LegadoSourceReader(source, LegadoQuickJsEngine())
+        val category = source.exploreCategories().first()
+
+        assertEquals(
+            "https://s.example/list/xh?p=2",
+            exploreReader.exploreUrl(category, page = 2),
+        )
+    }
+
+    @Test
+    fun `explore parses lists with explore rules`() = runTest {
+        val exploreReader = LegadoSourceReader(
+            LegadoBookSource.fromJson(exploreSourceJson),
+            LegadoQuickJsEngine(),
+        )
+
+        val books = exploreReader.explore(searchPage, "https://s.example/list/xh?p=1")
+
+        assertEquals(2, books.size)
+        assertEquals("斗破苍穹", books[0].name)
+        assertEquals("天蚕土豆", books[0].author)
+        assertEquals("https://s.example/book/1", books[0].bookUrl)
+        assertEquals("https://s.example/cover/1.jpg", books[0].coverUrl)
+        assertEquals("一段简介。", books[0].intro)
+    }
+
     @Test
     fun `book info extracts fields and defaults toc url to the page`() = runTest {
         val info = reader.bookInfo(infoPage, "https://s.example/book/1")

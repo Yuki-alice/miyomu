@@ -159,7 +159,7 @@ class NovelSourceSearchScreen(
 }
 
 @Composable
-private fun SearchBookRow(
+internal fun SearchBookRow(
     graph: MiyomuGraph,
     book: LegadoSearchBook,
     sourceUrl: String?,

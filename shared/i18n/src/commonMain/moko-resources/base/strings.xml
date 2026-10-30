@@ -1033,6 +1033,8 @@
     <string name="novel_source_import">Import sources</string>
     <string name="novel_source_import_hint">Paste legado book-source JSON (object or array)</string>
     <string name="novel_search_online">Search this source</string>
+    <string name="novel_explore">Discover</string>
+    <string name="novel_explore_empty">This source has no discovery page</string>
     <string name="novel_shelf">Online shelf</string>
     <string name="novel_add_shelf">Add to shelf</string>
     <string name="novel_in_shelf">On shelf</string>

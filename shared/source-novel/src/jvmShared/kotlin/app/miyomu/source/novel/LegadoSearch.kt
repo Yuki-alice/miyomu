@@ -20,6 +20,18 @@ suspend fun searchLegadoSource(
     return reader.search(fetcher(url), url)
 }
 
+/** One discovery category page for [source], evaluated through the same list rules as search. */
+suspend fun exploreLegadoSource(
+    source: LegadoBookSource,
+    fetcher: suspend (String) -> String,
+    category: LegadoExploreCategory,
+    page: Int = 1,
+): List<LegadoSearchBook> {
+    val reader = LegadoSourceReader(source, LegadoQuickJsEngine())
+    val url = reader.exploreUrl(category, page)
+    return reader.explore(fetcher(url), url)
+}
+
 /** [LegadoSearchBook] → shelf/detail model; the TOC URL is only known after the detail load. */
 fun LegadoSearchBook.toOnlineBook(sourceUrl: String?): LegadoOnlineBook = LegadoOnlineBook(
     name = name,

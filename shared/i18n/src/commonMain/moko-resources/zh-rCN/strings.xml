@@ -884,6 +884,8 @@
     <string name="novel_illustration">插画</string>
     <string name="novel_image_error">[图片不可用]</string>
     <string name="novel_sources">小说书源</string>
+    <string name="novel_explore">发现</string>
+    <string name="novel_explore_empty">该源没有发现页</string>
     <string name="novel_source_import">导入书源</string>
     <string name="novel_source_import_hint">粘贴 legado 书源 JSON(单条或数组)</string>
     <string name="novel_search_online">搜索本书源</string>
