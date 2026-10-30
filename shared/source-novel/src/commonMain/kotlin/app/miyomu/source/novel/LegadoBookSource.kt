@@ -14,7 +14,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * Chinese novel-source community (hundreds of community-maintained sources). This model
  * covers the read-path subset: search, book info, TOC and content rules. Legado itself
  * is GPL-3.0; this is an independent implementation driven by the documented JSON shape,
- * with no legado code (docs/13 §2).
+ * with no legado code (docs/02-decisions.md).
  */
 @Serializable
 data class LegadoBookSource(

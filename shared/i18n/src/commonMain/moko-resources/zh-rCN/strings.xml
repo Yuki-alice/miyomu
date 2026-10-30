@@ -849,7 +849,7 @@
     <string name="library_exported">已导出列表</string>
     <string name="tracked_privately">私下记录</string>
     <string name="action_toggle_private_on">私下记录</string>
-    <!-- 小说阅读器(Miyomu 小说端,docs/12) -->
+    <!-- 小说阅读器(Miyomu 小说端) -->
     <string name="label_novels">小说</string>
     <string name="novel_empty_library">还没有小说。把 .txt 或 .epub 文件放进库文件夹即可。</string>
     <string name="novel_reader_settings">阅读设置</string>

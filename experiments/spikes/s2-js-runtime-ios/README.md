@@ -1,6 +1,6 @@
 # S2 iOS Spike
 
-在 iPhone 17 模拟器上验证 quickjs-kt 1.0.15 与同一套 Venera 风格源。规格见 [S2](../../../docs/spikes/s2-js-runtime.md)，报告见 [结果](../../../docs/spikes/results/s2-js-runtime.md)。
+在 iPhone 17 模拟器上验证 quickjs-kt 1.0.15 与同一套 Venera 风格源。旧规格/报告已随旧文档删除（git `14c495e`）。
 
 ## 已验证（2026-10-28，iPhone 17 模拟器 / iosSimulatorArm64）
 

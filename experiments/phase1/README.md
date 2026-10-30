@@ -1,6 +1,6 @@
 # Phase 1 探针
 
-M0 的可丢弃验证代码，不属于正式架构。决策记录见 [ADR-0006](../../docs/adr/0006-unified-android-toolchain.md) 与 [ADR-0007](../../docs/adr/0007-network-and-cookie-storage.md)。
+M0 的可丢弃验证代码，不属于正式架构。决策记录见 [02 关键决策](../../docs/02-decisions.md)。
 
 ## toolchain-probe
 

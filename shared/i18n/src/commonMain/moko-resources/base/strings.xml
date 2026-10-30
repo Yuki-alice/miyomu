@@ -995,7 +995,7 @@
     <string name="exception_http">HTTP %d, check website in WebView</string>
     <string name="exception_offline">No Internet connection</string>
     <string name="exception_unknown_host">Couldn\'t reach %s</string>
-    <!-- Novel reader (Miyomu novel side, docs/12) -->
+    <!-- Novel reader (Miyomu novel side) -->
     <string name="label_novels">Novels</string>
     <string name="novel_empty_library">No novels here yet. Put .txt or .epub files into the library folder.</string>
     <string name="novel_reader_settings">Reader settings</string>

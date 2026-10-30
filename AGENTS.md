@@ -5,8 +5,8 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- **2026-10-30 (evening): CI is green and the Venera host APIs are complete; see `git log -1` for the baseline.** Start from `docs/16-handoff-2026-10-30-evening.md`. Android + desktop are the production targets (both builds green); iOS is not started. All three media (comic / video / novel) live on one branch; 210 JVM tests pass; all 13 reference Venera sources construct unmodified, and hitomi's real-site flow passes on desktop and the Android emulator. The Phase-D handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; the novel plan is `docs/12-novel-plan.md`; decisions are ADR-0011/0012/0013/0014. **Packaging/release is deferred by the user until completeness improves.**
-- `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, and `docs/09-handoff-2026-10-29.md` are **historical** (pre-Phase-D) and are kept for implementation records only.
+- **2026-10-30 (evening): the code compiles, but the project is NOT usable.** The user's real-device test found it "基本不可用"; do not claim feature completeness from fixture/construction/static tests. Start from `docs/00-current-status.md`. Android + desktop compile; iOS is not started; 210 module-level/fixture tests pass; all 13 reference Venera sources construct and hitomi's single real-site path works, but none of these prove a user can import data/sources and actually read or play. Feature work is paused; prioritize reproducing real-use failures and hardening import → use → restart flows. The old ADR/plan/handoff docs were deleted on 2026-10-30; the decision digest is `docs/02-decisions.md`. **Packaging/release is deferred.**
+- Old ADRs, plans, handoffs and checklists were deleted on 2026-10-30. If their content is needed, recover it from git history `14c495e`; the current minimal docs are `docs/00-current-status.md` through `docs/03-verification.md`.
 - Production build lives at the repository root (`androidApp/`, `desktopApp/`, `shared/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
 - Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
 
@@ -47,18 +47,18 @@ Rules:
 
 ## Current focus (2026-10-30)
 
-- **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). See `docs/11-handoff-2026-10-30.md` §5.
+- **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). The old handoff with those rules was deleted; recover it from git `14c495e` if needed.
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
-- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), online novel body search, no release artifacts, CI green since 2026-10-30. Venera source compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/14-venera-compat.md`; all 13 reference sources construct and the static API surface has no gaps; hitomi's real-site search → details → pages flow passes on desktop and the Android emulator; the remaining sources are still unverified.
+- **Known gaps**: **real-usage validation failed (user, 2026-10-30); detailed failure list pending**; Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), online novel body search, no release artifacts. Venera compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/03-verification.md`; the 13/13 numbers cover construction + static API only, and hitomi covers one search → details → pages path; **they are not usability evidence**, and the remaining sources are unverified.
+- **Validation rule**: only claim a feature works after a fresh-data UI walkthrough (import → use → restart → persistence). Module/fixture tests, source construction, and static audits are not evidence of usability.
 - **Novel wiring**: `HomeScreen` has six tabs with `NovelLibraryTab` at index 0 (manga/updates/history/browse/more shifted by one). Novel bookmarks, reader prefs and legado sources all live in the JSON `PreferenceStore`, so the novel side still has **zero Room schema impact** — keep it that way unless a migration is planned.
-- **CI gaps**: CI is green as of 2026-10-30 (canonical repositories on runners; `download`/`danmaku` tests included); no Windows job; no packaging smoke.
+- **CI gaps**: CI is runnable as of 2026-10-30 (canonical repositories on runners; `download`/`danmaku` tests included), but it only validates compilation and module tests, not real usability; no Windows job; no packaging smoke.
 
 ## Canonical files
 
-- Product: `docs/00-product-brief.md`
-- Architecture: `docs/01-architecture.md` (note: module list predates Phase D; see README/11)
-- Current handoff: `docs/16-handoff-2026-10-30-evening.md` (previous: `docs/15-handoff-2026-10-30-afternoon.md`; Phase-D era: `docs/11-handoff-2026-10-30.md`)
-- Anime/player plan: `docs/10-anime-source-and-player-plan.md`
-- Novel plan: `docs/12-novel-plan.md` (benchmark research: `docs/13-novel-benchmark.md`)
-- Brand: `docs/06-brand.md`
-- Historical plans: `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, `docs/09-handoff-2026-10-29.md`
+- Current status: `docs/00-current-status.md` (single source of truth)
+- Architecture: `docs/01-architecture.md`
+- Decisions: `docs/02-decisions.md`
+- Verification: `docs/03-verification.md`
+- Docs index: `docs/README.md`
+- Old docs: deleted 2026-10-30; recover from git `14c495e` if needed

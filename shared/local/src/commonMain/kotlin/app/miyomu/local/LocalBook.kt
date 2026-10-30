@@ -11,7 +11,7 @@ enum class LocalBookFormat {
     TXT,
     VIDEO,
 
-    // Novel-only formats (docs/12-novel-plan.md); the comic scanner keeps ignoring them.
+    // Novel-only formats; the comic scanner keeps ignoring them.
     FB2,
     HTML,
     MARKDOWN,

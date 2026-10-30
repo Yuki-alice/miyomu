@@ -11,7 +11,7 @@ import tachiyomi.core.common.preference.PreferenceStore
 
 /**
  * Imported legado book sources and the online shelf, persisted as JSON strings in the
- * shared [PreferenceStore] — novel-only data with zero Room schema impact (docs/13 §3).
+ * shared [PreferenceStore] — novel-only data with zero Room schema impact (docs/02-decisions.md).
  * Sources are read from the store on construction; mutations update both the flow and
  * the store.
  */

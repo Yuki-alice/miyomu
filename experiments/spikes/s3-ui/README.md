@@ -2,7 +2,7 @@
 
 Compose Multiplatform 桌面样例，用于验证 Aniyomi 风格三屏（库 / 详情 / 设置）迁移到 CMP + Material 3 的成本。
 
-规格：[docs/spikes/s3-cmp-ui.md](../../../docs/spikes/s3-cmp-ui.md)
+旧规格已随旧文档删除（git `14c495e`）。
 
 ## 运行
 
@@ -30,4 +30,4 @@ Compose Multiplatform 桌面样例，用于验证 Aniyomi 风格三屏（库 / �
 - [ ] MD3E 组件可用性表
 - [ ] 1,000 项网格性能
 - [ ] 每屏迁移耗时
-- [ ] 报告写入 `docs/spikes/results/s3-cmp-ui.md`
+- [ ] 旧报告已随旧文档删除（git `14c495e`）

@@ -40,15 +40,13 @@ Desktop (macOS arm64/x64, Windows x64/arm64) bundles the mediamp MPV runtime
 artifacts. They contain libmpv (https://github.com/mpv-player/mpv) and FFmpeg
 (https://ffmpeg.org), built without GPL components and distributed under
 LGPL-2.1-or-later, dynamically linked and replaceable. The Linux runtime is
-GPL-3.0 and is not distributed. See
-docs/adr/0012-desktop-video-backend-licensing.md for details.
+GPL-3.0 and is not distributed. See docs/02-decisions.md for details.
 
 Android-only dependencies (Injekt DI, Context-based helpers, Android View
 viewer core, SQLDelight data layer, Material motion, drawable resources) are
-replaced by multiplatform equivalents; see
-docs/adr/0011-kmp-aniyomi-port.md for the full substitution map.
+replaced by multiplatform equivalents; see docs/02-decisions.md for the porting strategy.
 
-The Phase D additions (ADR-0014) are original Miyomu code with no copied
+The anime source additions are original Miyomu code with no copied
 material: the JS anime source engine (`shared/source-api`/`source-runtime`/
 `source-manager` anime paths, `demo-resources/sources/anime/*`), the download
 queue (`shared/download`), the dandanplay danmaku client and Compose overlay

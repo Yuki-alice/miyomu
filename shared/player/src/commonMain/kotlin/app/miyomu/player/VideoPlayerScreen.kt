@@ -376,7 +376,7 @@ private fun PlayerUnavailable(onBack: () -> Unit) {
             Text(
                 text = "macOS / Windows 版本内置 MPV 运行时；Linux 的 MPV 构建是 GPL-3.0，" +
                     "与项目的 Apache-2.0 冲突，因此不分发。详见 " +
-                    "docs/adr/0012-desktop-video-backend-licensing.md。",
+                    "docs/02-decisions.md。",
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodySmall,
             )

@@ -83,7 +83,7 @@ class MiyomuAppTest {
                 )
             }
 
-            // Novels own the first tab (docs/12); switch to the manga library tab first.
+            // Novels own the first tab; switch to the manga library tab first.
             val mangaTabLabels = listOf("书架", "Library")
             waitUntil(timeoutMillis = 5_000) {
                 mangaTabLabels.any { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
@@ -171,7 +171,7 @@ class MiyomuAppTest {
                 )
             }
 
-            // Novels own the first tab (docs/12); switch to the manga library tab first.
+            // Novels own the first tab; switch to the manga library tab first.
             val mangaTabLabels = listOf("书架", "Library")
             waitUntil(timeoutMillis = 5_000) {
                 mangaTabLabels.any { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }

@@ -65,7 +65,7 @@ import kotlinx.coroutines.launch
  * out concurrently and each source streams its own result card row.
  *
  * Both source families take part: installed JS sources (comic + anime) and imported legado
- * novel sources, so one query covers all three media (docs/12 §7).
+ * novel sources, so one query covers all three media.
  */
 class GlobalSearchRoute(
     private val graph: MiyomuGraph,

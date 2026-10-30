@@ -1,7 +1,6 @@
 # S1 Android Player Spike
 
-mediamp + ExoPlayer 的 Android 播放验证。规格：[docs/spikes/s1-player.md](../../../docs/spikes/s1-player.md)
-报告：[docs/spikes/results/s1-player.md](../../../docs/spikes/results/s1-player.md)
+mediamp + ExoPlayer 的 Android 播放验证。旧规格/报告已随旧文档删除（git `14c495e`）。
 
 ## 已验证（2026-10-28，API 36 / 16KB AVD）
 
@@ -54,4 +53,4 @@ adb logcat -s S1_ANDROID
 - 模拟器无 `/sdcard/Download`，测试统一走 HTTP 媒体（`10.0.2.2:18080/media/...`）。
 - 媒体服务支持 Range，用于 seek；无 Range 时 MP4 会反复整文件传输，导致卡顿。
 - 音轨/内嵌字幕切换不在 mediamp 统一 API 内，需后端直连或扩展。
-- 截图证据：`docs/spikes/results/evidence/s1-android-*.png`。
+- 截图证据已随旧文档删除（git `14c495e`）。

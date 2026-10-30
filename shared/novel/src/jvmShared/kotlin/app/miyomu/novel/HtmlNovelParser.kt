@@ -6,7 +6,7 @@ import com.fleeksoft.ksoup.Ksoup
  * Standalone .html/.htm novel files — the common form of fan-translated web novels.
  * The whole document becomes one chapter; scripts/styles are dropped and the body is
  * walked with the shared block walker. Referenced images are not resolved in v1
- * (a single HTML file has no reliable sibling context; see docs/12).
+ * (a single HTML file has no reliable sibling context).
  */
 class HtmlNovelParser {
 

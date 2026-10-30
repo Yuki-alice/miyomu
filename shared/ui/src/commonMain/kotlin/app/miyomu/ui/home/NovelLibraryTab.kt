@@ -10,7 +10,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
 /**
- * Novel library tab (docs/12): the novel counterpart of Aniyomi's AnimeLibraryTab /
+ * Novel library tab: the novel counterpart of Aniyomi's AnimeLibraryTab /
  * MangaLibraryTab split — each medium owns its library tab.
  */
 class NovelLibraryTab(

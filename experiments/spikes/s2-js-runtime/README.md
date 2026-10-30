@@ -1,7 +1,6 @@
 # S2 JS Runtime Spike
 
-QuickJS + Venera 风格源的桌面验证。规格：[docs/spikes/s2-js-runtime.md](../../../docs/spikes/s2-js-runtime.md)
-报告：[docs/spikes/results/s2-js-runtime.md](../../../docs/spikes/results/s2-js-runtime.md)
+QuickJS + Venera 风格源的桌面验证。旧规格/报告已随旧文档删除（git `14c495e`）。
 
 ## 已验证（2026-10-28，JVM 桌面）
 

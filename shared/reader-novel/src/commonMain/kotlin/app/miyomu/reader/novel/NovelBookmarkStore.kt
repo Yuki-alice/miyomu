@@ -20,7 +20,7 @@ data class NovelBookmark(
 /**
  * Bookmarks for local novels, persisted as a JSON string in the shared [PreferenceStore]
  * instead of a Room table: novel-only data, zero schema impact on the comic side
- * (docs/13 §3). Keys are per book location, so the store instance itself stays stateless.
+ * (docs/02-decisions.md). Keys are per book location, so the store instance itself stays stateless.
  */
 class NovelBookmarkStore(
     private val store: PreferenceStore,

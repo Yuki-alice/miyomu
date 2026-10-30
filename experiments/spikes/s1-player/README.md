@@ -1,7 +1,6 @@
 # S1 Player Spike
 
-mediamp 桌面播放验证样例。规格：[docs/spikes/s1-player.md](../../../docs/spikes/s1-player.md)
-报告：[docs/spikes/results/s1-player.md](../../../docs/spikes/results/s1-player.md)
+mediamp 桌面播放验证样例。旧规格/报告已随旧文档删除（git `14c495e`）。
 
 ## 已验证（2026-10-28，macOS / MPV）
 

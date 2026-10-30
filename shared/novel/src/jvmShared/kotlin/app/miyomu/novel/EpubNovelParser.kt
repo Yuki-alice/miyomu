@@ -14,7 +14,7 @@ import java.util.zip.ZipInputStream
  * light-novel case); image dimensions come from the file header so the reader can reserve
  * space before decoding. Cover extraction follows EPUB 2 (`meta name="cover"`) and EPUB 3
  * (`properties` containing `cover-image`). CSS, footnotes and CSS-based layout are out of
- * scope for v1 (docs/12). Extraction behavior was cross-checked against Myne's EPUB reader
+ * scope for v1. Extraction behavior was cross-checked against Myne's EPUB reader
  * (Apache-2.0).
  */
 class EpubNovelParser {
