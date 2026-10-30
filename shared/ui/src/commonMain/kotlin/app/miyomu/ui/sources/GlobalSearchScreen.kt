@@ -1,5 +1,6 @@
 package app.miyomu.ui.sources
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,7 +40,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.miyomu.model.ComicSummary
 import app.miyomu.source.manager.SourceRuntimeInfo
+import app.miyomu.source.novel.LegadoBookSource
+import app.miyomu.source.novel.LegadoSearchBook
+import app.miyomu.source.novel.searchLegadoSource
+import app.miyomu.source.novel.toOnlineBook
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.novel.NovelOnlineDetailScreen
+import app.miyomu.ui.novel.NovelSourceSearchScreen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBar
@@ -56,6 +63,9 @@ import kotlinx.coroutines.launch
 /**
  * Global search across every loaded source (Aniyomi's Browse > global search): one query fans
  * out concurrently and each source streams its own result card row.
+ *
+ * Both source families take part: installed JS sources (comic + anime) and imported legado
+ * novel sources, so one query covers all three media (docs/12 §7).
  */
 class GlobalSearchRoute(
     private val graph: MiyomuGraph,
@@ -68,15 +78,19 @@ class GlobalSearchRoute(
         val scope = rememberCoroutineScope()
         val runtime = graph.sourceRuntime
         val sources by runtime.state.collectAsState()
+        val novelSources by graph.novelSourceStore.sources.collectAsState()
+        val novelFetcher = graph.novelFetcher
 
         var query by rememberSaveable { mutableStateOf<String?>(null) }
         var submitted by rememberSaveable { mutableStateOf("") }
         val results = remember { mutableStateMapOf<String, SourceResult>() }
+        val novelResults = remember { mutableStateMapOf<String, NovelResult>() }
 
         fun runSearch(term: String) {
             if (term.isNullOrBlank()) return
             submitted = term
             results.clear()
+            novelResults.clear()
             sources.sources.forEach { info ->
                 results[info.id] = SourceResult.Loading
                 scope.launch {
@@ -85,6 +99,19 @@ class GlobalSearchRoute(
                         onSuccess = { SourceResult.Success(it.items) },
                         onFailure = { SourceResult.Error(it.message ?: it::class.simpleName.orEmpty()) },
                     )
+                }
+            }
+            if (novelFetcher != null) {
+                novelSources.forEach { novelSource ->
+                    val key = novelKey(novelSource)
+                    novelResults[key] = NovelResult.Loading
+                    scope.launch {
+                        val outcome = runCatching { searchLegadoSource(novelSource, novelFetcher, term) }
+                        novelResults[key] = outcome.fold(
+                            onSuccess = { NovelResult.Success(it) },
+                            onFailure = { NovelResult.Error(it.message ?: it::class.simpleName.orEmpty()) },
+                        )
+                    }
                 }
             }
         }
@@ -102,11 +129,13 @@ class GlobalSearchRoute(
             },
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                // This screen exists to search, so keep the field visible instead of starting
+                // in SearchToolbar's collapsed (icon-only) state.
                 SearchToolbar(
-                    searchQuery = query,
+                    searchQuery = query ?: "",
                     onChangeSearchQuery = { query = it },
                     navigateUp = null,
-                    placeholderText = "在所有源中搜索",
+                    placeholderText = "在所有源中搜索（漫画 / 动画 / 小说）",
                     onSearch = { term -> runSearch(term.trim()) },
                 )
 
@@ -145,6 +174,27 @@ class GlobalSearchRoute(
                                 )
                             }
                         }
+
+                        if (novelFetcher != null) {
+                            items(novelSources, key = { novelKey(it) }) { novelSource ->
+                                val key = novelKey(novelSource)
+                                GlobalNovelSection(
+                                    title = novelSource.bookSourceName ?: novelSource.bookSourceUrl.orEmpty(),
+                                    result = novelResults[key] ?: NovelResult.Loading,
+                                    onOpenSource = {
+                                        navigator.push(NovelSourceSearchScreen(graph, novelSource))
+                                    },
+                                    onOpenItem = { book ->
+                                        navigator.push(
+                                            NovelOnlineDetailScreen(
+                                                graph = graph,
+                                                book = book.toOnlineBook(novelSource.bookSourceUrl),
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -152,10 +202,19 @@ class GlobalSearchRoute(
     }
 }
 
+private fun novelKey(source: LegadoBookSource): String =
+    "novel:" + (source.bookSourceUrl ?: source.bookSourceName ?: "unnamed")
+
 private sealed interface SourceResult {
     data object Loading : SourceResult
     data class Success(val items: List<ComicSummary>) : SourceResult
     data class Error(val message: String) : SourceResult
+}
+
+private sealed interface NovelResult {
+    data object Loading : NovelResult
+    data class Success(val items: List<LegadoSearchBook>) : NovelResult
+    data class Error(val message: String) : NovelResult
 }
 
 @Composable
@@ -222,6 +281,107 @@ private fun GlobalSourceSection(
                         Text("在 ${info.name} 中查看更多")
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlobalNovelSection(
+    title: String,
+    result: NovelResult,
+    onOpenSource: () -> Unit,
+    onOpenItem: (LegadoSearchBook) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenSource).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "小说",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        when (result) {
+            NovelResult.Loading -> Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.width(24.dp))
+            }
+            is NovelResult.Error -> Text(
+                text = result.message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            is NovelResult.Success -> {
+                if (result.items.isEmpty()) {
+                    Text(
+                        text = "没有结果",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                } else {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(result.items.take(10)) { book ->
+                            GlobalNovelCard(book = book, onClick = { onOpenItem(book) })
+                        }
+                    }
+                }
+                if (result.items.size >= 5) {
+                    TextButton(onClick = onOpenSource, modifier = Modifier.padding(horizontal = 8.dp)) {
+                        Text("在 $title 中查看更多")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlobalNovelCard(book: LegadoSearchBook, onClick: () -> Unit) {
+    Card(modifier = Modifier.clickable(onClick = onClick)) {
+        Column {
+            AsyncImage(
+                model = book.coverUrl,
+                contentDescription = book.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(120.dp)
+                    .aspectRatio(2f / 3f)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+            Text(
+                text = book.name,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp).width(120.dp),
+            )
+            book.author?.takeIf { it.isNotBlank() }?.let { author ->
+                Text(
+                    text = author,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 8.dp).width(120.dp),
+                )
             }
         }
     }

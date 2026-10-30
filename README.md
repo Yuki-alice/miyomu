@@ -130,6 +130,8 @@ python3 tools/make_sample_library.py
 - 护眼暖色滤镜四档（Play Books Night Light 同类）与音量键翻页（Android 生效）；chrome：顶栏（书名/章节/书签）、底栏（位置滑条、上一章/下一章、目录、设置）、点击翻页区、桌面键盘翻页。
 - 在线阅读（legado 书源）：浏览 Tab 导入书源 JSON → 搜索 → 加入书架 → 目录/正文在线阅读，进度与书签与本地共用同一套存储；规则引擎为 legado 语法的独立实现（无 GPL 代码）。
 
+「浏览 → 全局搜索」一次查询同时打散到已安装的 JS 源（漫画 / anime）与已导入的 legado 小说书源，三种媒介的结果分节并列；点小说结果直接进在线详情。
+
 截图：[小说库](evidence/novel-library.png) · [小说详情](evidence/novel-detail.png) · [小说阅读器](evidence/novel-reader.png)
 
 ## 本地阅读

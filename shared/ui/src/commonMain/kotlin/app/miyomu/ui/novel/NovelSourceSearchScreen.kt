@@ -36,10 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.miyomu.source.novel.LegadoBookSource
-import app.miyomu.source.novel.LegadoOnlineBook
-import app.miyomu.source.novel.LegadoQuickJsEngine
-import app.miyomu.source.novel.LegadoSourceReader
 import app.miyomu.source.novel.LegadoSearchBook
+import app.miyomu.source.novel.searchLegadoSource
+import app.miyomu.source.novel.toOnlineBook
 import app.miyomu.ui.MiyomuGraph
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -72,9 +71,7 @@ class NovelSourceSearchScreen(
             error = null
             results = null
             runCatching {
-                val reader = LegadoSourceReader(source, LegadoQuickJsEngine())
-                val url = reader.searchUrl(query) ?: throw IllegalStateException("searchUrl")
-                reader.search(fetcher(url), url)
+                searchLegadoSource(source, fetcher, query)
             }.onSuccess { results = it }
                 .onFailure { failure -> error = failure.message ?: failure.toString() }
             searching = false
@@ -148,14 +145,7 @@ class NovelSourceSearchScreen(
                                 navigator.push(
                                     NovelOnlineDetailScreen(
                                         graph = graph,
-                                        book = LegadoOnlineBook(
-                                            name = book.name,
-                                            author = book.author,
-                                            bookUrl = book.bookUrl.orEmpty(),
-                                            tocUrl = book.bookUrl.orEmpty(),
-                                            coverUrl = book.coverUrl,
-                                            sourceUrl = source.bookSourceUrl,
-                                        ),
+                                        book = book.toOnlineBook(source.bookSourceUrl),
                                     ),
                                 )
                             },
@@ -201,16 +191,7 @@ private fun SearchBookRow(
                 if (onShelf) {
                     graph.novelSourceStore.removeFromShelf(book.bookUrl.orEmpty())
                 } else {
-                    graph.novelSourceStore.addToShelf(
-                        LegadoOnlineBook(
-                            name = book.name,
-                            author = book.author,
-                            bookUrl = book.bookUrl.orEmpty(),
-                            tocUrl = book.bookUrl.orEmpty(),
-                            coverUrl = book.coverUrl,
-                            sourceUrl = sourceUrl,
-                        ),
-                    )
+                    graph.novelSourceStore.addToShelf(book.toOnlineBook(sourceUrl))
                 }
             },
         ) {
