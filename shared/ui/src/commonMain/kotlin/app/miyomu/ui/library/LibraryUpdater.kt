@@ -56,6 +56,7 @@ class LibraryUpdater(
                             lastFinishedAt = graph.nowMillis(),
                             errors = result,
                         )
+                        graph.preferenceStore.getLong("updates_last_fetched", 0L).set(graph.nowMillis())
                     }
                     .onFailure { error ->
                         _state.value = _state.value.copy(

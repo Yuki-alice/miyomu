@@ -163,6 +163,9 @@ interface MiyomuDao {
     @Upsert
     suspend fun upsertLibraryUpdates(rows: List<LibraryUpdateEntity>)
 
+    @Query("DELETE FROM library_updates WHERE itemId = :itemId AND key = :key")
+    suspend fun deleteLibraryUpdate(itemId: String, key: String)
+
     @Query("DELETE FROM library_updates")
     suspend fun clearLibraryUpdates()
 }

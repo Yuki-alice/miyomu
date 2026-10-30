@@ -19,6 +19,8 @@ interface LibraryUpdateRepository {
 
     suspend fun recordUpdates(itemId: String, updates: List<LibraryUpdate>)
 
+    suspend fun deleteUpdate(itemId: String, key: String)
+
     suspend fun clear()
 }
 
@@ -43,6 +45,8 @@ internal class RoomLibraryUpdateRepository(
             },
         )
     }
+
+    override suspend fun deleteUpdate(itemId: String, key: String) = dao.deleteLibraryUpdate(itemId, key)
 
     override suspend fun clear() = dao.clearLibraryUpdates()
 }
