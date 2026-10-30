@@ -34,6 +34,7 @@ class MoreTab(
     private val onOpenDownloads: (() -> Unit)? = null,
     private val onOpenBackup: (() -> Unit)? = null,
     private val onOpenDanmaku: (() -> Unit)? = null,
+    private val onOpenSettings: () -> Unit = {},
 ) : Tab {
 
     override val options: TabOptions
@@ -77,7 +78,12 @@ class MoreTab(
                 onClick = onOpenDanmaku,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            MoreRow(icon = Icons.Outlined.Settings, title = "阅读设置", subtitle = "阅读模式、方向与排版（后续）")
+            MoreRow(
+                icon = Icons.Outlined.Settings,
+                title = "设置",
+                subtitle = "阅读、备份、弹幕",
+                onClick = onOpenSettings,
+            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MoreRow(icon = Icons.Outlined.Info, title = "关于 Miyomu", subtitle = "0.1.0 · Apache-2.0")
         }
