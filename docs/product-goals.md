@@ -267,6 +267,9 @@
 | Q8 | 追踪集成 | AniList + Bangumi；不做 MAL；默认关闭（P1 可选） |
 | Q9 | Desktop 视频后端 | 维持 macOS/Windows MPV；Linux 不做 |
 | Q10 | 包名策略 | 统一 `app.miyomu.*`（移植代码用 `app.miyomu.ported.*` 过渡） |
+| Q11 | Q7 同步范围（2026-10-31 采纳推荐默认值，可推翻） | **WebDAV 双向**——P1-5 已实施（`WebDavSyncService` 增量判定 + 冲突对话框 + 偏好入备份）；若需自建云请重新评估 Q5/Q6 | 
+| Q12 | 未提交变更处理（2026-10-31 采纳） | **单 commit**（`8ffc77e`，202 文件；分主题拆分因核心文件跨轮交叉修改不可行） |
+| Q13 | P2 与 P1 剩余子项（2026-10-31 采纳） | **单独立项**：视频 HLS/DASH 混流（需混流库许可评估）、词典/翻译（外部服务/词库选型）、P2 生态项（规模化门槛）——均记录于 architecture-refactor 文档 |
 
 > 注：用户原话为“mihoo”，本文按 Mihon（Tachiyomi 后继）理解；如指其他产品，请纠正后我再更新。
 
