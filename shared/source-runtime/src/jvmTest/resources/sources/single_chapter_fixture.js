@@ -26,7 +26,15 @@ class SingleChapterFixtureSource extends ComicSource {
         }),
 
         loadEp: async () => ({
-            images: [__BASE_URL + "/single-1.jpg", __BASE_URL + "/single-2.jpg"]
+            images: [
+                { url: __BASE_URL + "/single-1.jpg" },
+                { url: __BASE_URL + "/single-2.jpg" }
+            ]
+        }),
+
+        onImageLoad: url => ({
+            url: url,
+            headers: { Referer: "https://example.com/" }
         })
     };
 }

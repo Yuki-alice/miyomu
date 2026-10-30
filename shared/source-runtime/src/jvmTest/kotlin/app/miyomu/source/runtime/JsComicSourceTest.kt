@@ -31,6 +31,7 @@ class JsComicSourceTest {
 
     private val receivedCookies = CopyOnWriteArrayList<String?>()
     private val receivedTestHeaders = CopyOnWriteArrayList<String?>()
+    private val receivedImageReferers = CopyOnWriteArrayList<String?>()
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -46,6 +47,7 @@ class JsComicSourceTest {
             createContext("/images", ::handleImage)
             createContext("/binary", ::handleBinary)
             createContext("/cookie-echo", ::handleCookieEcho)
+            createContext("/single-1.jpg", ::handleSingleImage)
             this.executor = this@JsComicSourceTest.executor
             start()
         }
@@ -124,10 +126,16 @@ class JsComicSourceTest {
             val details = source.details("g1")
             val chapter = details.chapters.single()
             assertEquals(SingleChapterId, chapter.id)
+            val pages = source.pages("g1", chapter.id)
             assertEquals(
                 listOf("$baseUrl/single-1.jpg", "$baseUrl/single-2.jpg"),
-                source.pages("g1", chapter.id).map { it.url },
+                pages.map { it.url },
             )
+            assertEquals("https://example.com/", pages.first().headers["Referer"])
+
+            val image = source.loadImage(pages.first().url, pages.first().headers)
+            assertEquals(listOf<Byte>(9, 8, 7), image.toList())
+            assertEquals("https://example.com/", receivedImageReferers.single())
         } finally {
             source.close()
         }
@@ -266,6 +274,14 @@ class JsComicSourceTest {
 
     private fun handleCookieEcho(exchange: HttpExchange) {
         exchange.respondHtml(exchange.requestHeaders.getFirst("Cookie") ?: "none")
+    }
+
+    private fun handleSingleImage(exchange: HttpExchange) {
+        receivedImageReferers += exchange.requestHeaders.getFirst("Referer")
+        val bytes = byteArrayOf(9, 8, 7)
+        exchange.responseHeaders.add("Content-Type", "image/jpeg")
+        exchange.sendResponseHeaders(200, bytes.size.toLong())
+        exchange.responseBody.use { it.write(bytes) }
     }
 
     private fun resource(path: String): String =

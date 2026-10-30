@@ -567,7 +567,29 @@ globalThis.__miyomuInvoke = async function (action, sourceKey, payloadJson) {
         if (!source.comic || typeof source.comic.loadEp !== "function") {
             throw new Error("source does not support chapter pages");
         }
-        return JSON.stringify(await source.comic.loadEp(payload.comicId, payload.chapterId == null ? null : payload.chapterId));
+        const comicId = payload.comicId;
+        const chapterId = payload.chapterId == null ? null : payload.chapterId;
+        const result = await source.comic.loadEp(comicId, chapterId);
+        let images = Array.isArray(result.images) ? result.images : [];
+        if (typeof source.comic.onImageLoad === "function") {
+            images = await Promise.all(images.map(async image => {
+                const url = typeof image === "string" ? image : image.url;
+                const originalHeaders = (image && typeof image === "object" && image.headers) || {};
+                try {
+                    const config = await source.comic.onImageLoad(url, comicId, chapterId);
+                    if (config && typeof config === "object") {
+                        return {
+                            url: config.url || url,
+                            headers: Object.assign({}, originalHeaders, config.headers || {})
+                        };
+                    }
+                } catch (error) {
+                    __hostLog("warn", "onImageLoad failed for " + url + ": " + String(error));
+                }
+                return { url: url, headers: originalHeaders };
+            }));
+        }
+        return JSON.stringify({ images: images });
     }
 
     if (action === "animeSearch") {

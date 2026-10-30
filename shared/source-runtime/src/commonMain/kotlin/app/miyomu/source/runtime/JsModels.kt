@@ -54,7 +54,7 @@ internal const val SingleChapterId = "__miyomu_single__"
 
 @Serializable
 internal data class JsPagesDto(
-    val images: List<String> = emptyList(),
+    val images: List<JsonElement> = emptyList(),
 )
 
 @Serializable
@@ -123,12 +123,26 @@ internal fun JsComicDetailsDto.toDetails(comicId: String): ComicDetails {
     )
 }
 
-internal fun JsPagesDto.toPages(): List<PageRef> = images
-    .asSequence()
-    .map { it.trim() }
-    .filter { it.isNotEmpty() }
-    .map { PageRef(url = it) }
-    .toList()
+internal fun JsPagesDto.toPages(): List<PageRef> = images.mapNotNull { image ->
+    when (image) {
+        is JsonPrimitive -> image.contentOrNull
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { PageRef(url = it) }
+        is JsonObject -> {
+            val url = image["url"]?.jsonPrimitiveContent()?.trim().orEmpty()
+            if (url.isEmpty()) null else PageRef(url = url, headers = parsePageHeaders(image["headers"]))
+        }
+        else -> null
+    }
+}
+
+private fun parsePageHeaders(element: JsonElement?): Map<String, String> {
+    val headers = element as? JsonObject ?: return emptyMap()
+    return headers.mapNotNull { (name, value) ->
+        (value as? JsonPrimitive)?.contentOrNull?.let { name to it }
+    }.toMap()
+}
 
 internal fun parseTags(element: JsonElement?): Map<String, List<String>> {
     val objectValue = element as? JsonObject ?: return emptyMap()
