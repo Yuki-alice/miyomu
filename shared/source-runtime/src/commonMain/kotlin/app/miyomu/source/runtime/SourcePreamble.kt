@@ -59,6 +59,50 @@ globalThis.Cookie = class Cookie {
     }
 };
 
+// Venera's diagnostic surface; routed to the host log so source logging is visible.
+globalThis.console = {
+    log(...args) { __hostLog("log", Array.from(args).join(" ")); },
+    info(...args) { __hostLog("info", Array.from(args).join(" ")); },
+    warn(...args) { __hostLog("warn", Array.from(args).join(" ")); },
+    error(...args) { __hostLog("error", Array.from(args).join(" ")); },
+    debug(...args) { __hostLog("debug", Array.from(args).join(" ")); },
+};
+
+// App metadata. `platform` is deliberately absent: the preamble is shared by the JVM and
+// Android targets, and reporting the wrong platform would silently change source branches.
+// Sources that read it are reported by tools/venera_compat.py instead of getting a lie.
+globalThis.APP = {
+    get version() { return "0.1.0"; },
+    get locale() { return "zh_CN"; },
+};
+
+// Comment model: sources construct it when rendering a comments page. Display is not
+// implemented yet, so the object only needs to hold its fields.
+globalThis.Comment = function Comment(values) {
+    values = values || {};
+    this.userName = values.userName;
+    this.avatar = values.avatar;
+    this.content = values.content;
+    this.time = values.time;
+    this.replyCount = values.replyCount;
+    this.id = values.id;
+    this.isLiked = values.isLiked;
+    this.score = values.score;
+    this.voteStatus = values.voteStatus;
+};
+
+// Image handle. Real decoding/transform is host work that sources only reach through
+// Venera's image pipeline; an empty handle keeps signatures satisfied.
+globalThis.Image = class Image {
+    constructor(key) {
+        this.key = key == null ? 0 : key;
+    }
+
+    static get empty() {
+        return new Image(0);
+    }
+};
+
 globalThis.Network = {
     async sendRequest(method, url, headers, data) {
         const responseJson = await __hostHttpRequest(
@@ -103,16 +147,68 @@ globalThis.Network = {
     }
 };
 
-globalThis.fetch = async function () {
-    throw new Error("fetch is not supported; use Network.get");
+// Web-fetch shaped adapter over Network: sources written for Venera expect a `Response`-like
+// object. Binary paths (`arrayBuffer`) stay unsupported until Network.fetchBytes exists, and
+// say so instead of returning garbage.
+globalThis.fetch = async function (url, options) {
+    options = options || {};
+    const response = await Network.sendRequest(
+        options.method || "GET",
+        url,
+        options.headers || {},
+        options.body == null ? null : options.body
+    );
+    const text = async () => response.body;
+    return {
+        ok: response.status >= 200 && response.status < 300,
+        status: response.status,
+        statusText: "",
+        headers: response.headers,
+        text: text,
+        json: async () => JSON.parse(await text()),
+        arrayBuffer: async () => {
+            throw new Error("fetch(...).arrayBuffer() needs Network.fetchBytes, not implemented");
+        }
+    };
+};
+
+// Small helpers Venera exposes as globals (init.js): random values and uuids.
+globalThis.randomInt = function (min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+globalThis.randomDouble = function (min, max) {
+    return Math.random() * (max - min) + min;
+};
+
+globalThis.createUuid = function () {
+    let uuid = "";
+    for (let i = 0; i < 36; i++) {
+        if (i === 8 || i === 13 || i === 18 || i === 23) {
+            uuid += "-";
+        } else if (i === 14) {
+            uuid += "4";
+        } else if (i === 19) {
+            uuid += (Math.floor(Math.random() * 4) + 8).toString(16);
+        } else {
+            uuid += Math.floor(Math.random() * 16).toString(16);
+        }
+    }
+    return uuid;
+};
+
+globalThis.log = function (...args) {
+    __hostLog("log", Array.from(args).join(" "));
 };
 
 globalThis.UI = {
-    showMessage() {
-        throw new Error("UI is not available in the headless source runtime");
+    // Headless runtime: a toast/dialog is a side effect we cannot honour, but throwing would
+    // abort the source mid-flow (sources do call these for user feedback). Log instead.
+    showMessage(message) {
+        __hostLog("ui", String(message));
     },
-    showDialog() {
-        throw new Error("UI is not available in the headless source runtime");
+    showDialog(title, content) {
+        __hostLog("ui", String(title) + ": " + String(content));
     }
 };
 

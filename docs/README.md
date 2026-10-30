@@ -18,6 +18,7 @@
 | [11 当前交接](11-handoff-2026-10-30.md) | Phase D 后的能力、模块/数据层、CI 缺口、并行开发规则与下一步队列 | **最新（2026-10-30）** |
 | [12 小说端计划](12-novel-plan.md) | 双设备分工决策、小说参考仓库与许可边界、N1–N3 切片与实施记录 | N1–N3 完成并已合入 main（2026-10-30） |
 | [13 小说端对标调研](13-novel-benchmark.md) | 对标 Google Play Books / legado / NovelDokusha / Book's Story 的功能矩阵与优先级 | 本批功能已实现（2026-10-30） |
+| [14 Venera 源零改验证](14-venera-compat.md) | 第三方 Venera 源的兼容性度量手段、首轮结果与剩余缺口 | 12/13 构造通过；`Convert` 待补 |
 | [Phase 0 清单](checklists/phase-0.md) | 可勾选的任务列表与命令 | 已完成（历史） |
 | [Phase 1 M0 清单](checklists/phase-1-m0.md) | 工具链、Ktor/Cookie、标识符、CI | 核心完成 |
 | [Phase 1 M1 清单](checklists/phase-1-m1.md) | 共享 UI、本地库、漫画/小说阅读器 | 历史（被 ADR-0011/0014 取代） |

@@ -1,6 +1,6 @@
 # ADR-0008：Venera 风格 JS 源运行时的读路径实现
 
-- 状态：接受（M1 read-path 切片；真实第三方源待验证）
+- 状态：接受（M1 read-path 切片；真实第三方源已验证构造，见 [14 号文档](../14-venera-compat.md)）
 - 日期：2026-10-28
 - 关联：[ADR-0003](0003-js-extension-runtime.md) · [ADR-0007](0007-network-and-cookie-storage.md) · [M1 清单](../checklists/phase-1-m1.md)
 
@@ -54,7 +54,7 @@ Venera-Next 的源脚本约定（仅参考行为，不复制 GPL 代码）：
 
 负面 / 未完成：
 
-- 真实 Venera 兼容源尚未零修改跑通；fixture 只覆盖读路径子集。需要用户提供一个合法测试源（本地、不提交）做对照。
+- 真实 Venera 兼容源的验证手段已建立（静态 API 审计 + 构造探针，见 [14](../14-venera-compat.md)）：13 个社区源中 12 个零改构造成功。`Convert`（编码/加密）仍是主要缺口，命中它的源在调用时会失败。
 - `Network.setCookies/getCookies/deleteCookies` 的同步 JS 语义未实现；登录态目前仅靠 HTTP 自动 Cookie。
 - 未实现 `fetch`、search options、explore/categories、settings、login、comments、UI；这些按“显式报错/stub”处理。
 - QuickJS 每源常驻有内存开销；尚未测多源并发与真实站点长尾 DOM。
