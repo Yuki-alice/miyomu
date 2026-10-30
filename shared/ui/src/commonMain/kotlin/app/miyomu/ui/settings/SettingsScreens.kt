@@ -3,6 +3,7 @@ package app.miyomu.ui.settings
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -27,6 +28,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.core.preference.asState
+import eu.kanade.domain.ui.model.AppTheme
+import eu.kanade.domain.ui.model.ThemeMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import tachiyomi.presentation.core.components.CheckboxItem
@@ -269,7 +272,7 @@ class AboutRoute : Screen {
 }
 
 
-/** Appearance settings: theme mode (Aniyomi's `pref_theme_mode_key` semantics). */
+/** Appearance settings: theme mode, app theme (Aniyomi keys) and the AMOLED switch. */
 class SettingsAppearanceRoute(private val graph: MiyomuGraph) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -277,10 +280,27 @@ class SettingsAppearanceRoute(private val graph: MiyomuGraph) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
-        val prefs = remember(graph) { graph.preferenceStore.getInt("pref_theme_mode_key", 0) }
-        val modeState = remember(prefs) { prefs.asState(scope) }
-        val darkStylePrefs = remember(graph) { graph.preferenceStore.getInt("app_dark_theme_key", 0) }
-        val darkStyleState = remember(darkStylePrefs) { darkStylePrefs.asState(scope) }
+        val modeState = remember(graph) {
+            graph.preferenceStore.getString("pref_theme_mode_key", ThemeMode.SYSTEM.name).asState(scope)
+        }
+        val themeState = remember(graph) {
+            graph.preferenceStore.getString("pref_app_theme", "").asState(scope)
+        }
+        val amoledState = remember(graph) {
+            graph.preferenceStore.getBoolean("pref_theme_dark_amoled_key", false).asState(scope)
+        }
+        val currentMode = ThemeMode.fromStored(modeState.value)
+        val currentTheme = AppTheme.fromStored(themeState.value, currentMode)
+
+        fun setMode(mode: ThemeMode) {
+            graph.preferenceStore.getString("pref_theme_mode_key", ThemeMode.SYSTEM.name).set(mode.name)
+            modeState.value = mode.name
+        }
+
+        fun setTheme(theme: AppTheme) {
+            graph.preferenceStore.getString("pref_app_theme", "").set(theme.name)
+            themeState.value = theme.name
+        }
 
         Scaffold(
             topBar = {
@@ -297,38 +317,59 @@ class SettingsAppearanceRoute(private val graph: MiyomuGraph) : Screen {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 item { HeadingItem("主题模式") }
                 item {
-                    RadioItem(
-                        label = "跟随系统",
-                        selected = modeState.value == 0,
-                        onClick = { prefs.set(0) },
-                    )
+                    RadioItem("跟随系统", selected = currentMode == ThemeMode.SYSTEM) { setMode(ThemeMode.SYSTEM) }
                 }
                 item {
-                    RadioItem(
-                        label = "亮色",
-                        selected = modeState.value == 1,
-                        onClick = { prefs.set(1) },
-                    )
+                    RadioItem("亮色", selected = currentMode == ThemeMode.LIGHT) { setMode(ThemeMode.LIGHT) }
                 }
                 item {
-                    RadioItem(
-                        label = "暗色",
-                        selected = modeState.value == 2,
-                        onClick = { prefs.set(2) },
-                    )
+                    RadioItem("暗色", selected = currentMode == ThemeMode.DARK) { setMode(ThemeMode.DARK) }
                 }
-                item {
-                    HeadingItem("暗色主题风格（暗色模式下生效）")
-                    val styles = listOf("默认", "青苹果", "午夜薄暮", "薰衣草", "草莓")
-                    styles.forEachIndexed { index, label ->
-                        RadioItem(
-                            label = label,
-                            selected = darkStyleState.value == index,
-                            onClick = { darkStylePrefs.set(index) },
+                if (currentMode != ThemeMode.LIGHT) {
+                    item {
+                        CheckboxItem(
+                            label = "纯黑（AMOLED）",
+                            checked = amoledState.value,
+                            onClick = {
+                                graph.preferenceStore.getBoolean("pref_theme_dark_amoled_key", false)
+                                    .set(!amoledState.value)
+                            },
                         )
                     }
+                }
+                item { HeadingItem("主题风格") }
+                items(AppTheme.entries.size) { index ->
+                    val theme = AppTheme.entries[index]
+                    val label = if (theme == AppTheme.MONET) "Monet（动态取色，暂用默认色）" else themeLabel(theme)
+                    RadioItem(
+                        label = label,
+                        selected = currentTheme == theme,
+                        onClick = { setTheme(theme) },
+                    )
                 }
             }
         }
     }
+}
+
+private fun themeLabel(theme: AppTheme): String = when (theme) {
+    AppTheme.DEFAULT -> "默认"
+    AppTheme.CLOUDFLARE -> "Cloudflare"
+    AppTheme.COTTONCANDY -> "棉花糖"
+    AppTheme.DOOM -> "末日"
+    AppTheme.GREEN_APPLE -> "青苹果"
+    AppTheme.LAVENDER -> "薰衣草"
+    AppTheme.MATRIX -> "矩阵"
+    AppTheme.MIDNIGHT_DUSK -> "午夜薄暮"
+    AppTheme.MOCHA -> "摩卡"
+    AppTheme.MONOCHROME -> "单色"
+    AppTheme.NORD -> "Nord"
+    AppTheme.SAPPHIRE -> "蓝宝石"
+    AppTheme.STRAWBERRY_DAIQUIRI -> "草莓戴克利"
+    AppTheme.TAKO -> "章鱼"
+    AppTheme.TEALTURQUOISE -> "青绿松石"
+    AppTheme.TIDAL_WAVE -> "浪潮"
+    AppTheme.YINYANG -> "阴阳"
+    AppTheme.YOTSUBA -> "四叶"
+    AppTheme.MONET -> "Monet"
 }

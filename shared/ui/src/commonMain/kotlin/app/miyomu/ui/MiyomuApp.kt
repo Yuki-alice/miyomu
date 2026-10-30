@@ -9,6 +9,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import app.miyomu.data.MiyomuData
+import eu.kanade.domain.ui.model.AppTheme
+import eu.kanade.domain.ui.model.ThemeMode
 import app.miyomu.download.DownloadQueue
 import app.miyomu.download.FileDownloadStore
 import app.miyomu.local.LocalComicRepository
@@ -78,11 +80,22 @@ fun MiyomuApp(
         library.refresh(root)
     }
 
-    val themeModeState = remember(store) {
-        store.getInt("pref_theme_mode_key", 0).changes()
-    }.collectAsState(initial = store.getInt("pref_theme_mode_key", 0).get())
+    // pref_theme_mode_key historically held 0/1/2 ints; new writes use the enum name.
+    val themeModeStored = remember(store) {
+        store.getString("pref_theme_mode_key", ThemeMode.SYSTEM.name).changes()
+    }.collectAsState(initial = ThemeMode.SYSTEM.name)
+    val appThemeStored = remember(store) {
+        store.getString("pref_app_theme", "").changes()
+    }.collectAsState(initial = "")
+    val amoledState = remember(store) {
+        store.getBoolean("pref_theme_dark_amoled_key", false).changes()
+    }.collectAsState(initial = store.getBoolean("pref_theme_dark_amoled_key", false).get())
 
-    MiyomuTheme(darkTheme = resolveDarkTheme(themeModeState.value)) {
+    MiyomuTheme(
+        themeMode = ThemeMode.fromStored(themeModeStored.value),
+        appTheme = AppTheme.fromStored(appThemeStored.value, ThemeMode.fromStored(themeModeStored.value)),
+        amoled = amoledState.value,
+    ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
@@ -91,3 +104,4 @@ fun MiyomuApp(
         }
     }
 }
+

@@ -1,32 +1,35 @@
 package eu.kanade.domain.ui.model
 
-import dev.icerock.moko.resources.StringResource
-import tachiyomi.i18n.MR
-import tachiyomi.i18n.aniyomi.AYMR
+/** Aniyomi's AppTheme; MONET falls back to the default palette until platform dynamic color lands. */
+enum class AppTheme {
+    DEFAULT,
+    MONET,
+    CLOUDFLARE,
+    COTTONCANDY,
+    DOOM,
+    GREEN_APPLE,
+    LAVENDER,
+    MATRIX,
+    MIDNIGHT_DUSK,
+    MOCHA,
+    SAPPHIRE,
+    NORD,
+    STRAWBERRY_DAIQUIRI,
+    TAKO,
+    TEALTURQUOISE,
+    TIDAL_WAVE,
+    YINYANG,
+    YOTSUBA,
+    MONOCHROME,
+    ;
 
-enum class AppTheme(val titleRes: StringResource?) {
-    DEFAULT(MR.strings.label_default),
-    MONET(MR.strings.theme_monet),
-    CLOUDFLARE(AYMR.strings.theme_cloudflare),
-    COTTONCANDY(AYMR.strings.theme_cottoncandy),
-    DOOM(AYMR.strings.theme_doom),
-    GREEN_APPLE(MR.strings.theme_greenapple),
-    LAVENDER(MR.strings.theme_lavender),
-    MATRIX(AYMR.strings.theme_matrix),
-    MIDNIGHT_DUSK(MR.strings.theme_midnightdusk),
-    MOCHA(AYMR.strings.theme_mocha),
-    SAPPHIRE(AYMR.strings.theme_sapphire),
-    NORD(MR.strings.theme_nord),
-    STRAWBERRY_DAIQUIRI(MR.strings.theme_strawberrydaiquiri),
-    TAKO(MR.strings.theme_tako),
-    TEALTURQUOISE(MR.strings.theme_tealturquoise),
-    TIDAL_WAVE(MR.strings.theme_tidalwave),
-    YINYANG(MR.strings.theme_yinyang),
-    YOTSUBA(MR.strings.theme_yotsuba),
-    MONOCHROME(MR.strings.theme_monochrome),
+    companion object {
+        fun fromName(name: String?): AppTheme? = entries.firstOrNull { it.name == name }
 
-    // Deprecated
-    DARK_BLUE(null),
-    HOT_PINK(null),
-    BLUE(null),
+        fun fromStored(stored: String, mode: ThemeMode): AppTheme {
+            val fallback = if (mode == ThemeMode.LIGHT) MONET else DEFAULT
+            return fromName(stored) ?: fallback
+        }
+    }
 }
+

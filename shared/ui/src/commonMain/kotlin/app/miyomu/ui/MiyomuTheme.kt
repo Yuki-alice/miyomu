@@ -1,5 +1,5 @@
 /*
- * Material 3 color tokens adapted from Aniyomi's TachiyomiColorScheme
+ * Material 3 color tokens adapted from Aniyomi's color schemes
  * (https://github.com/aniyomiorg/aniyomi, Apache-2.0). See NOTICE.
  */
 package app.miyomu.ui
@@ -8,125 +8,44 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import app.miyomu.ui.theme.greenAppleDarkColors
-import app.miyomu.ui.theme.lavenderDarkColors
-import app.miyomu.ui.theme.midnightDuskDarkColors
-import app.miyomu.ui.theme.strawberryDarkColors
+import app.miyomu.ui.theme.darkColors
+import app.miyomu.ui.theme.defaultColorsDark
+import app.miyomu.ui.theme.lightColors
+import eu.kanade.domain.ui.model.AppTheme
+import eu.kanade.domain.ui.model.ThemeMode
 
-private val MiyomuDarkColors = darkColorScheme(
-    primary = Color(0xFFB0C6FF),
-    onPrimary = Color(0xFF002D6E),
-    primaryContainer = Color(0xFF00429B),
-    onPrimaryContainer = Color(0xFFD9E2FF),
-    inversePrimary = Color(0xFF0058CA),
-    secondary = Color(0xFFB0C6FF),
-    onSecondary = Color(0xFF002D6E),
-    secondaryContainer = Color(0xFF00429B),
-    onSecondaryContainer = Color(0xFFD9E2FF),
-    tertiary = Color(0xFF7ADC77),
-    onTertiary = Color(0xFF003909),
-    tertiaryContainer = Color(0xFF005312),
-    onTertiaryContainer = Color(0xFF95F990),
-    background = Color(0xFF1B1B1F),
-    onBackground = Color(0xFFE3E2E6),
-    surface = Color(0xFF1B1B1F),
-    onSurface = Color(0xFFE3E2E6),
-    surfaceVariant = Color(0xFF211F26),
-    onSurfaceVariant = Color(0xFFC5C6D0),
-    surfaceTint = Color(0xFFB0C6FF),
-    inverseSurface = Color(0xFFE3E2E6),
-    inverseOnSurface = Color(0xFF1B1B1F),
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF690005),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    outline = Color(0xFF8F9099),
-    outlineVariant = Color(0xFF44464F),
-    surfaceContainerLowest = Color(0xFF1A181D),
-    surfaceContainerLow = Color(0xFF1E1C22),
-    surfaceContainer = Color(0xFF211F26),
-    surfaceContainerHigh = Color(0xFF292730),
-    surfaceContainerHighest = Color(0xFF302E38),
-)
-
-private val MiyomuLightColors = lightColorScheme(
-    primary = Color(0xFF0058CA),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD9E2FF),
-    onPrimaryContainer = Color(0xFF001945),
-    inversePrimary = Color(0xFFB0C6FF),
-    secondary = Color(0xFF0058CA),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFD9E2FF),
-    onSecondaryContainer = Color(0xFF001945),
-    tertiary = Color(0xFF006E1B),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFF95F990),
-    onTertiaryContainer = Color(0xFF002203),
-    background = Color(0xFFFEFBFF),
-    onBackground = Color(0xFF1B1B1F),
-    surface = Color(0xFFFEFBFF),
-    onSurface = Color(0xFF1B1B1F),
-    surfaceVariant = Color(0xFFF3EDF7),
-    onSurfaceVariant = Color(0xFF44464F),
-    surfaceTint = Color(0xFF0058CA),
-    inverseSurface = Color(0xFF303034),
-    inverseOnSurface = Color(0xFFF2F0F4),
-    error = Color(0xFFBA1A1A),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFFDAD6),
-    onErrorContainer = Color(0xFF410002),
-    outline = Color(0xFF757780),
-    outlineVariant = Color(0xFFC5C6D0),
-    surfaceContainerLowest = Color(0xFFF5F1F8),
-    surfaceContainerLow = Color(0xFFF7F2FA),
-    surfaceContainer = Color(0xFFF3EDF7),
-    surfaceContainerHigh = Color(0xFFFCF7FF),
-    surfaceContainerHighest = Color(0xFFFCF7FF),
+/** Aniyomi's `pref_theme_dark_amoled_key`: pure-black surfaces in dark mode. */
+private fun androidx.compose.material3.ColorScheme.amoled(): androidx.compose.material3.ColorScheme = copy(
+    background = Color.Black,
+    onBackground = Color.White,
+    surface = Color.Black,
+    onSurface = Color.White,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color.Black,
+    surfaceContainer = Color.Black,
+    surfaceContainerHigh = Color.Black,
+    surfaceContainerHighest = Color.Black,
 )
 
 @Composable
-fun MiyomuTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) MiyomuDarkColors else MiyomuLightColors,
-        typography = Typography(),
-        content = content,
-    )
+fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
 }
 
-/** Aniyomi's `pref_theme_mode_key` semantics: 0 = system, 1 = light, 2 = dark. */
-@Composable
-fun resolveDarkTheme(themeMode: Int): Boolean = when (themeMode) {
-    1 -> false
-    2 -> true
-    else -> isSystemInDarkTheme()
-}
-
-/** Aniyomi's `app_dark_theme_key`: 0 default, 1 green apple, 2 midnight dusk, 3 lavender, 4 strawberry. */
 @Composable
 fun MiyomuTheme(
-    themeMode: Int,
-    darkThemeStyle: Int,
+    themeMode: ThemeMode,
+    appTheme: AppTheme,
+    amoled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val dark = resolveDarkTheme(themeMode)
-    val colors = if (!dark) {
-        MiyomuLightColors
-    } else {
-        when (darkThemeStyle) {
-            1 -> greenAppleDarkColors
-            2 -> midnightDuskDarkColors
-            3 -> lavenderDarkColors
-            4 -> strawberryDarkColors
-            else -> MiyomuDarkColors
-        }
-    }
+    var colors = if (dark) appTheme.darkColors() else appTheme.lightColors()
+    if (dark && amoled) colors = colors.amoled()
     MaterialTheme(
         colorScheme = colors,
         typography = Typography(),
