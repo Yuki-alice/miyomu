@@ -148,16 +148,16 @@ globalThis.Network = {
         };
     },
 
-    setCookies() {
-        throw new Error("Network.setCookies is not supported in this runtime yet");
+    setCookies(url, cookies) {
+        __hostCookieSet(url, JSON.stringify(cookies || []));
     },
 
-    getCookies() {
-        throw new Error("Network.getCookies is not supported in this runtime yet");
+    getCookies(url) {
+        return JSON.parse(__hostCookieGet(url));
     },
 
-    deleteCookies() {
-        throw new Error("Network.deleteCookies is not supported in this runtime yet");
+    deleteCookies(url) {
+        __hostCookieDelete(url);
     }
 };
 

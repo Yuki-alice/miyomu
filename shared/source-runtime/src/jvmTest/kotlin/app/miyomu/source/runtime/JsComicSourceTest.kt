@@ -45,6 +45,7 @@ class JsComicSourceTest {
             createContext("/html/chapter", ::handleChapter)
             createContext("/images", ::handleImage)
             createContext("/binary", ::handleBinary)
+            createContext("/cookie-echo", ::handleCookieEcho)
             this.executor = this@JsComicSourceTest.executor
             start()
         }
@@ -98,6 +99,19 @@ class JsComicSourceTest {
             assertEquals("0,1,2,127,255", item.title)
             assertEquals("binary-ok", item.author)
             assertEquals("bytes", receivedTestHeaders.single())
+        } finally {
+            source.close()
+        }
+    }
+
+    @Test
+    fun setsReadsAndDeletesCookies() = runBlocking {
+        val source = loadSource("cookie_fixture", "cookies", expectedKey = "cookie_fixture")
+        try {
+            val item = source.search("x").items.single()
+            assertEquals("1", item.id)
+            assertTrue(item.title.contains("sid=abc123"), "first request should carry the cookie: ${item.title}")
+            assertEquals("none", item.author)
         } finally {
             source.close()
         }
@@ -220,6 +234,10 @@ class JsComicSourceTest {
         exchange.responseHeaders.add("Content-Type", "application/octet-stream")
         exchange.sendResponseHeaders(200, bytes.size.toLong())
         exchange.responseBody.use { it.write(bytes) }
+    }
+
+    private fun handleCookieEcho(exchange: HttpExchange) {
+        exchange.respondHtml(exchange.requestHeaders.getFirst("Cookie") ?: "none")
     }
 
     private fun resource(path: String): String =

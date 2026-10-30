@@ -68,6 +68,13 @@ internal data class HostHttpBytesMeta(
 )
 
 @Serializable
+internal data class SourceCookieDto(
+    val name: String = "",
+    val value: String = "",
+    val domain: String? = null,
+)
+
+@Serializable
 internal data class SearchPayload(
     val query: String,
     val page: Int,

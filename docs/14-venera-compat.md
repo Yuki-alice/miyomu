@@ -1,6 +1,6 @@
 # 14 Venera 源零改验证
 
-> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert` 与 `Network.fetchBytes` 已补齐，静态审计已无阻塞项；剩余缺口为登录态 cookie API 与 jm.js 构造错误，见文末。
+> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes` 与 cookie API 均已补齐，静态审计 13/13 无缺口；唯一剩余的动态问题是 jm.js 的构造错误，见文末。
 > 关联：[ADR-0008](adr/0008-venera-source-runtime.md)（源运行时）、[ADR-0003](adr/0003-js-extension-runtime.md)、[03 风险登记](03-risk-register.md) R4
 
 ## 为什么需要这份验证
@@ -36,7 +36,7 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 
 ## 实测结果（2026-10-30，13 个真实源）
 
-**12 / 13 在未作任何修改的情况下构造成功**；静态审计 **7 个完全兼容、6 个仍有缺口（5 个只差登录态，jm.js 另有构造错误）、0 个阻塞**。
+**12 / 13 在未作任何修改的情况下构造成功**；静态审计 **13 个真实源全部兼容（0 缺口）**，jm.js 的构造失败与静态 API 面无关。
 
 | 源 | 构造 | 静态审计 | 说明 |
 |---|---|---|---|
@@ -46,8 +46,8 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 | shonenjumpplus.js | ok | OK | 同上 |
 | copy_manga.js | ok | OK | 补 `Convert` 后由 BLOCKED 转 OK |
 | picacg.js | ok | OK | 同上（`Convert.hmacString`） |
-| baozi / wnacg / ikmmh / nhentai / ehentai | ok | RISK | 只用 `Network.setCookie*`（登录态），读路径不受影响 |
-| jm.js | **FAIL** | RISK | `initialize()` 期间抛 `Not enough data available`。已排除 `Convert`（同链路在单测里正常，且 AES 错误会被包装成 `Convert.aes-ecb:dec failed: ...`）；静态缺口仅为 `Network.deleteCookies`；待定位 |
+| baozi / wnacg / ikmmh / nhentai / ehentai | ok | OK | 补 cookie API 后由 RISK 转 OK；登录态读写路径均可运行 |
+| jm.js | **FAIL** | OK | `initialize()` 期间抛 `Not enough data available`。已排除 `Convert`（同链路在单测里正常，且 AES 错误会被包装成 `Convert.aes-ecb:dec failed: ...`）；静态 API 已齐，问题在构造/执行期，待定位 |
 | hitomi.js | ok | OK | 补 `Network.fetchBytes` 后由 BLOCKED 转 OK（Range 请求 + 二进制 body） |
 
 结论：**兼容性的瓶颈不是语言层，而是宿主 API 的覆盖面**。QuickJS + 预加载脚本足以承载社区源的实际写法。
@@ -65,12 +65,12 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 | `randomInt/randomDouble/createUuid/log` | 1 个源 | 上游 `init.js` 的全局小工具 |
 | `fetch` | 1 个源 | `Network.sendRequest` 的 Response 形状适配；`arrayBuffer()` 仍显式报错 |
 | `Network.fetchBytes` | 1 个源（hitomi） | 二进制响应；宿主返回 `status`/小写 `headers`/`body(ArrayBuffer)`，body 经 token 暂存避免把二进制塞进 JSON |
+| `Network.setCookies/getCookies/deleteCookies` | 6 个源 | 复用持久 cookie jar；URL 支持裸域名，`deleteCookies` 按 URL 匹配清除 |
 
 ## 剩余缺口
 
 | 缺口 | 被引用次数 | 代价 | 判断 |
 |---|---|---|---|
-| `Network.setCookies/getCookies/deleteCookies` | 6 个源 | 中：只影响登录态，不阻塞读路径 | 下一个做（静态全兼容的最后一块） |
 | `setTimeout/setInterval` | 本轮未出现 | 中：需要宿主定时器 | 按需 |
 | `Convert.decryptRsa` | 本轮未出现 | 高：RSA 私钥解密 | 按需 |
 | `getClipboard/setClipboard/compute` | 本轮未出现 | 低：可 stub | 按需 |

@@ -69,6 +69,12 @@ class FileCookiesStorage(
         persist()
     }
 
+    suspend fun delete(requestUrl: Url) = mutex.withLock {
+        loadIfNeeded()
+        val removed = entries.removeAll { it.cookie.matchesSafely(requestUrl) }
+        if (removed) persist()
+    }
+
     override fun close() = Unit
 
     private fun loadIfNeeded() {

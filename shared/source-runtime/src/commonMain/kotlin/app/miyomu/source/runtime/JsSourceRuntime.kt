@@ -1,6 +1,7 @@
 package app.miyomu.source.runtime
 
 import app.miyomu.network.createMiyomuHttpClient
+import app.miyomu.network.cookies.FileCookiesStorage
 import app.miyomu.source.SourceException
 import app.miyomu.source.SourceTimeoutException
 import com.dokar.quickjs.QuickJs
@@ -14,11 +15,14 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Cookie
 import io.ktor.http.HttpMethod
+import io.ktor.http.Url
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
@@ -32,6 +36,7 @@ import kotlinx.serialization.json.Json
  */
 internal class JsSourceRuntime(
     private val httpClient: HttpClient,
+    private val cookies: FileCookiesStorage,
     private val keyValueStore: FileSourceKeyValueStore,
     private val dom: HtmlDomBridge,
     private val convert: ConvertBridge,
@@ -162,6 +167,16 @@ internal class JsSourceRuntime(
                 pendingBinaryResponses.remove(args.string(0)) ?: ByteArray(0)
             }
 
+            function<Unit>("__hostCookieSet") { args ->
+                setCookies(args.string(0), args.string(1))
+            }
+            function<String>("__hostCookieGet") { args ->
+                getCookies(args.string(0))
+            }
+            function<Unit>("__hostCookieDelete") { args ->
+                deleteCookies(args.string(0))
+            }
+
             function<String?>("__hostKvGet") { args ->
                 keyValueStore.get(args.string(0))
             }
@@ -266,6 +281,48 @@ internal class JsSourceRuntime(
                 token = token,
             ),
         )
+    }
+
+    private fun setCookies(url: String, cookiesJson: String) {
+        val requestUrl = cookieUrl(url)
+        val parsed = runCatching { json.decodeFromString<List<SourceCookieDto>>(cookiesJson) }
+            .getOrElse { throw IllegalArgumentException("invalid cookies payload: ${it.message}", it) }
+        runBlocking {
+            parsed.forEach { dto ->
+                if (dto.name.isBlank()) return@forEach
+                cookies.addCookie(
+                    requestUrl,
+                    Cookie(name = dto.name, value = dto.value, domain = dto.domain),
+                )
+            }
+        }
+    }
+
+    private fun getCookies(url: String): String {
+        val requestUrl = cookieUrl(url)
+        val jar = runBlocking { cookies.get(requestUrl) }
+        return json.encodeToString(
+            jar.map { SourceCookieDto(name = it.name, value = it.value, domain = it.domain) },
+        )
+    }
+
+    private fun deleteCookies(url: String) {
+        val requestUrl = cookieUrl(url)
+        runBlocking { cookies.delete(requestUrl) }
+    }
+
+    private fun cookieUrl(raw: String): Url {
+        val value = raw.trim()
+        require(value.isNotEmpty()) { "cookie url is empty" }
+        val normalized = if (
+            value.startsWith("http://", ignoreCase = true) ||
+            value.startsWith("https://", ignoreCase = true)
+        ) {
+            value
+        } else {
+            "https://$value"
+        }
+        return Url(normalized)
     }
 
     private fun parseHeaders(raw: String?): Map<String, String> {

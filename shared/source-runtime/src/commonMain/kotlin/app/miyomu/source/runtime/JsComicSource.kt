@@ -47,6 +47,7 @@ suspend fun loadJsComicSource(
         keyValueStore.open()
         val runtime = JsSourceRuntime(
             httpClient = httpClient,
+            cookies = cookies,
             keyValueStore = keyValueStore,
             dom = createHtmlDomBridge(maxDocuments = 16),
             convert = createConvertBridge(),
