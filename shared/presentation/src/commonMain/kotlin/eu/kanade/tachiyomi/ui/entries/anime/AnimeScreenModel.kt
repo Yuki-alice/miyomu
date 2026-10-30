@@ -11,7 +11,7 @@ import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.core.common.preference.CheckboxState
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.AnimeRelationGroup

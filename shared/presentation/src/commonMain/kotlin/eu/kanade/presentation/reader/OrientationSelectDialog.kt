@@ -15,7 +15,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.components.AdaptiveSheet
 import eu.kanade.presentation.reader.components.ModeSelectionDialog
-import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import app.miyomu.ui.MiyomuPreviewTheme
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import tachiyomi.i18n.MR
@@ -85,7 +85,7 @@ private fun DialogContent(
 @PreviewLightDark
 @Composable
 private fun DialogContentPreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface {
             Column {
                 DialogContent(

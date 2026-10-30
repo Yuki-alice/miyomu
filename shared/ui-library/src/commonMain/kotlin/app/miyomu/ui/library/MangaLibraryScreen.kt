@@ -33,7 +33,7 @@ import eu.kanade.presentation.library.manga.MangaLibrarySettingsDialog
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryItem
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibrarySettingsScreenModel
 import kotlinx.coroutines.launch
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -73,6 +73,7 @@ fun MangaLibraryScreen(
     var currentPage by remember { mutableStateOf(0) }
     var showBulkCategoryDialog by remember { mutableStateOf(false) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
+    var showBulkMetadataDialog by remember { mutableStateOf(false) }
 
     val displayModeState = remember(scope) { preferences.displayMode().asState(scope) }
     val portraitColumns = remember(scope) { preferences.mangaPortraitColumns().asState(scope) }
@@ -146,6 +147,9 @@ fun MangaLibraryScreen(
             ) {
                 TextButton(onClick = { showBulkCategoryDialog = true }) {
                     Text("编辑分类")
+                }
+                TextButton(onClick = { showBulkMetadataDialog = true }) {
+                    Text("编辑信息")
                 }
                 TextButton(onClick = { showBulkDeleteConfirm = true }) {
                     Text("删除", color = MaterialTheme.colorScheme.error)
@@ -252,10 +256,36 @@ fun MangaLibraryScreen(
         )
     }
 
+    if (showBulkMetadataDialog) {
+        BulkMetadataEditDialog(
+            onDismiss = { showBulkMetadataDialog = false },
+            onConfirm = { author, description, tags ->
+                showBulkMetadataDialog = false
+                val itemIds = selection.mapNotNull { libraryManga ->
+                    books.firstOrNull { it.mangaId() == libraryManga.id }
+                        ?.let { LibraryItem.idOf("local", it.id) }
+                }
+                selection.clear()
+                scope.launch {
+                    itemIds.forEach { itemId ->
+                        val item = graph.data.library.get(itemId) ?: return@forEach
+                        graph.data.library.upsert(
+                            item.copy(
+                                author = author.ifBlank { null },
+                                description = description.ifBlank { null },
+                                tags = tags,
+                                updatedAt = graph.nowMillis(),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+    }
+
     if (showSettings) {
-        // Built on demand: the screen model starts a Voyager scope, which should not run until
-        // the dialog is actually open.
-        val settingsModel = remember(preferences) { MangaLibrarySettingsScreenModel(preferences) }
+        // Built on demand: the screen model only runs while the dialog is actually open.
+        val settingsModel = remember(preferences) { MangaLibrarySettingsScreenModel(preferences, scope) }
         MangaLibrarySettingsDialog(
             onDismissRequest = { showSettings = false },
             screenModel = settingsModel,

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 
 /**
  * Miyomu's library update check (Aniyomi's LibraryUpdateChecker): walks the online entries in

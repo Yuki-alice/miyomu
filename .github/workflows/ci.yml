@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    # Weekly canary run: real-source network tests that stay out of the push path.
+    - cron: "0 6 * * 1"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -55,3 +58,26 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Miyomu Android shell
         run: ./gradlew :app:android:assembleDebug
+      - name: Android lint
+        run: ./gradlew :app:android:lintDebug
+
+  canary:
+    # CanarySourceTest hits the live network, so it only runs on the weekly schedule or on
+    # demand — never on push (the source-runtime test task excludes the tag without -Pcanary).
+    name: Canary sources
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install SDK platforms
+        run: sdkmanager --install "platforms;android-36" "platforms;android-37.0" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Canary source tests
+        run: ./gradlew -Pcanary :shared:source-runtime:jvmTest

@@ -1,11 +1,15 @@
 package app.miyomu.ui.novel
 
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
+import app.miyomu.reader.novel.NovelHighlight
 import app.miyomu.novel.NovelBlock
 import kotlinx.coroutines.yield
 
@@ -97,6 +101,7 @@ internal suspend fun measureChapter(
     fontSizeSp: Int,
     lineHeightMultiplier: Float,
     paragraphSpacingPx: Int,
+    highlights: List<NovelHighlight> = emptyList(),
 ): NovelChapterPages {
     val style = TextStyle(
         fontSize = fontSizeSp.sp,
@@ -115,7 +120,11 @@ internal suspend fun measureChapter(
                         (chunkStart + SECTION_MAX_CHARS).coerceAtMost(paragraph.length),
                     )
                     val layout = measurer.measure(
-                        text = chunk,
+                        text = annotateWithHighlights(
+                            chunk,
+                            absoluteStart = block.startChar + chunkStart,
+                            highlights = highlights,
+                        ),
                         style = style,
                         constraints = Constraints(maxWidth = usableWidthPx.coerceAtLeast(1)),
                         maxLines = Int.MAX_VALUE,
@@ -153,6 +162,31 @@ internal fun imagePieceHeight(image: NovelBlock.Image, widthPx: Int, pageHeightP
     }
     return natural.coerceIn(1, pageHeightPx)
 }
+
+/**
+ * Layers saved highlight backgrounds onto [text]; [absoluteStart] is the text's chapter-relative
+ * offset. Shared by the scroll renderer and the paged measure pipeline.
+ */
+internal fun annotateWithHighlights(
+    text: String,
+    absoluteStart: Int,
+    highlights: List<NovelHighlight>,
+): AnnotatedString {
+    val overlaps = highlights.mapNotNull { highlight ->
+        val start = maxOf(highlight.startChar, absoluteStart)
+        val end = minOf(highlight.endChar, absoluteStart + text.length)
+        if (end > start) (start - absoluteStart) to (end - absoluteStart) else null
+    }
+    return buildAnnotatedString {
+        append(text)
+        overlaps.forEach { (start, end) ->
+            addStyle(SpanStyle(background = HighlightBrush), start.coerceAtLeast(0), end.coerceAtMost(text.length))
+        }
+    }
+}
+
+/** Soft amber used for saved highlights; alpha keeps the text readable on any palette. */
+internal val HighlightBrush = androidx.compose.ui.graphics.Color(0x59FFD54F)
 
 private fun paginatePieces(
     pieces: List<NovelChapterPages.Piece>,

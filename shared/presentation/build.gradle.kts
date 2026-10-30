@@ -28,7 +28,6 @@ kotlin {
             api(projects.shared.presentationCore)
             api(projects.shared.i18n)
             api(projects.shared.i18nAniyomi)
-            api(libs.voyager.screenmodel)
             api(libs.kotlinx.collections.immutable)
             implementation(compose.animation)
             implementation(compose.uiUtil)

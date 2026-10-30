@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import app.miyomu.ui.MiyomuPreviewTheme
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.SettingsItemsPaddings
 import tachiyomi.presentation.core.components.material.padding
@@ -70,7 +70,7 @@ fun ModeSelectionDialog(
 @PreviewLightDark
 @Composable
 private fun Preview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface {
             Column {
                 ModeSelectionDialog(

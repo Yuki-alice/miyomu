@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -22,6 +23,8 @@ import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.source.manager.SourceRuntimeManager
 import app.miyomu.source.repo.SourceInstallManager
 import app.miyomu.ui.library.installLocalCoverLoader
+import app.miyomu.ui.navigation.HomeKey
+import app.miyomu.ui.navigation.MiyomuKey
 import app.miyomu.ui.library.localCoverResolver
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
 import tachiyomi.core.common.preference.PreferenceStore
@@ -49,13 +52,17 @@ fun MiyomuApp(
     onOpenLibraryFolder: (() -> Unit)? = null,
     onPickLibraryDirectory: (() -> Unit)? = null,
     novelFetcher: (suspend (String) -> String)? = null,
+    /** P1-6: destination to open instead of Home (externally opened book's detail page). */
+    startKey: MiyomuKey? = null,
     /** Invoked when back is pressed on the root destination (finish the activity/window). */
     onExit: () -> Unit = {},
 ) {
     val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
 
     // The graph rebuilds when the library root changes (SAF directory switch); source runtimes
-    // reload on the next access, which is acceptable for this rare operation.
+    // reload on the next access, which is acceptable for this rare operation. The graph owns its
+    // updater scope and danmaku client, so a replaced graph must be closed here — everything
+    // with a longer lifetime (database, runtimes, download queue) lives in MiyomuServices.
     val graph = remember(root.location, store) {
         MiyomuGraph(
             library = library,
@@ -77,6 +84,9 @@ fun MiyomuApp(
             novelFetcher = novelFetcher,
         )
     }
+    DisposableEffect(graph) {
+        onDispose { graph.close() }
+    }
 
     // Coil resolves covers through a process-wide singleton, so the local fetcher has to be
     // registered before the first grid item composes. Comic and novel books share the reserved
@@ -86,11 +96,13 @@ fun MiyomuApp(
             localCoverResolver(
                 books = { graph.library.books.value + graph.novelLibrary.books.value },
                 cover = { book ->
-                    if (book.mediaType == MediaType.NOVEL) {
-                        graph.novels.cover(book)
-                    } else {
-                        graph.comics.cover(book)
-                    }
+                    // P1-1 封面候选: the user's picked cover wins over the default first page.
+                    localCoverOverrideBytes(graph.preferenceStore, book)
+                        ?: if (book.mediaType == MediaType.NOVEL) {
+                            graph.novels.cover(book)
+                        } else {
+                            graph.comics.cover(book)
+                        }
                 },
             ),
         )
@@ -121,7 +133,7 @@ fun MiyomuApp(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
         ) {
-            MiyomuNavHost(graph = graph, onExit = onExit)
+            MiyomuNavHost(graph = graph, onExit = onExit, start = startKey ?: HomeKey)
         }
     }
 }

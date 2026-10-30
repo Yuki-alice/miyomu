@@ -22,6 +22,7 @@ class LocalNovelRepository(
     private val fb2Parser: Fb2NovelParser = Fb2NovelParser(),
     private val htmlParser: HtmlNovelParser = HtmlNovelParser(),
     private val markdownParser: MarkdownNovelParser = MarkdownNovelParser(),
+    private val mobiParser: MobiNovelParser = MobiNovelParser(),
     private val cacheSize: Int = DEFAULT_CACHE_SIZE,
 ) {
 
@@ -46,12 +47,18 @@ class LocalNovelRepository(
     suspend fun chapterText(book: LocalBook, chapterIndex: Int): String =
         parse(book).chapters[chapterIndex].text()
 
+    /** Deletes the book's file from disk (P1-4 duplicate cleanup; the shelf drops on rescan). */
+    suspend fun delete(book: LocalBook) {
+        withContext(Dispatchers.IO) { File(book.location).deleteRecursively() }
+    }
+
     private fun parseUncached(book: LocalBook): ParsedNovel = when (book.format) {
         LocalBookFormat.TXT -> txtParser.parse(book.title, File(book.location).readBytes())
         LocalBookFormat.EPUB -> epubParser.parse(File(book.location).readBytes())
         LocalBookFormat.FB2 -> fb2Parser.parse(File(book.location).readBytes())
         LocalBookFormat.HTML -> htmlParser.parse(book.title, File(book.location).readBytes())
         LocalBookFormat.MARKDOWN -> markdownParser.parse(book.title, File(book.location).readBytes())
+        LocalBookFormat.MOBI, LocalBookFormat.AZW3 -> mobiParser.parse(book.title, File(book.location).readBytes())
         else -> throw NovelParseException("Unsupported novel format: ${book.format}")
     }
 

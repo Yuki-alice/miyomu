@@ -25,6 +25,7 @@ fun ReaderScreen(
             deviceId = graph.deviceId,
             nowMillis = graph.nowMillis,
             readerPreferences = graph.readerPreferences,
+            readingStats = graph.readingStats,
             onBack = { navigator.pop() },
         )
     }

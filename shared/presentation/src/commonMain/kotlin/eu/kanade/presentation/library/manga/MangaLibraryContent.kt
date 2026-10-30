@@ -20,7 +20,7 @@ import eu.kanade.presentation.library.components.LibraryTabs
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.presentation.core.components.material.PullRefresh

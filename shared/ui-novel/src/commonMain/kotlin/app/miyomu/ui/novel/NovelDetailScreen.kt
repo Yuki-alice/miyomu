@@ -19,6 +19,9 @@ import app.miyomu.model.ReadingProgress
 import app.miyomu.novel.LocalNovelRepository
 import app.miyomu.novel.ParsedNovel
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.share.bookMimeType
+import app.miyomu.ui.share.rememberBookSharer
+import app.miyomu.ui.track.TrackBindingDialog
 import app.miyomu.ui.navigation.*
 import app.miyomu.ui.library.mangaId
 import app.miyomu.ui.library.toManga
@@ -66,6 +69,7 @@ fun NovelDetailContent(
     var latestProgress by remember(book.id) { mutableStateOf<ReadingProgress?>(null) }
     var refreshToken by remember(book.id) { mutableIntStateOf(0) }
     var selectedIds by remember(book.id) { mutableStateOf(emptySet<Long>()) }
+    var showTrackDialog by remember(book.id) { mutableStateOf(false) }
 
     LaunchedEffect(book.id, refreshToken) {
         parsed = runCatching { graph.novels.parse(book) }.getOrNull()
@@ -135,14 +139,16 @@ fun NovelDetailContent(
         onAddToLibraryClicked = {},
         onWebViewClicked = null,
         onWebViewLongClicked = null,
-        onTrackingClicked = {},
+        onTrackingClicked = { showTrackDialog = true },
         onTagSearch = {},
         onFilterButtonClicked = {},
         onRefresh = { refreshToken++ },
         onContinueReading = { onRead(resumeChapter, resumeOffset) },
         onSearch = { _, _ -> },
         onCoverClicked = {},
-        onShareClicked = null,
+        onShareClicked = rememberBookSharer()?.let { sharer ->
+            { sharer(book.location, bookMimeType(book.format)) }
+        },
         onDownloadActionClicked = null,
         onEditCategoryClicked = null,
         onEditFetchIntervalClicked = null,
@@ -164,6 +170,17 @@ fun NovelDetailContent(
             selectedIds = all - selectedIds
         },
     )
+
+    if (showTrackDialog) {
+        // P1-9 逐书绑定: chapters before the resume point count as read for the tracker push.
+        TrackBindingDialog(
+            graph = graph,
+            itemId = itemId,
+            initialTitle = book.title,
+            currentProgress = savedChapterIndex.coerceAtLeast(0),
+            onDismiss = { showTrackDialog = false },
+        )
+    }
 }
 
 /** Domain id for the chapter list UI; progress keys use [LocalNovelRepository.chapterId]. */

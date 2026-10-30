@@ -5,6 +5,7 @@ import app.miyomu.local.LocalBookFormat
 import app.miyomu.local.LocalChapter
 import app.miyomu.local.LocalPage
 import app.miyomu.local.ReaderPageSource
+import app.miyomu.novel.NovelChapterCache
 import java.io.File
 
 /**
@@ -14,11 +15,14 @@ import java.io.File
  * <root>/<itemId-hash>/<chapterKey-hash>/0000.jpg… + .complete (page count)
  * ```
  *
+ * The same layout also serves the novel chapter cache (P1-2): a cached novel chapter is
+ * `chapter.txt` plus the `.complete` marker in the item/chapter hash directories.
+ *
  * Keys are hashed, so arbitrary source paths/urls cannot escape the downloads root.
  */
 class FileDownloadStore(
     private val root: File,
-) : DownloadStore {
+) : DownloadStore, NovelChapterCache {
 
     override fun deleteChapter(itemId: String, chapterKey: String) {
         chapterDir(itemId, chapterKey).deleteRecursively()
@@ -62,6 +66,75 @@ class FileDownloadStore(
     fun pageFile(itemId: String, chapterKey: String, index: Int): File =
         chapterDir(itemId, chapterKey).resolve("%04d".format(index) + ".jpg")
 
+    /** Free bytes on the volume holding the downloads root (P0-7 space guard). */
+    fun usableBytes(): Long = root.usableSpace
+
+    /** Target file for one downloaded video episode (P1-2 视频按集); ext: "mp4"/"ts". */
+    fun episodeFile(itemId: String, episodeUrl: String, ext: String = "mp4"): File =
+        chapterDir(itemId, "video:$episodeUrl").resolve("video.$ext")
+
+    fun isEpisodeDownloaded(itemId: String, episodeUrl: String): Boolean =
+        chapterDir(itemId, "video:$episodeUrl").resolve(COMPLETE_MARKER).isFile
+
+    fun markEpisodeComplete(itemId: String, episodeUrl: String) {
+        chapterDir(itemId, "video:$episodeUrl").resolve(COMPLETE_MARKER).writeText("1")
+    }
+
+    /** The downloaded episode file for offline playback, whichever container was used. */
+    fun downloadedEpisodeFile(itemId: String, episodeUrl: String): File? =
+        listOf("mp4", "ts").map { episodeFile(itemId, episodeUrl, it) }.firstOrNull { it.isFile }
+
+    fun deleteEpisode(itemId: String, episodeUrl: String) {
+        chapterDir(itemId, "video:$episodeUrl").deleteRecursively()
+    }
+
+    override fun isCached(itemId: String, chapterKey: String): Boolean =
+        isDownloaded(itemId, chapterKey)
+
+    override fun read(itemId: String, chapterKey: String): String? {
+        val file = chapterDir(itemId, chapterKey).resolve(NOVEL_CHAPTER_FILE)
+        return file.takeIf { it.isFile }?.readText()
+    }
+
+    override fun write(itemId: String, chapterKey: String, text: String) {
+        val dir = chapterDir(itemId, chapterKey)
+        dir.mkdirs()
+        dir.resolve(NOVEL_CHAPTER_FILE).writeText(text)
+        markComplete(itemId, chapterKey, 1)
+    }
+
+    /** Drops every cached novel chapter for one book (used by shelf removal). */
+    fun deleteNovelBook(itemId: String) {
+        File(root, itemId.hash32()).deleteRecursively()
+    }
+
+    /** Remembers a display title for the cached novel book (unified download center). */
+    fun registerNovelBook(itemId: String, title: String) {
+        val dir = chapterDir(itemId, "-").parentFile ?: return
+        dir.mkdirs()
+        File(dir, NOVEL_BOOK_NAME_FILE).writeText(title)
+    }
+
+    /** Inventory of cached novel books for the download center, title-first, then by itemId. */
+    fun novelCachedBooks(): List<NovelCachedBook> =
+        root.listFiles().orEmpty()
+            .filter { it.isDirectory }
+            .mapNotNull { itemDir ->
+                val chapterCount = itemDir.listFiles().orEmpty()
+                    .count { chapterDir -> File(chapterDir, NOVEL_CHAPTER_FILE).isFile }
+                if (chapterCount == 0) return@mapNotNull null
+                NovelCachedBook(
+                    itemId = itemDir.name,
+                    title = File(itemDir, NOVEL_BOOK_NAME_FILE)
+                        .takeIf { it.isFile }
+                        ?.readText()
+                        ?.trim()
+                        ?.ifBlank { null },
+                    chapterCount = chapterCount,
+                )
+            }
+            .sortedWith(compareBy({ it.title ?: "~" }, { it.itemId }))
+
     override fun pageSource(itemId: String, chapterKey: String, chapterTitle: String): ReaderPageSource? {
         if (!isDownloaded(itemId, chapterKey)) return null
         return DownloadedChapterPageSource(this, itemId, chapterKey, chapterTitle)
@@ -69,6 +142,8 @@ class FileDownloadStore(
 
     companion object {
         const val COMPLETE_MARKER = ".complete"
+        const val NOVEL_CHAPTER_FILE = "chapter.txt"
+        const val NOVEL_BOOK_NAME_FILE = ".name"
         const val MAX_PAGES = 2000
     }
 }

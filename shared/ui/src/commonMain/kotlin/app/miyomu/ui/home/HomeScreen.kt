@@ -27,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -47,11 +48,14 @@ import app.miyomu.ui.navigation.MangaReaderKey
 import app.miyomu.ui.navigation.MiyomuKey
 import app.miyomu.ui.navigation.NovelDetailKey
 import app.miyomu.ui.navigation.SettingsKey
+import app.miyomu.ui.navigation.ReadingStatsKey
+import app.miyomu.ui.navigation.TrackSettingsKey
 import app.miyomu.ui.navigation.SourceDetailKey
 import app.miyomu.ui.navigation.SourceRepositoryKey
 import app.miyomu.ui.navigation.SourceSearchKey
 import app.miyomu.ui.navigation.VideoDetailKey
 import app.miyomu.ui.updates.UpdatesTab
+import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -85,8 +89,22 @@ fun HomeScreen(graph: MiyomuGraph) {
         }
     }
 
+    // History rows pointing at an installed source resolve the item off the main thread: the
+    // query hits Room through the data port and must never block the click handler.
+    val scope = rememberCoroutineScope()
+    val onOpenSourceItem: (String, String) -> Unit = { scopeId, sourceKey ->
+        scope.launch {
+            val item = runCatching { graph.data.library.get("$scopeId:$sourceKey") }.getOrNull()
+            if (item != null) {
+                navigator.push(
+                    SourceDetailKey(scopeId, scopeId, sourceKey, item.title, item.coverUrl),
+                )
+            }
+        }
+    }
+
     // History rows point at either a local book or an item that lives in an installed source.
-    val onHistoryResume: (String, String) -> Unit = remember(navigator) {
+    val onHistoryResume: (String, String) -> Unit = remember(navigator, onOpenSourceItem) {
         { itemId, _ ->
             val scopeId = itemId.substringBefore(':')
             val sourceKey = itemId.substringAfter(':')
@@ -95,32 +113,18 @@ fun HomeScreen(graph: MiyomuGraph) {
                     navigator.push(MangaReaderKey(it.id, 0, 0))
                 }
             } else {
-                val item = runCatching {
-                    kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) }
-                }.getOrNull()
-                if (item != null) {
-                    navigator.push(
-                        SourceDetailKey(scopeId, scopeId, sourceKey, item.title, item.coverUrl),
-                    )
-                }
+                onOpenSourceItem(scopeId, sourceKey)
             }
         }
     }
-    val onHistoryOpenDetails: (String) -> Unit = remember(navigator, onOpenBook) {
+    val onHistoryOpenDetails: (String) -> Unit = remember(navigator, onOpenBook, onOpenSourceItem) {
         { itemId ->
             val scopeId = itemId.substringBefore(':')
             val sourceKey = itemId.substringAfter(':')
             if (scopeId == "local") {
                 graph.library.books.value.firstOrNull { it.id == sourceKey }?.let(onOpenBook)
             } else {
-                val item = runCatching {
-                    kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) }
-                }.getOrNull()
-                if (item != null) {
-                    navigator.push(
-                        SourceDetailKey(scopeId, scopeId, sourceKey, item.title, item.coverUrl),
-                    )
-                }
+                onOpenSourceItem(scopeId, sourceKey)
             }
         }
     }
@@ -130,6 +134,8 @@ fun HomeScreen(graph: MiyomuGraph) {
     val onOpenBackup: (() -> Unit)? = graph.backupFile?.let { { navigator.push(BackupKey) } }
     val onOpenGlobalSearch: () -> Unit = remember(navigator) { { navigator.push(GlobalSearchKey) } }
     val onOpenDanmaku: () -> Unit = remember(navigator) { { navigator.push(DanmakuSettingsKey) } }
+    val onOpenStats: () -> Unit = remember(navigator) { { navigator.push(ReadingStatsKey) } }
+    val onOpenTrack: () -> Unit = remember(navigator) { { navigator.push(TrackSettingsKey) } }
     val onOpenSettings: () -> Unit = remember(navigator) { { navigator.push(SettingsKey) } }
     val onOpenSource: (SourceRuntimeInfo) -> Unit = remember(navigator) {
         { info -> navigator.push(SourceSearchKey(info.id, info.name, info.mediaType)) }
@@ -159,6 +165,8 @@ fun HomeScreen(graph: MiyomuGraph) {
                 onOpenBackup = onOpenBackup,
                 onOpenGlobalSearch = onOpenGlobalSearch,
                 onOpenDanmaku = onOpenDanmaku,
+                onOpenStats = onOpenStats,
+                onOpenTrack = onOpenTrack,
                 onOpenSettings = onOpenSettings,
                 onOpenSource = onOpenSource,
                 onOpenScreen = onOpenScreen,
@@ -233,6 +241,8 @@ private fun HomeTabContent(
     onOpenBackup: (() -> Unit)?,
     onOpenGlobalSearch: () -> Unit,
     onOpenDanmaku: () -> Unit,
+    onOpenStats: () -> Unit,
+    onOpenTrack: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSource: (SourceRuntimeInfo) -> Unit,
     onOpenScreen: (MiyomuKey) -> Unit,
@@ -255,6 +265,8 @@ private fun HomeTabContent(
             onOpenDownloads = onOpenDownloads,
             onOpenBackup = onOpenBackup,
             onOpenDanmaku = onOpenDanmaku,
+            onOpenStats = onOpenStats,
+            onOpenTrack = onOpenTrack,
             onOpenSettings = onOpenSettings,
         )
     }

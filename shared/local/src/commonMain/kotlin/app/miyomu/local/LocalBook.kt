@@ -15,6 +15,8 @@ enum class LocalBookFormat {
     FB2,
     HTML,
     MARKDOWN,
+    MOBI,
+    AZW3,
 }
 
 /**

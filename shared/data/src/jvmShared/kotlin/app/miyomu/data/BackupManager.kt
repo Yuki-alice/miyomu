@@ -7,8 +7,8 @@ import java.io.File
 
 /**
  * File-level backup: serializes the data layer snapshot to JSON and restores it. Preferences
- * are not included in v1 (the ported store has no enumeration API); library, progress and
- * read/seen/bookmark marks are covered.
+ * ride along as a raw store snapshot ([preferencesJson]) since P1-5 偏好同步; library,
+ * progress and read/seen/bookmark marks are covered.
  */
 class BackupManager(
     private val data: DataPort,
@@ -20,8 +20,9 @@ class BackupManager(
         encodeDefaults = true
     }
 
-    suspend fun export(nowMillis: Long): String {
-        val snapshot = data.backup.export().copy(exportedAt = nowMillis)
+    suspend fun export(nowMillis: Long, preferencesJson: String? = null): String {
+        val snapshot = data.backup.export()
+            .copy(exportedAt = nowMillis, preferences = preferencesJson)
         return json.encodeToString(snapshot)
     }
 
@@ -35,6 +36,7 @@ class BackupManager(
             progress = snapshot.progress.size,
             chapters = snapshot.chapters.size,
             episodes = snapshot.episodes.size,
+            preferences = snapshot.preferences,
         )
     }
 
@@ -54,6 +56,8 @@ class BackupManager(
         val progress: Int,
         val chapters: Int,
         val episodes: Int,
+        /** Raw preference snapshot from the backup, applied by the caller (P1-5). */
+        val preferences: String? = null,
     )
 
     companion object {

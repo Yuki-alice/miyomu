@@ -64,7 +64,8 @@ class WebDavClientTest {
         val httpClient = HttpClient()
         val client = WebDavClient(httpClient)
         try {
-            val error = assertFailsWith<WebDavException> {
+            // P1-5: 404 is now a typed WebDavNotFoundException (first-run semantics).
+            val error = assertFailsWith<WebDavNotFoundException> {
                 client.download("$baseUrl/dav/backup.json?empty=1", "user", "pass")
             }
             assertTrue(error.message.orEmpty().contains("does not exist"))

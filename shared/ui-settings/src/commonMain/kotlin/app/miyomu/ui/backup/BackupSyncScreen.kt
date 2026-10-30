@@ -31,7 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.miyomu.data.BackupManager
+import app.miyomu.data.WebDavSyncService
 import app.miyomu.network.WebDavClient
+import app.miyomu.network.WebDavOps
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.navigation.LocalMiyomuNavigator
 import kotlinx.coroutines.launch
@@ -65,6 +67,8 @@ fun BackupSyncContent(
     var webDavUrl by rememberSaveable { mutableStateOf(graph.preferenceStore.getString(WebDavUrlKey).get()) }
     var webDavUser by rememberSaveable { mutableStateOf(graph.preferenceStore.getString(WebDavUserKey).get()) }
     var webDavPass by rememberSaveable { mutableStateOf(graph.preferenceStore.getString(WebDavPassKey).get()) }
+    val lastSyncedPref = remember { graph.preferenceStore.getLong("webdav_last_synced_at", 0L) }
+    var conflict by remember { mutableStateOf<Pair<WebDavSyncService.Outcome.Conflict, String>?>(null) }
 
     fun webDavReady(): Boolean {
         if (webDavUrl.isBlank()) {
@@ -193,6 +197,53 @@ fun BackupSyncContent(
                 ) { Text("从 WebDAV 恢复") }
             }
 
+            HorizontalDivider()
+
+            // P1-5 WebDAV 双向: incremental sync against the last-synced marker, with a
+            // conflict dialog when both sides changed. Preferences ride inside the backup.
+            Button(onClick = {
+                if (!webDavReady()) return@Button
+                scope.launch {
+                    runCatching {
+                        val service = WebDavSyncService(
+                            ops = WebDavClient() as WebDavOps,
+                            fileUrl = webDavUrl.trim(),
+                            username = webDavUser,
+                            password = webDavPass,
+                        )
+                        val prefsJson = (graph.preferenceStore as? app.miyomu.domain.preferences.JsonPreferenceStore)
+                            ?.exportValuesJson()
+                        val outcome = service.sync(
+                            WebDavSyncService.Input(
+                                localJson = manager.export(graph.nowMillis(), prefsJson),
+                                lastSyncedAt = lastSyncedPref.get(),
+                                applyRemote = { remoteJson ->
+                                    val result = manager.restore(remoteJson, replace = true)
+                                    result.preferences?.let { prefs ->
+                                        (graph.preferenceStore as? app.miyomu.domain.preferences.JsonPreferenceStore)
+                                            ?.importValuesJson(prefs)
+                                    }
+                                },
+                            ),
+                        )
+                        when (outcome) {
+                            is WebDavSyncService.Outcome.Won -> {
+                                lastSyncedPref.set(outcome.exportedAt)
+                                status = when (outcome.side) {
+                                    WebDavSyncService.Outcome.Side.LOCAL -> "本端较新：已上传（增量完成）"
+                                    WebDavSyncService.Outcome.Side.REMOTE -> "云端较新：已恢复（含偏好）"
+                                }
+                            }
+                            is WebDavSyncService.Outcome.UpToDate -> status = "两端一致，无需同步"
+                            is WebDavSyncService.Outcome.Conflict -> {
+                                conflict = outcome to runCatching { manager.export(graph.nowMillis(), prefsJson) }
+                                    .getOrDefault("{}")
+                            }
+                        }
+                    }.onFailure { status = "同步失败：${it.message}" }
+                }
+            }) { Text("立即同步（双向）") }
+
             status?.let {
                 Text(
                     text = it,
@@ -203,7 +254,3 @@ fun BackupSyncContent(
         }
     }
 }
-
-/** Backup file location is chosen by the platform; null disables local backup rows. */
-internal fun defaultBackupFile(homeDir: File?): File? =
-    homeDir?.let { File(it, "backup.json") }

@@ -21,6 +21,8 @@ data class LibraryItem(
     val coverUrl: String? = null,
     val author: String? = null,
     val description: String? = null,
+    /** Free-form labels edited in bulk (P1-3); serialized as a JSON array in backups. */
+    val tags: List<String> = emptyList(),
     val status: LibraryStatus = LibraryStatus.UNKNOWN,
     val addedAt: Long,
     val updatedAt: Long,

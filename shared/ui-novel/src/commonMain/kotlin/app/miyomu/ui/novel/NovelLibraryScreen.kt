@@ -29,7 +29,7 @@ import eu.kanade.presentation.library.manga.MangaLibrarySettingsDialog
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryItem
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibrarySettingsScreenModel
 import kotlinx.coroutines.launch
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -152,7 +152,7 @@ fun NovelLibraryScreen(
     }
 
     if (showSettings) {
-        val settingsModel = remember(preferences) { MangaLibrarySettingsScreenModel(preferences) }
+        val settingsModel = remember(preferences) { MangaLibrarySettingsScreenModel(preferences, scope) }
         MangaLibrarySettingsDialog(
             onDismissRequest = { showSettings = false },
             screenModel = settingsModel,

@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.ui.entries.manga
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.util.fastAny
-import cafe.adriel.voyager.core.model.ScreenModel
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.manga.model.chaptersFiltered
 import eu.kanade.domain.entries.manga.model.downloadedFilter
@@ -12,7 +11,7 @@ import eu.kanade.tachiyomi.source.MangaSource
 import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
@@ -24,7 +23,7 @@ import kotlin.math.floor
  * CMP port: only the state/dialog/chapter-list types from Aniyomi's 1243-line screen model
  * are kept here verbatim; the action surface is implemented by Miyomu's adapted screen model.
  */
-open class MangaScreenModel : ScreenModel {
+open class MangaScreenModel {
 
     sealed interface Dialog {
         data class ChangeCategory(

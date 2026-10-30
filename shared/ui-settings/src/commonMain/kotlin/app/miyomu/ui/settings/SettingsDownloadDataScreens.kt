@@ -191,6 +191,7 @@ fun SettingsDataRoute(graph: MiyomuGraph) {
             },
         ) { padding ->
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                libraryHealthItems(graph)
                 item { HeadingItem("清除数据") }
                 items(cleanups.size) { index ->
                     val cleanup = cleanups[index]

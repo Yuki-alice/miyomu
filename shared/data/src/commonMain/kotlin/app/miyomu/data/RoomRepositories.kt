@@ -3,7 +3,7 @@ package app.miyomu.data
 import app.miyomu.data.db.CategoryEntity
 import app.miyomu.data.db.MangaCategoryEntity
 import app.miyomu.data.db.LibraryUpdateEntity
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import app.miyomu.contract.*
 import app.miyomu.data.db.ChapterEntity
 import app.miyomu.data.db.EpisodeEntity
@@ -233,6 +233,7 @@ private fun LibraryItem.toEntity(): LibraryItemEntity = LibraryItemEntity(
     author = author,
     description = description,
     status = status.name,
+    tags = encodeTags(tags),
     addedAt = addedAt,
     updatedAt = updatedAt,
     lastViewedAt = lastViewedAt,
@@ -248,10 +249,17 @@ private fun LibraryItemEntity.toModel(): LibraryItem = LibraryItem(
     author = author,
     description = description,
     status = LibraryStatus.valueOf(status),
+    tags = decodeTags(tags),
     addedAt = addedAt,
     updatedAt = updatedAt,
     lastViewedAt = lastViewedAt,
 )
+
+internal fun encodeTags(tags: List<String>): String =
+    runCatching { Json.encodeToString(tags) }.getOrDefault("[]")
+
+internal fun decodeTags(raw: String): List<String> =
+    runCatching { Json.decodeFromString<List<String>>(raw) }.getOrDefault(emptyList())
 
 private fun ReadingProgress.toEntity(): ReadingProgressEntity = ReadingProgressEntity(
     itemId = itemId,
@@ -420,6 +428,7 @@ private fun LibraryItemEntity.toBackup() = BackupLibraryItem(
     author = author,
     description = description,
     status = status,
+    tags = decodeTags(tags),
     addedAt = addedAt,
     updatedAt = updatedAt,
     lastViewedAt = lastViewedAt,
@@ -435,6 +444,7 @@ private fun BackupLibraryItem.toEntity() = LibraryItemEntity(
     author = author,
     description = description,
     status = status,
+    tags = encodeTags(tags),
     addedAt = addedAt,
     updatedAt = updatedAt,
     lastViewedAt = lastViewedAt,

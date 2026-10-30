@@ -1,5 +1,6 @@
 package app.miyomu.ui.core
 
+import app.miyomu.model.ResolvedStream
 import app.miyomu.model.ResolvedVideo
 import app.miyomu.ui.MiyomuGraph
 
@@ -17,8 +18,17 @@ suspend fun resolveEpisodeStream(
     graph: MiyomuGraph,
     sourceId: String,
     episodeUrl: String,
+    itemId: String? = null,
 ): ResolvedVideo? = runCatching {
     val now = graph.nowMillis()
+    // P1-2 离线优先: a downloaded episode plays from disk without touching the network.
+    if (itemId != null) {
+        graph.downloadStore?.downloadedEpisodeFile(itemId, episodeUrl)?.let { file ->
+            return ResolvedVideo(
+                streams = listOf(ResolvedStream(url = file.absolutePath, type = "mp4")),
+            )
+        }
+    }
     graph.data.videoResolve.get(episodeUrl, RESOLVE_CACHE_TTL_MILLIS, now)
         ?: graph.sourceRuntime.resolveVideo(sourceId, episodeUrl).also { resolved ->
             graph.data.videoResolve.put(episodeUrl, resolved, now)

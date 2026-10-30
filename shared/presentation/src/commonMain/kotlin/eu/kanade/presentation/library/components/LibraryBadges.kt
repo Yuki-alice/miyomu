@@ -6,7 +6,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import app.miyomu.ui.MiyomuPreviewTheme
 import tachiyomi.presentation.core.components.Badge
 
 @Composable
@@ -50,7 +50,7 @@ internal fun LanguageBadge(
 @PreviewLightDark
 @Composable
 private fun BadgePreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Column {
             DownloadsBadge(count = 10)
             UnviewedBadge(count = 10)

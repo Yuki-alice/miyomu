@@ -42,15 +42,19 @@ internal fun extensionOf(name: String): String =
     name.substringAfterLast('.', "").lowercase()
 
 internal fun LocalBookFormat.isComicFormat(): Boolean = when (this) {
-    LocalBookFormat.DIRECTORY, LocalBookFormat.ZIP -> true
+    LocalBookFormat.DIRECTORY,
+    LocalBookFormat.ZIP,
     LocalBookFormat.SEVEN_ZIP,
     LocalBookFormat.PDF,
+    -> true
     LocalBookFormat.EPUB,
     LocalBookFormat.TXT,
     LocalBookFormat.VIDEO,
     LocalBookFormat.FB2,
     LocalBookFormat.HTML,
     LocalBookFormat.MARKDOWN,
+    LocalBookFormat.MOBI,
+    LocalBookFormat.AZW3,
     -> false
 }
 

@@ -37,6 +37,8 @@ import app.miyomu.ui.novel.NovelSourceSearchScreen
 import app.miyomu.ui.player.OnlineVideoPlayerRoute
 import app.miyomu.ui.player.VideoPlayerRoute
 import app.miyomu.ui.reader.OnlineReaderScreen
+import app.miyomu.ui.settings.ReadingStatsRoute
+import app.miyomu.ui.settings.TrackSettingsRoute
 import app.miyomu.ui.reader.ReaderScreen
 import app.miyomu.ui.settings.AboutRoute
 import app.miyomu.ui.settings.DanmakuSettingsRoute
@@ -152,8 +154,10 @@ fun MiyomuNavHost(
                 entry<BackupKey> { BackupSyncRoute(graph) }
                 entry<DownloadsKey> {
                     val queue = graph.downloadQueue
-                    if (queue == null) MissingEntry("下载队列不可用") else DownloadQueueRoute(queue)
+                    if (queue == null) MissingEntry("下载队列不可用") else DownloadQueueRoute(queue, graph.downloadStore)
                 }
+                entry<ReadingStatsKey> { ReadingStatsRoute(graph) }
+                entry<TrackSettingsKey> { TrackSettingsRoute(graph) }
             },
         )
     }

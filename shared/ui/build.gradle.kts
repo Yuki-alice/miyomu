@@ -18,6 +18,11 @@ kotlin {
             api(projects.shared.uiSources)
             api(projects.shared.uiPlayer)
             api(projects.shared.uiSettings)
+            // MiyomuApp's signature exposes PreferenceStore (domain) and it calls the canonical
+            // theme/i18n directly, so declare what this module actually uses.
+            api(projects.shared.domain)
+            implementation(projects.shared.presentationCore)
+            implementation(projects.shared.i18n)
             api(libs.navigation3.ui)
             implementation(libs.kotlinx.coroutines.core)
         }

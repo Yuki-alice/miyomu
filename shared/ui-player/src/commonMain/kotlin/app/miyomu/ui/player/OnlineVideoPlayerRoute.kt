@@ -117,7 +117,7 @@ fun OnlineVideoPlayerRoute(
                     if (latestDuration > 0L) {
                         runCatching { persistProgress(latestPosition, latestDuration) }
                     }
-                    val resolved = resolveEpisodeStream(graph, route.sourceId, next.url)
+                    val resolved = resolveEpisodeStream(graph, route.sourceId, next.url, route.itemId)
                     val stream = resolved?.bestStream()
                     if (resolved != null && stream != null) {
                         navigator.replace(

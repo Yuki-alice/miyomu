@@ -22,7 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 
 /**
  * Category membership editor for one item (Aniyomi's edit-categories dialog): check the

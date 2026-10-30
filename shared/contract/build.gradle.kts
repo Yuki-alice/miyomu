@@ -11,7 +11,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.shared.model)
-            api(projects.shared.domain)
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
         }

@@ -1,6 +1,6 @@
 package tachiyomi.domain.library.manga.model
 
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 import tachiyomi.domain.library.model.FlagWithMask
 import tachiyomi.domain.library.model.plus
 

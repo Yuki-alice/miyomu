@@ -182,4 +182,10 @@ data object BackupKey : MiyomuKey
 data object DownloadsKey : MiyomuKey
 
 @Serializable
+data object ReadingStatsKey : MiyomuKey
+
+@Serializable
+data object TrackSettingsKey : MiyomuKey
+
+@Serializable
 data object AboutKey : MiyomuKey

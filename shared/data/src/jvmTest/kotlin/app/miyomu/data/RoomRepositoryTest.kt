@@ -237,4 +237,18 @@ class RoomRepositoryTest {
         data.videoResolve.clearExpired(now = 20_000, maxAgeMillis = 10_000)
         assertNull(data.videoResolve.get("ep2", maxAgeMillis = Long.MAX_VALUE, now = 0))
     }
+
+    @Test
+    fun `tags round trip through the library repository`() = runBlocking {
+        val item = demoItem().copy(tags = listOf("日漫", "冒险", "完结"))
+        data.library.upsert(item)
+
+        val loaded = data.library.get(item.id)!!
+
+        assertEquals(listOf("日漫", "冒险", "完结"), loaded.tags)
+
+        // Bulk clear (empty list) persists.
+        data.library.upsert(loaded.copy(tags = emptyList()))
+        assertEquals(emptyList(), data.library.get(item.id)!!.tags)
+    }
 }

@@ -2,6 +2,10 @@ package app.miyomu.download
 
 import app.miyomu.local.LocalBook
 import app.miyomu.local.LocalBookFormat
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.headersOf
 import app.miyomu.local.LocalChapter
 import app.miyomu.local.LocalPage
 import app.miyomu.local.ReaderPageSource
@@ -10,6 +14,7 @@ import app.miyomu.model.ComicSummary
 import app.miyomu.model.MediaType
 import app.miyomu.model.PageRef
 import app.miyomu.model.Paged
+import app.miyomu.model.ResolvedStream
 import app.miyomu.model.ResolvedVideo
 import app.miyomu.source.manager.SourceRuntimeManager
 import app.miyomu.source.manager.SourceRuntimeState
@@ -47,6 +52,89 @@ class DownloadQueueTest {
     @AfterTest
     fun tearDown() {
         scope.coroutineContext.cancelChildren()
+    }
+
+    @Test
+    fun `downloads mp4 episodes and marks complete`() = runBlocking {
+        val payload = ByteArray(1024) { (it % 251).toByte() }
+        val runtime = FakeSourceRuntime(
+            pageCount = 0,
+            resolved = ResolvedVideo(
+                streams = listOf(ResolvedStream(url = "https://example.test/ep.mp4", type = "mp4")),
+            ),
+        )
+        val store = FileDownloadStore(tempDir)
+        val queue = FileDownloadQueue(runtime, store, scope, httpClient = videoClient(payload))
+        try {
+            val request = VideoDownloadRequest(
+                sourceId = "src",
+                itemId = "src:anime",
+                episodeUrl = "https://example.test/ep/1",
+                episodeTitle = "第一集",
+            )
+            queue.enqueueVideo(request)
+            withTimeout(15_000) {
+                queue.state.first { state -> state.tasks.any { it.status == DownloadStatus.DONE } }
+            }
+
+            val task = queue.state.value.tasks.single()
+            assertEquals("第一集", task.request.chapterTitle)
+            assertTrue(task.bytesDone >= payload.size)
+
+            val file = store.episodeFile(request.itemId, request.episodeUrl)
+            assertTrue(file.isFile)
+            assertEquals(payload.size.toLong(), file.length())
+
+            // Already-downloaded episodes complete immediately on re-enqueue.
+            queue.enqueueVideo(request)
+            withTimeout(15_000) {
+                queue.state.first { state -> state.tasks.last().status == DownloadStatus.DONE }
+            }
+        } finally {
+            queue.close()
+        }
+    }
+
+    @Test
+    fun `hls streams fail with an actionable message`() = runBlocking {
+        val runtime = FakeSourceRuntime(
+            pageCount = 0,
+            resolved = ResolvedVideo(
+                streams = listOf(ResolvedStream(url = "https://example.test/ep.m3u8", type = "hls")),
+            ),
+        )
+        val store = FileDownloadStore(tempDir)
+        // Real media playlist whose only segment 404s — the failure must be actionable.
+        val playlist = "#EXTM3U\n#EXTINF:4.0,\nhttps://example.test/seg/1.ts\n#EXT-X-ENDLIST"
+        val client = io.ktor.client.HttpClient(
+            io.ktor.client.engine.mock.MockEngine { request ->
+                if (request.url.toString() == "https://example.test/ep.m3u8") {
+                    respond(
+                        content = playlist,
+                        headers = io.ktor.http.headersOf(
+                            io.ktor.http.HttpHeaders.ContentType to listOf("application/vnd.apple.mpegurl"),
+                        ),
+                    )
+                } else {
+                    respond("", io.ktor.http.HttpStatusCode.NotFound)
+                }
+            },
+        )
+        val queue = FileDownloadQueue(runtime, store, scope, httpClient = client)
+        try {
+            queue.enqueueVideo(
+                VideoDownloadRequest("src", "src:anime", "https://example.test/ep/1", "第一集"),
+            )
+            withTimeout(15_000) {
+                queue.state.first { state -> state.tasks.any { it.status == DownloadStatus.FAILED } }
+            }
+
+            val task = queue.state.value.tasks.single()
+            assertTrue("HLS" in task.error.orEmpty(), "error: ${task.error}")
+        } finally {
+            queue.close()
+            client.close()
+        }
     }
 
     @Test
@@ -147,9 +235,23 @@ private fun dummyBook(): LocalBook = LocalBook(
 )
 
 /** Serves `pageCount` fake pages; page bytes encode their index; can fail a page on demand. */
+/** Mock HTTP engine serving one fixed payload for the video download tests. */
+private fun videoClient(payload: ByteArray) = io.ktor.client.HttpClient(
+    io.ktor.client.engine.mock.MockEngine { request ->
+        respond(
+            content = payload,
+            headers = io.ktor.http.headersOf(
+                io.ktor.http.HttpHeaders.ContentType to listOf("video/mp4"),
+                io.ktor.http.HttpHeaders.ContentLength to listOf(payload.size.toString()),
+            ),
+        )
+    },
+)
+
 private class FakeSourceRuntime(
     private val pageCount: Int,
     private val failOnPage: Int = -1,
+    private val resolved: ResolvedVideo = ResolvedVideo(),
 ) : SourceRuntimeManager {
     val fetchedUrls = mutableListOf<String>()
 
@@ -167,8 +269,7 @@ private class FakeSourceRuntime(
     override suspend fun pages(sourceId: String, comicId: String, chapterId: String): List<PageRef> =
         (1..pageCount).map { PageRef(url = "https://example.test/$it.jpg") }
 
-    override suspend fun resolveVideo(sourceId: String, episodeUrl: String): ResolvedVideo =
-        ResolvedVideo()
+    override suspend fun resolveVideo(sourceId: String, episodeUrl: String): ResolvedVideo = resolved
 
     override suspend fun loadImage(sourceId: String, url: String, headers: Map<String, String>): ByteArray {
         val index = url.substringAfterLast("/").substringBefore(".").toInt()

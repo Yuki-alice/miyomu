@@ -18,6 +18,8 @@ data class LibraryItemEntity(
     val author: String?,
     val description: String?,
     val status: String,
+    /** JSON array string; empty array when unset (P1-3). */
+    val tags: String,
     val addedAt: Long,
     val updatedAt: Long,
     val lastViewedAt: Long?,

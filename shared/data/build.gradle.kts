@@ -19,6 +19,11 @@ kotlin {
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
+            // WebDavSyncService talks to the WebDAV ops surface (P1-5).
+            implementation(projects.shared.network)
+        }
+        jvmTest.dependencies {
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-    id("miyomu.kmp-compose")
+    id("miyomu.kmp-library")
 }
 
 kotlin {
@@ -9,6 +9,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api(projects.shared.model)
             api(projects.shared.i18n)
             api(projects.shared.i18nAniyomi)
             api(projects.shared.sourceApi)

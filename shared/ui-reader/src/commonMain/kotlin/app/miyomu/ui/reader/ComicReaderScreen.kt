@@ -61,6 +61,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import app.miyomu.ui.core.ReadingStatsRecorder
+import java.time.LocalDate
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -233,11 +235,21 @@ fun ComicReaderScreen(
     deviceId: String,
     nowMillis: () -> Long,
     readerPreferences: ReaderPreferences,
+    readingStats: ReadingStatsRecorder? = null,
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val controller = remember(book.id) { ComicReaderController(pageSource, scope) }
     val state by controller.state.collectAsState()
+
+    // P1-8: reading-time session; the cap keeps a stuck composition from inflating the stats.
+    val sessionStartedAt = remember { nowMillis() }
+    DisposableEffect(readingStats) {
+        onDispose {
+            val elapsedSeconds = ((nowMillis() - sessionStartedAt) / 1000).coerceIn(0, ReadingStatsRecorder.MAX_SESSION_SECONDS)
+            readingStats?.recordSession(LocalDate.now(), elapsedSeconds)
+        }
+    }
 
     val itemId = libraryItemId
     LaunchedEffect(book.id, itemId) {
@@ -478,8 +490,8 @@ fun ComicReaderScreen(
         )
     }
 
-    // The ported settings/chrome screen models start a Voyager scope, so they are only built
-    // when a dialog is actually opened.
+    // The ported settings screen model shares the screen's composition scope, so it is only
+    // built when a dialog is actually opened.
     val settingsModel = remember(readerPreferences) {
         ReaderSettingsScreenModel(
             readerState = readerStateFlow,
@@ -493,6 +505,7 @@ fun ComicReaderScreen(
                 readerPreferences.readerOrientationOverride(itemId).set(chosen.flagValue)
             },
             preferences = readerPreferences,
+            scope = scope,
         )
     }
 

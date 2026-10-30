@@ -16,7 +16,8 @@ kotlin {
             api(projects.shared.sourceNovel)
             api(projects.shared.download)
             api(projects.shared.uiLibrary)
-            implementation(libs.kotlinx.coroutines.core)
+                        implementation(projects.shared.presentation)
+implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

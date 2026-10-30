@@ -12,7 +12,10 @@ kotlin {
             api(projects.shared.uiCore)
             api(projects.shared.local)
             api(projects.shared.data)
-            implementation(libs.kotlinx.coroutines.core)
+                        implementation(projects.shared.presentation)
+            implementation(projects.shared.presentationCore)
+            implementation(projects.shared.i18n)
+implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

@@ -326,8 +326,8 @@ fun SourceDetailContent(
                 scope.launch {
                     if (newName != null) {
                         val id = graph.data.categories.upsert(
-                            tachiyomi.domain.category.model.Category(
-                                id = tachiyomi.domain.category.model.Category.UNCATEGORIZED_ID,
+                            app.miyomu.model.Category(
+                                id = app.miyomu.model.Category.UNCATEGORIZED_ID,
                                 name = newName,
                                 order = categories.size.toLong(),
                             ),

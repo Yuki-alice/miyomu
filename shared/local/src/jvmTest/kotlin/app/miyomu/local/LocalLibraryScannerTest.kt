@@ -26,13 +26,15 @@ class LocalLibraryScannerTest {
         File(book10, "chapter 10").apply { mkdirs() }
         writeFile(File(book10, "chapter 10"), "1.jpg", byteArrayOf(1))
         writeZip(File(root, "book2.zip"), listOf("10.jpg", "2.jpg", "1.jpg"))
-        writeFile(root, "ignored.pdf", byteArrayOf(1))
+        // P0-1: PDF (and 7z/CB7) books are scanned and openable, not ignored.
+        writeFile(root, "manual.pdf", byteArrayOf(1))
 
         val books = LocalLibraryScanner().scan(FileLocalFileRef(root))
 
-        assertEquals(listOf("book2", "book10"), books.map { it.title })
+        assertEquals(listOf("book2", "book10", "manual"), books.map { it.title })
         assertEquals(LocalBookFormat.ZIP, books[0].format)
         assertEquals(LocalBookFormat.DIRECTORY, books[1].format)
+        assertEquals(LocalBookFormat.PDF, books[2].format)
     }
 
     @Test

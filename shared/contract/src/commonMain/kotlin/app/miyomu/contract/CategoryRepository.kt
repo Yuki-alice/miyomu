@@ -2,7 +2,7 @@ package app.miyomu.contract
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import tachiyomi.domain.category.model.Category
+import app.miyomu.model.Category
 
 interface CategoryRepository {
     fun observeCategories(): Flow<List<Category>>

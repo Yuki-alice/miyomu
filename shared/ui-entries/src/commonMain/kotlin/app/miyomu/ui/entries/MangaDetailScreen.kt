@@ -22,6 +22,9 @@ import app.miyomu.model.LibraryItem
 import app.miyomu.model.MediaType
 import app.miyomu.model.ReadingProgress
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.track.TrackBindingDialog
+import app.miyomu.ui.share.bookMimeType
+import app.miyomu.ui.share.rememberBookSharer
 import app.miyomu.ui.navigation.*
 import app.miyomu.ui.library.CategoryEditDialog
 import app.miyomu.ui.library.mangaId
@@ -76,6 +79,8 @@ fun MangaDetailContent(
     var refreshToken by remember(book.id) { mutableIntStateOf(0) }
     var selectedIds by remember(book.id) { mutableStateOf(emptySet<Long>()) }
     var showCategoryDialog by remember(book.id) { mutableStateOf(false) }
+    var showTrackDialog by remember(book.id) { mutableStateOf(false) }
+    var showCoverPicker by remember(book.id) { mutableStateOf(false) }
     val categories by graph.data.categories.observeCategories().collectAsState(initial = emptyList())
     var memberOf by remember(book.id) { mutableStateOf<Set<Long>>(emptySet()) }
 
@@ -155,6 +160,9 @@ fun MangaDetailContent(
         excludedScanlators = emptySet(),
     )
 
+    // P1-9 逐书绑定: local read-chapter count is the progress pushed to the tracker.
+    val readChapterCount = remember(records) { records.count { it.read } }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val swipeEndAction = remember { graph.libraryPreferences.swipeChapterEndAction().get() }
     val swipeStartAction = remember { graph.libraryPreferences.swipeChapterStartAction().get() }
@@ -196,14 +204,16 @@ fun MangaDetailContent(
         },
         onWebViewClicked = null,
         onWebViewLongClicked = null,
-        onTrackingClicked = {},
+        onTrackingClicked = { showTrackDialog = true },
         onTagSearch = {},
         onFilterButtonClicked = {},
         onRefresh = { refreshToken++ },
         onContinueReading = { onRead(resumeChapter, resumePage) },
         onSearch = { _, _ -> },
-        onCoverClicked = {},
-        onShareClicked = null,
+        onCoverClicked = { showCoverPicker = true },
+        onShareClicked = rememberBookSharer()?.let { sharer ->
+            { sharer(book.location, bookMimeType(book.format)) }
+        },
         onDownloadActionClicked = null,
         onEditCategoryClicked = null,
         onEditFetchIntervalClicked = null,
@@ -238,6 +248,23 @@ fun MangaDetailContent(
             selectedIds = all - selectedIds
         },
     )
+
+    if (showCoverPicker) {
+        CoverCandidatePickerDialog(
+            graph = graph,
+            book = book,
+            onDismiss = { showCoverPicker = false },
+        )
+    }
+    if (showTrackDialog) {
+        TrackBindingDialog(
+            graph = graph,
+            itemId = itemId,
+            initialTitle = book.title,
+            currentProgress = readChapterCount,
+            onDismiss = { showTrackDialog = false },
+        )
+    }
 }
 
 /** Stable chapter id derived from the on-disk location. */

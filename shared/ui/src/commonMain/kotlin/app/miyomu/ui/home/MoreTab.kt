@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
@@ -33,6 +35,8 @@ fun MoreTab(
     onOpenDownloads: (() -> Unit)? = null,
     onOpenBackup: (() -> Unit)? = null,
     onOpenDanmaku: (() -> Unit)? = null,
+    onOpenStats: () -> Unit = {},
+    onOpenTrack: () -> Unit = {},
     onOpenSettings: () -> Unit = {},) {
 
 
@@ -71,6 +75,20 @@ fun MoreTab(
                 title = "弹幕设置",
                 subtitle = "弹弹play 凭据与默认开关",
                 onClick = onOpenDanmaku,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            MoreRow(
+                icon = Icons.Outlined.Insights,
+                title = "阅读统计",
+                subtitle = "每日阅读时长与连续记录",
+                onClick = onOpenStats,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            MoreRow(
+                icon = Icons.Outlined.CloudSync,
+                title = "追踪",
+                subtitle = "AniList / Bangumi 进度同步（默认关闭）",
+                onClick = onOpenTrack,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             MoreRow(

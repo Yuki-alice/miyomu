@@ -1,6 +1,7 @@
 package app.miyomu.source.novel
 
 import app.miyomu.novel.NovelBlock
+import app.miyomu.novel.NovelChapterCache
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -138,5 +139,96 @@ class LegadoContentSourceTest {
         val data = contentSource.load("book-key", 0, 0)
 
         assertEquals("目录为空", data.error)
+    }
+}
+
+
+/** In-memory [NovelChapterCache] standing in for the disk store in cache-behavior tests. */
+private class MemoryNovelCache : NovelChapterCache {
+    val entries = mutableMapOf<Pair<String, String>, String>()
+
+    override fun isCached(itemId: String, chapterKey: String): Boolean =
+        entries.containsKey(itemId to chapterKey)
+
+    override fun read(itemId: String, chapterKey: String): String? = entries[itemId to chapterKey]
+
+    override fun write(itemId: String, chapterKey: String, text: String) {
+        entries[itemId to chapterKey] = text
+    }
+}
+
+class LegadoContentSourceCacheTest {
+
+    private val sourceJson = """
+        {
+          "bookSourceUrl": "https://s.example",
+          "bookSourceName": "示例书源",
+          "ruleToc": { "chapterList": "ul.chapters li", "chapterName": "a@text", "chapterUrl": "a@href" },
+          "ruleContent": { "content": "#content@textNodes" }
+        }
+    """.trimIndent()
+
+    private val tocPage = """
+        <html><body><ul class="chapters">
+          <li><a href="/b/1/c1">第一章 起点</a></li>
+          <li><a href="/b/1/c2">第二章 转折</a></li>
+        </ul></body></html>
+    """.trimIndent()
+
+    private fun contentPage(text: String) =
+        "<html><body><div id=\"content\"><p>$text</p></div></body></html>"
+
+    private fun contentSource(
+        cache: NovelChapterCache,
+        bodies: MutableMap<String, String>,
+    ): LegadoContentSource = LegadoContentSource(
+        source = LegadoBookSource.fromJson(sourceJson),
+        book = LegadoOnlineBook(
+            name = "测试在线书",
+            author = "作者",
+            bookUrl = "https://s.example/b/1",
+            tocUrl = "https://s.example/b/1/toc",
+            coverUrl = null,
+            sourceUrl = "https://s.example",
+        ),
+        fetch = { url -> bodies[url] ?: error("network down: $url") },
+        js = LegadoQuickJsEngine(),
+        cache = cache,
+    )
+
+    @Test
+    fun `prefetched chapters serve without network`() = runTest {
+        val cache = MemoryNovelCache()
+        val bodies = mutableMapOf(
+            "https://s.example/b/1/toc" to tocPage,
+            "https://s.example/b/1/c1" to contentPage("第一段正文。"),
+            "https://s.example/b/1/c2" to contentPage("第二段正文。"),
+        )
+        val online = contentSource(cache, bodies)
+        // 缓存全本: sequential prefetch through the offline-first source.
+        online.load("book-key", 0, 0)
+        online.load("book-key", 1, 0)
+        assertEquals(3, cache.entries.size) // toc + two chapters
+
+        // Offline: network gone and a brand new source instance (as after an app restart).
+        bodies.clear()
+        val offline = contentSource(cache, bodies)
+        val chapter = offline.load("book-key", 1, 0)
+        assertNull(chapter.error)
+        assertEquals("第二段正文。", chapter.text)
+        assertEquals(2, chapter.chapterCount)
+        assertEquals("第二章 转折", chapter.chapterTitle)
+    }
+
+    @Test
+    fun `fetch failures still surface when nothing is cached`() = runTest {
+        val cache = MemoryNovelCache()
+        val contentSource = contentSource(cache, mutableMapOf())
+
+        val data = contentSource.load("book-key", 0, 0)
+
+        assertTrue(data.error != null)
+        assertEquals("", data.text)
+        assertTrue(cache.entries.isEmpty())
     }
 }

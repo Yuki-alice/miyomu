@@ -15,7 +15,10 @@ kotlin {
             api(projects.shared.sourceNovel)
             api(projects.shared.readerNovel)
             api(projects.shared.uiLibrary)
-            implementation(libs.kotlinx.coroutines.core)
+                        implementation(projects.shared.presentation)
+            implementation(projects.shared.presentationCore)
+            implementation(projects.shared.i18n)
+implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

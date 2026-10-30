@@ -17,11 +17,20 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Minimal WebDAV client for backup sync (ADR: C3c). The endpoint is a full file URL the user
  * configures, e.g. `https://dav.example.com/miyomu/backup.json`; parent collection must exist.
  */
+/** Thrown when the remote backup does not exist yet (404) — the sync treats it as first run. */
+class WebDavNotFoundException(message: String) : RuntimeException(message)
+
+/** Upload/download surface for the WebDAV sync service (P1-5), decoupled from Ktor. */
+interface WebDavOps {
+    suspend fun upload(fileUrl: String, username: String, password: String, bytes: ByteArray)
+    suspend fun download(fileUrl: String, username: String, password: String): ByteArray
+}
+
 class WebDavClient(
     private val httpClient: HttpClient = HttpClient(),
-) {
+) : WebDavOps {
 
-    suspend fun upload(
+    override suspend fun upload(
         fileUrl: String,
         username: String,
         password: String,
@@ -37,7 +46,7 @@ class WebDavClient(
         }
     }
 
-    suspend fun download(
+    override suspend fun download(
         fileUrl: String,
         username: String,
         password: String,
@@ -46,7 +55,7 @@ class WebDavClient(
             basicAuth(username, password)
         }
         if (response.status == HttpStatusCode.NotFound) {
-            throw WebDavException("remote backup does not exist yet")
+            throw WebDavNotFoundException("remote backup does not exist yet")
         }
         if (!response.status.isSuccess()) {
             throw WebDavException("download failed: HTTP ${response.status.value}")

@@ -17,7 +17,7 @@ import androidx.sqlite.execSQL
         MangaCategoryEntity::class,
         LibraryUpdateEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class MiyomuDatabase : RoomDatabase() {
@@ -89,6 +89,13 @@ abstract class MiyomuDatabase : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SQLiteConnection) {
+                // P1-3 标签字段: JSON array string, "[]" when unset.
+                db.execSQL("ALTER TABLE `library_item` ADD COLUMN `tags` TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
     }
 }

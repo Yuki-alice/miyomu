@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.io.files.Path
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.net.InetSocketAddress
@@ -19,7 +20,12 @@ import kotlin.test.assertTrue
 /**
  * Offline verification of the OmoFun source selectors against fixture HTML that mirrors the
  * live site's MacCMS markup. Live reachability is covered by [CanarySourceTest] (-Pcanary).
+ *
+ * Tagged `canary`: the suite reads the real `demo-resources/sources/anime/omofun.js` product
+ * source, which is no longer committed (it was removed with the other verification artifacts),
+ * so it only runs in checkouts that restore that fixture, via `-Pcanary`.
  */
+@Tag("canary")
 class OmofunSourceTest {
 
     @TempDir

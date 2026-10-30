@@ -36,7 +36,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import app.miyomu.ui.MiyomuPreviewTheme
 import eu.kanade.presentation.util.isTabletUi
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Slider
@@ -152,7 +152,7 @@ fun ChapterNavigator(
 @Composable
 private fun ChapterNavigatorPreview() {
     var currentPage by remember { mutableIntStateOf(1) }
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         ChapterNavigator(
             isRtl = false,
             onNextChapter = {},

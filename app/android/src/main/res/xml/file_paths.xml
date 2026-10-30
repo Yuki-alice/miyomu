@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Books under filesDir/library are the shareable set (P1-6 分享动作). -->
+<paths>
+    <files-path
+        name="library"
+        path="library/" />
+</paths>

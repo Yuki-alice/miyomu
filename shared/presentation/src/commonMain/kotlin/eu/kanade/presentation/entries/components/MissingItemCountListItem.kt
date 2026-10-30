@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import app.miyomu.ui.MiyomuPreviewTheme
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
@@ -44,7 +44,7 @@ fun MissingItemCountListItem(
 @PreviewLightDark
 @Composable
 private fun Preview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface {
             MissingItemCountListItem(count = 42)
         }

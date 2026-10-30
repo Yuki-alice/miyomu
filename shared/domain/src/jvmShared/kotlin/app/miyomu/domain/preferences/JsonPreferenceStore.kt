@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import java.io.File
@@ -92,6 +93,21 @@ class JsonPreferenceStore(
         values[key] = value
         observe(key).value = value
         scheduleWrite()
+    }
+
+    /**
+     * P1-5 偏好同步: serializes every preference (string-encoded values keyed by name) for
+     * embedding into a backup; [importValuesJson] merges a snapshot back in.
+     */
+    fun exportValuesJson(): String = buildJsonObject {
+        values.forEach { (key, value) -> put(key, kotlinx.serialization.json.JsonPrimitive(value)) }
+    }.toString()
+
+    fun importValuesJson(jsonText: String) {
+        val element = runCatching { Json.parseToJsonElement(jsonText) }.getOrNull() as? JsonObject ?: return
+        element.forEach { (key, value) ->
+            if (value is JsonPrimitive && value.isString) persist(key, value.content)
+        }
     }
 
     internal fun remove(key: String) {

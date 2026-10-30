@@ -15,6 +15,8 @@ import androidx.compose.material.icons.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.NavigateBefore
 import androidx.compose.material.icons.outlined.NavigateNext
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.VolumeOff
+import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +56,9 @@ fun NovelReaderChrome(
     onOpenSettings: () -> Unit,
     onOpenCatalog: () -> Unit,
     onToggleBookmark: () -> Unit,
+    /** P1-7 朗读: non-null enables the TTS affordance (platform-dependent). */
+    readingAloud: Boolean = false,
+    onToggleTts: (() -> Unit)? = null,
 ) {
     if (!visible) return
     val chromeSurface = palette.background.copy(alpha = 0.96f)
@@ -96,6 +101,15 @@ fun NovelReaderChrome(
                     ),
                     tint = palette.text,
                 )
+            }
+            if (onToggleTts != null) {
+                IconButton(onClick = onToggleTts) {
+                    Icon(
+                        if (readingAloud) Icons.Outlined.VolumeOff else Icons.Outlined.VolumeUp,
+                        contentDescription = if (readingAloud) "停止朗读" else "朗读本章",
+                        tint = palette.text,
+                    )
+                }
             }
         }
 

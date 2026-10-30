@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +45,8 @@ import app.miyomu.source.novel.LegadoSourceReader
 import app.miyomu.source.novel.LegadoTocChapter
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.navigation.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -83,6 +87,47 @@ fun NovelOnlineDetailScreen(
         val progress by produceState<ReadingProgress?>(initialValue = null, itemId) {
             value = runCatching { graph.data.progress.latest(itemId) }.getOrNull()
         }
+        // P1-2 缓存全本: prefetches every chapter through the offline-first content source, so
+        // the book reads without network afterwards. Progress shows in the title column; a
+        // second tap cancels.
+        val cacheScope = rememberCoroutineScope()
+        var downloadJob by remember { mutableStateOf<Job?>(null) }
+        var downloadProgress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+
+        fun cacheWholeBook() {
+            val store = graph.downloadStore
+            val chapters = toc
+            if (store == null || chapters.isNullOrEmpty()) return
+            val running = downloadJob
+            if (running != null) {
+                running.cancel()
+                downloadJob = null
+                downloadProgress = null
+                return
+            }
+            val contentSource = LegadoContentSource(
+                source = sourceFor(graph, book),
+                book = book,
+                fetch = { url -> fetcher?.invoke(url).orEmpty() },
+                js = jsEngine,
+                cache = store,
+            )
+            downloadJob = cacheScope.launch {
+                // Name the entry so the unified download center shows a readable title.
+                store.registerNovelBook(itemId, book.name)
+                var done = 0
+                for (index in chapters.indices) {
+                    if (!store.isCached(itemId, chapters[index].url)) {
+                        contentSource.load(book.bookUrl, index, 0)
+                    }
+                    done += 1
+                    downloadProgress = done to chapters.size
+                }
+                downloadProgress = null
+                downloadJob = null
+            }.also { job -> job.invokeOnCompletion { downloadJob = null } }
+        }
+
         val savedIndex = toc?.indices?.firstOrNull { index ->
             LegadoContentSource.chapterEntryId(book.bookUrl, index) == progress?.entryId
         } ?: -1
@@ -104,10 +149,24 @@ fun NovelOnlineDetailScreen(
                     Column(Modifier.weight(1f)) {
                         Text(book.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
                         Text(
-                            text = book.author ?: "",
+                            text = downloadProgress?.let { (done, total) -> "缓存中 $done/$total" }
+                                ?: book.author.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (downloadProgress != null) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                             maxLines = 1,
+                        )
+                    }
+                    IconButton(
+                        onClick = ::cacheWholeBook,
+                        enabled = graph.downloadStore != null && fetcher != null && !toc.isNullOrEmpty(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Download,
+                            contentDescription = "缓存全本",
                         )
                     }
                     IconButton(

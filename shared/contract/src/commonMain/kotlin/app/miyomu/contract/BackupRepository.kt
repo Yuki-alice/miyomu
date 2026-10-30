@@ -12,6 +12,8 @@ data class BackupData(
     val episodes: List<BackupEpisode> = emptyList(),
     val categories: List<BackupCategory> = emptyList(),
     val categoryMemberships: List<BackupCategoryMembership> = emptyList(),
+    /** Raw preference-store snapshot (P1-5 偏好同步); applied by the UI after restore. */
+    val preferences: String? = null,
 )
 
 @kotlinx.serialization.Serializable
@@ -40,6 +42,7 @@ data class BackupLibraryItem(
     val author: String? = null,
     val description: String? = null,
     val status: String,
+    val tags: List<String> = emptyList(),
     val addedAt: Long,
     val updatedAt: Long,
     val lastViewedAt: Long? = null,

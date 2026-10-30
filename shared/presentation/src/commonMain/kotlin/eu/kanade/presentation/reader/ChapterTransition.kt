@@ -33,7 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import eu.kanade.presentation.theme.TachiyomiPreviewTheme
+import app.miyomu.ui.MiyomuPreviewTheme
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import kotlinx.collections.immutable.persistentMapOf
@@ -310,7 +310,7 @@ private val FakeChapterLongTitle = previewChapter(
 @PreviewLightDark
 @Composable
 private fun TransitionTextPreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface(modifier = Modifier.padding(48.dp)) {
             ChapterTransition(
                 transition = ChapterTransition.Next(
@@ -327,7 +327,7 @@ private fun TransitionTextPreview() {
 @PreviewLightDark
 @Composable
 private fun TransitionTextLongTitlePreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface(modifier = Modifier.padding(48.dp)) {
             ChapterTransition(
                 transition = ChapterTransition.Next(
@@ -344,7 +344,7 @@ private fun TransitionTextLongTitlePreview() {
 @PreviewLightDark
 @Composable
 private fun TransitionTextWithGapPreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface(modifier = Modifier.padding(48.dp)) {
             ChapterTransition(
                 transition = ChapterTransition.Next(
@@ -361,7 +361,7 @@ private fun TransitionTextWithGapPreview() {
 @PreviewLightDark
 @Composable
 private fun TransitionTextNoNextPreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface(modifier = Modifier.padding(48.dp)) {
             ChapterTransition(
                 transition = ChapterTransition.Next(ReaderChapter(FakeChapter), null),
@@ -375,7 +375,7 @@ private fun TransitionTextNoNextPreview() {
 @PreviewLightDark
 @Composable
 private fun TransitionTextNoPreviousPreview() {
-    TachiyomiPreviewTheme {
+    MiyomuPreviewTheme {
         Surface(modifier = Modifier.padding(48.dp)) {
             ChapterTransition(
                 transition = ChapterTransition.Prev(ReaderChapter(FakeChapter), null),

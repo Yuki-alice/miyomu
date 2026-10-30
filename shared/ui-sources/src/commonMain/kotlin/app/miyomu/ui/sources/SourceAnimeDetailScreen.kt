@@ -140,7 +140,7 @@ fun SourceAnimeDetailContent(
 
     fun play(episode: AnimeEpisode, replace: Boolean = false) {
         scope.launch {
-            val resolved = resolveEpisodeStream(graph, sourceId, episode.url) ?: return@launch
+            val resolved = resolveEpisodeStream(graph, sourceId, episode.url, itemId) ?: return@launch
             val stream = resolved.bestStream() ?: return@launch
             val key = OnlineVideoPlayerKey(
                 sourceId = sourceId,
@@ -212,7 +212,34 @@ fun SourceAnimeDetailContent(
         onEpisodeClicked = { episode, _ ->
             visibleEpisodes.firstOrNull { sourceEpisodeId(it.key) == episode.id }?.let(::play)
         },
-        onDownloadEpisode = null,
+        // P1-2 视频按集: START/START_NOW enqueue MP4 episodes; DELETE removes the offline copy
+        // and cancels any running task. The queue resolves + streams through the source runtime.
+        onDownloadEpisode = { items, action ->
+            val queue = graph.downloadQueue ?: return@AnimeScreen
+            val targets = items.mapNotNull { item ->
+                visibleEpisodes.firstOrNull { sourceEpisodeId(it.key) == item.id }
+            }
+            targets.forEach { episode ->
+                val request = app.miyomu.download.VideoDownloadRequest(
+                    sourceId = sourceId,
+                    itemId = itemId,
+                    episodeUrl = episode.url,
+                    episodeTitle = episode.name,
+                )
+                when (action) {
+                    eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction.START,
+                    eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction.START_NOW,
+                    -> queue.enqueueVideo(request)
+                    eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction.DELETE -> {
+                        queue.cancelForEpisode(request.itemId, request.episodeUrl)
+                        graph.downloadStore?.deleteEpisode(request.itemId, request.episodeUrl)
+                    }
+                    eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction.CANCEL,
+                    eu.kanade.presentation.entries.anime.components.EpisodeDownloadAction.SHOW_QUALITIES,
+                    -> Unit
+                }
+            }
+        },
         onAddToLibraryClicked = {
             scope.launch {
                 val now = graph.nowMillis()

@@ -12,7 +12,8 @@ kotlin {
             api(projects.shared.uiCore)
             api(projects.shared.data)
             api(projects.shared.uiLibrary)
-            implementation(libs.kotlinx.coroutines.core)
+                        implementation(projects.shared.presentation)
+implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

@@ -30,6 +30,8 @@ class NovelLibraryScanner {
             "fb2" -> LocalBookFormat.FB2
             "html", "htm" -> LocalBookFormat.HTML
             "md", "markdown" -> LocalBookFormat.MARKDOWN
+            "mobi" -> LocalBookFormat.MOBI
+            "azw3" -> LocalBookFormat.AZW3
             else -> return null
         }
         return LocalBook(

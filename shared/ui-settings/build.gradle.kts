@@ -14,7 +14,9 @@ kotlin {
             api(projects.shared.download)
             api(projects.shared.danmaku)
             api(projects.shared.network)
-            implementation(libs.kotlinx.coroutines.core)
+                        implementation(projects.shared.presentationCore)
+            implementation(projects.shared.track)
+implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

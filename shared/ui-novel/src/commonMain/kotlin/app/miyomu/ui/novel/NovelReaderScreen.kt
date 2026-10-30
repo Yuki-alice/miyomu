@@ -34,6 +34,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import java.time.LocalDate
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +77,15 @@ import app.miyomu.reader.novel.NovelReaderPreferences
 import app.miyomu.reader.novel.NovelReaderTheme
 import app.miyomu.ui.decodeImageBitmap
 import app.miyomu.ui.MiyomuGraph
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import app.miyomu.reader.novel.NovelHighlight
+import app.miyomu.reader.novel.NovelHighlightStore
+import app.miyomu.ui.core.ReadingStatsRecorder
+import app.miyomu.ui.novel.tts.NovelTts
+import app.miyomu.ui.novel.tts.rememberNovelTts
 import app.miyomu.ui.navigation.LocalMiyomuNavigator
 import eu.kanade.core.preference.asState
 import kotlinx.coroutines.flow.drop
@@ -104,6 +114,9 @@ fun NovelReaderScreen(
             deviceId = graph.deviceId,
             nowMillis = graph.nowMillis,
             preferences = graph.novelReaderPreferences,
+            readingStats = graph.readingStats,
+            tts = rememberNovelTts(),
+            highlightStore = graph.novelHighlights,
             onBack = { navigator.pop() },
         )
     }
@@ -131,11 +144,80 @@ fun NovelReaderContent(
     deviceId: String,
     nowMillis: () -> Long,
     preferences: NovelReaderPreferences,
+    readingStats: ReadingStatsRecorder? = null,
+    tts: NovelTts? = null,
+    highlightStore: NovelHighlightStore? = null,
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val controller = remember(bookKey) { NovelReaderController(contentSource, scope) }
     val state by controller.state.collectAsState()
+
+    // P1-7 朗读: restart on chapter change while active, stop on toggle-off / dispose.
+    // Natural utterance completion auto-advances (连读) while chapters remain.
+    var readingAloud by remember { mutableStateOf(false) }
+    LaunchedEffect(state.text, readingAloud) {
+        if (readingAloud) {
+            state.text.takeIf { it.isNotBlank() }?.let { text ->
+                tts?.speak(text) {
+                    if (readingAloud) {
+                        if (state.hasNextChapter) {
+                            controller.nextChapter()
+                        } else {
+                            readingAloud = false
+                        }
+                    }
+                }
+            }
+        } else {
+            tts?.stop()
+        }
+    }
+    DisposableEffect(tts) {
+        onDispose { tts?.stop() }
+    }
+
+    // P1-7 高亮/批注: long-pressing a scroll paragraph drafts a highlight over it; the note is
+    // optional and re-saving the same start replaces. Highlights render as background spans.
+    var highlightDraft by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var highlightListVersion by remember { mutableStateOf(0) }
+    val highlights: List<NovelHighlight> = if (highlightStore == null) {
+        emptyList()
+    } else {
+        // Reading the version keeps this computation honest across edits.
+        @Suppress("UNUSED_EXPRESSION") highlightListVersion
+        highlightStore.forChapter(bookKey, state.chapterIndex)
+    }
+    val highlightDraftValue = highlightDraft
+    if (highlightDraftValue != null && highlightStore != null) {
+        val (draftStart, draftEnd) = highlightDraftValue
+        HighlightEditDialog(
+            existing = highlights.firstOrNull { it.startChar == draftStart },
+            onSave = { note ->
+                highlightStore.add(
+                    bookKey,
+                    NovelHighlight(state.chapterIndex, draftStart, draftEnd, note, createdAt = nowMillis()),
+                )
+                highlightListVersion++
+                highlightDraft = null
+            },
+            onDelete = {
+                highlights.firstOrNull { it.startChar == draftStart }?.let { highlightStore.remove(bookKey, it) }
+                highlightListVersion++
+                highlightDraft = null
+            },
+            onDismiss = { highlightDraft = null },
+        )
+    }
+
+    // P1-8: reading-time session; the cap keeps a stuck composition from inflating the stats.
+    val sessionStartedAt = remember { nowMillis() }
+    DisposableEffect(readingStats) {
+        onDispose {
+            val elapsedSeconds = ((nowMillis() - sessionStartedAt) / 1000).coerceIn(0, ReadingStatsRecorder.MAX_SESSION_SECONDS)
+            readingStats?.recordSession(LocalDate.now(), elapsedSeconds)
+        }
+    }
 
     LaunchedEffect(bookKey) {
         controller.open(bookKey, initialChapterIndex, initialCharOffset)
@@ -220,6 +302,7 @@ fun NovelReaderContent(
     val pages by produceState<NovelChapterPages?>(
         null,
         state.blocks, state.chapterIndex, containerSize, fontSize, lineHeight, paddingPx, spacingPx,
+        highlightListVersion, highlights,
     ) {
         if (state.blocks.isEmpty() || containerSize == IntSize.Zero) {
             value = null
@@ -235,6 +318,7 @@ fun NovelReaderContent(
             fontSizeSp = fontSize,
             lineHeightMultiplier = lineHeight,
             paragraphSpacingPx = spacingPx,
+            highlights = highlights,
         )
     }
 
@@ -373,6 +457,10 @@ fun NovelReaderContent(
                 pagePadding = pagePadding,
                 paragraphSpacing = paragraphSpacing,
                 palette = palette,
+                highlights = highlightStore?.forChapter(bookKey, state.chapterIndex).orEmpty(),
+                onHighlightParagraph = highlightStore?.let { store ->
+                    { item: ScrollItem.TextItem -> highlightDraft = item.offset to (item.offset + item.text.length) }
+                },
                 onToggleChrome = { chromeVisible = !chromeVisible },
             )
 
@@ -434,6 +522,8 @@ fun NovelReaderContent(
             hasPreviousChapter = state.hasPreviousChapter,
             hasNextChapter = state.hasNextChapter,
             bookmarked = bookmarkStore.has(bookKey, state.chapterIndex, currentOffset.intValue),
+            readingAloud = readingAloud,
+            onToggleTts = tts?.let { { readingAloud = !readingAloud } },
             palette = palette,
             onBack = onBack,
             onPreviousChapter = controller::previousChapter,
@@ -550,6 +640,8 @@ private fun NovelScrollContent(
     pagePadding: Int,
     paragraphSpacing: Int,
     palette: NovelPalette,
+    highlights: List<NovelHighlight> = emptyList(),
+    onHighlightParagraph: ((ScrollItem.TextItem) -> Unit)? = null,
     onToggleChrome: () -> Unit,
 ) {
     LazyColumn(
@@ -571,19 +663,36 @@ private fun NovelScrollContent(
             key = { index -> "${items[index].offset}-${items[index].ordinal}" },
         ) { index ->
             when (val item = items[index]) {
-                is ScrollItem.TextItem -> Text(
-                    text = item.text,
-                    color = palette.text,
-                    style = TextStyle(
-                        fontSize = fontSize.sp,
-                        lineHeight = (fontSize * lineHeight).sp,
-                    ),
-                )
+                is ScrollItem.TextItem -> {
+                    val highlightModifier = onHighlightParagraph?.let { callback ->
+                        val interactions = androidx.compose.foundation.interaction.MutableInteractionSource()
+                        Modifier.combinedClickable(
+                            interactionSource = interactions,
+                            indication = null,
+                            onClick = {},
+                            onLongClick = { callback(item) },
+                        )
+                    }
+                    Box(modifier = highlightModifier ?: Modifier) {
+                        Text(
+                            text = highlightedScrollText(item, highlights),
+                            color = palette.text,
+                            style = TextStyle(
+                                fontSize = fontSize.sp,
+                                lineHeight = (fontSize * lineHeight).sp,
+                            ),
+                        )
+                    }
+                }
                 is ScrollItem.ImageItem -> NovelScrollImage(item.image)
             }
         }
     }
 }
+
+/** Renders [item]'s paragraph with saved highlight backgrounds layered on top. */
+private fun highlightedScrollText(item: ScrollItem.TextItem, highlights: List<NovelHighlight>): AnnotatedString =
+    annotateWithHighlights(item.text, absoluteStart = item.offset, highlights = highlights)
 
 @Composable
 private fun NovelScrollImage(image: NovelBlock.Image) {

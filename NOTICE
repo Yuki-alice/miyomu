@@ -31,6 +31,12 @@ Adapted material currently covers:
   after Aniyomi's `ui/home` and `ui/entries` navigation code, with the
   reader's screen-model state adapted to Miyomu's `ComicReaderController`.
 
+Local comic archive/PDF support in `shared/local` uses Apache Commons
+Compress (https://commons.apache.org/proper/commons-compress/) and Tukaani
+XZ (https://tukaani.org/xz/java.html), both Apache-2.0 licensed (XZ is in the
+public domain), and Apache PDFBox (https://pdfbox.apache.org/, Apache-2.0) on
+desktop; Android uses the platform PdfRenderer API.
+
 The video player in `shared/player` is built on mediamp
 (https://github.com/open-ani/mediamp), Copyright OpenAni and contributors,
 licensed under Apache-2.0, with AndroidX Media3/ExoPlayer (Apache-2.0) as the
