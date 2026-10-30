@@ -35,27 +35,11 @@ jobs:
         run: sdkmanager --install "platforms;android-36" "platforms;android-37.0" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Shared module tests
-        run: >-
-          ./gradlew
-          :shared:network:jvmTest
-          :shared:source-runtime:jvmTest
-          :shared:data:jvmTest
-          :shared:local:jvmTest
-          :shared:source-repo:jvmTest
-          :shared:source-manager:jvmTest
-          :shared:novel:jvmTest
-          :shared:reader-novel:jvmTest
-          :shared:source-novel:jvmTest
-          :shared:reader-comic:jvmTest
-          :shared:domain:jvmTest
-          :shared:player:jvmTest
-          :shared:download:jvmTest
-          :shared:danmaku:jvmTest
-          :shared:ui:jvmTest
+        run: ./gradlew jvmTest
       - name: Ported presentation layer (JVM)
         run: ./gradlew :shared:presentation:compileKotlinJvm
       - name: Desktop shell
-        run: ./gradlew :desktopApp:compileKotlin
+        run: ./gradlew :app:desktop:compileKotlin
       - name: Phase 0 JVM spikes
         run: ./gradlew -p experiments :spikes:s3-ui:build :spikes:s1-player:build :spikes:s2-js-runtime:build
 
@@ -83,7 +67,7 @@ jobs:
       - name: S2 Android source runtime spike
         run: ./experiments/spikes/s2-js-runtime-android/gradlew -p experiments/spikes/s2-js-runtime-android assembleDebug
       - name: Miyomu Android shell
-        run: ./gradlew :androidApp:assembleDebug
+        run: ./gradlew :app:android:assembleDebug
 
   ios:
     name: iOS source runtime tests

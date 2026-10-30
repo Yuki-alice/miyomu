@@ -20,7 +20,8 @@ import app.miyomu.ui.FakeSourceRuntimeManager
 import app.miyomu.ui.MiyomuApp
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.library.installLocalCoverLoader
-import cafe.adriel.voyager.navigator.Navigator
+import app.miyomu.ui.MiyomuNavHost
+import app.miyomu.ui.navigation.NovelExploreKey
 import kotlinx.io.files.Path
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
@@ -169,7 +170,9 @@ class NovelExploreFlowTest {
             graph.novelSourceStore.addSource(source)
 
             installLocalCoverLoader { null }
-            setContent { Navigator(NovelExploreScreen(graph, source)) }
+            setContent {
+                MiyomuNavHost(graph, start = NovelExploreKey(source.bookSourceUrl))
+            }
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("玄幻").fetchSemanticsNodes().isNotEmpty()

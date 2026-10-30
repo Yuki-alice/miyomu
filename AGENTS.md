@@ -5,9 +5,9 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- **2026-10-30 (evening): the code compiles, but the project is NOT usable.** The user's real-device test found it "基本不可用"; do not claim feature completeness from fixture/construction/static tests. Start from `docs/00-current-status.md`. Android + desktop compile; iOS is not started; 210 module-level/fixture tests pass; all 13 reference Venera sources construct and hitomi's single real-site path works, but none of these prove a user can import data/sources and actually read or play. Feature work is paused; prioritize reproducing real-use failures and hardening import → use → restart flows. The old ADR/plan/handoff docs were deleted on 2026-10-30; the decision digest is `docs/02-decisions.md`. **Packaging/release is deferred.**
+- **2026-10-30 (evening): the code compiles, but the project is NOT usable.** The user's real-device test found it "基本不可用"; do not claim feature completeness from fixture/construction/static tests. Start from `docs/00-current-status.md`. Android + desktop compile; iOS is not started; 213 module-level/fixture tests pass; all 13 reference Venera sources construct and hitomi's single real-site path works, but none of these prove a user can import data/sources and actually read or play. Feature work is paused; prioritize reproducing real-use failures and hardening import → use → restart flows. The old ADR/plan/handoff docs were deleted on 2026-10-30; the decision digest is `docs/02-decisions.md`. **Packaging/release is deferred.**
 - Old ADRs, plans, handoffs and checklists were deleted on 2026-10-30. If their content is needed, recover it from git history `14c495e`; the current minimal docs are `docs/00-current-status.md` through `docs/03-verification.md`.
-- Production build lives at the repository root (`androidApp/`, `desktopApp/`, `shared/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
+- Production build lives at the repository root (`app/android/`, `app/desktop/`, `shared/`, `build-logic/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
 - Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
 
 ## Skill policy (temporarily disabled)
@@ -51,6 +51,34 @@ Rules:
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
 - **Known gaps**: **real-usage validation failed (user, 2026-10-30); detailed failure list pending**; Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), online novel body search, no release artifacts. Venera compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/03-verification.md`; the 13/13 numbers cover construction + static API only, and hitomi covers one search → details → pages path; **they are not usability evidence**, and the remaining sources are unverified.
 - **Validation rule**: only claim a feature works after a fresh-data UI walkthrough (import → use → restart → persistence). Module/fixture tests, source construction, and static audits are not evidence of usability.
+- **UI module layout (2026-10-30)**: `:shared:ui` is the shell only (`MiyomuApp`, `MiyomuNavHost`,
+  `HomeScreen`); features live in `:shared:ui-core|library|entries|novel|reader|sources|player|settings`.
+  A feature may depend on `ui-core` plus the modules it composes (`library → entries → reader`,
+  `library → novel`, `library → sources`); nothing may depend on `:shared:ui`. Put a screen in the
+  module that owns its feature, and its unit test in that module's `jvmTest` — only end-to-end flow
+  tests stay in `:shared:ui`.
+- **Build conventions (2026-10-30)**: `build-logic/` is an included build with the `miyomu.kmp-library`,
+  `miyomu.kmp-compose`, `miyomu.android-application` and `miyomu.jvm-compose` convention plugins.
+  Module build scripts must not repeat toolchain/`compileSdk`/Android/JUnit boilerplate, and project
+  dependencies must use typesafe accessors (`projects.shared.uiCore`), not `project(":shared:...")`.
+  Source sets stay in the standard KMP layout (`src/<sourceSet>/kotlin`); do not flatten them.
+- **Composition root (2026-10-30)**: `:shared:application` constructs `MiyomuData`, preferences,
+  source runtime/managers, download queue and the novel HTTP client. `:app:android` and `:app:desktop`
+  only build a `MiyomuAppEnvironment` (data dir, library root, database factory, device id, platform
+  callbacks) and call `MiyomuApplication(environment)`. Never put graph wiring back into the platform
+  entry points; if a platform needs new state, add it to the environment instead.
+- **Ports (2026-10-30)**: persistence is reached through `:shared:contract`. Add a method to the
+  relevant repository interface there and implement it in `:shared:data`; never let a feature module
+  import `app.miyomu.data.*` implementation types (`MiyomuData`, `Room*`, `*Entity`, `BackupManager`
+  is the one exception, it lives in data and takes `DataPort`). The only non-UI module allowed to see
+  `:shared:data` concretely is `:shared:application`, and platform entries see only
+  `MiyomuDatabaseFactory` through the environment. `:shared:ui-core` exposes only
+  `model`/`contract`/`presentation`/`i18n` with `api`; everything else is `implementation`, so a new
+  concrete dependency has to be declared by the feature module that needs it.
+- **Navigation (2026-10-30)**: routing is Navigation 3. A destination is a `@Serializable`
+  `MiyomuKey` in `shared/ui/.../navigation/MiyomuKey.kt` plus one `entry<...>` in `MiyomuNavHost`.
+  Keys carry ids only — never `MiyomuGraph`, `LocalBook` instances or lambdas; resolve those in the
+  entry with `remember(key)`. Voyager survives only as `ScreenModel` inside `:shared:presentation`.
 - **Novel wiring**: `HomeScreen` has six tabs with `NovelLibraryTab` at index 0 (manga/updates/history/browse/more shifted by one). Novel bookmarks, reader prefs and legado sources all live in the JSON `PreferenceStore`, so the novel side still has **zero Room schema impact** — keep it that way unless a migration is planned.
 - **CI gaps**: CI is runnable as of 2026-10-30 (canonical repositories on runners; `download`/`danmaku` tests included), but it only validates compilation and module tests, not real usability; no Windows job; no packaging smoke.
 

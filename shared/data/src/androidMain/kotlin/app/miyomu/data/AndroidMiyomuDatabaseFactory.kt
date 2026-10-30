@@ -1,5 +1,6 @@
 package app.miyomu.data
 
+import app.miyomu.contract.*
 import android.content.Context
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver

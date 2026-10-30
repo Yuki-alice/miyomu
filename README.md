@@ -11,7 +11,7 @@
 ## 能确认的事实
 
 - Android 与桌面代码能编译，桌面 App 能启动窗口。
-- 210 个模块/fixture 测试通过（数量不等于可用性）。
+- 213 个模块/fixture 测试通过（数量不等于可用性）。
 - Venera：13 个参考源能零改构造；静态 API 审计 0 缺口；hitomi 单源 search → details → pages 能取到数据（仅桌面/模拟器单路径）。
 - 用预置数据 + 本地 fixture 做过少量冒烟：本地 TXT、legado 发现链路、本地 MKV、设置/备份/源仓库页面。
 
@@ -38,6 +38,7 @@
 | `:shared:source-novel` | legado 书源 JSON 导入、规则求值器、在线内容源 |
 | `:shared:download` | 漫画章节下载队列、离线页源 |
 | `:shared:danmaku` | dandanplay 弹幕客户端（用户自配凭据） |
+| `:shared:contract` | UI 端口：仓储接口与记录类型（无 Room / 网络 / 平台代码） |
 | `:shared:data` | Room 2.8.5 + KSP（schema v4）；库/进度/章节/剧集/分类/更新/下载/解析缓存 |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:novel` | 小说解析：TXT/EPUB/FB2/HTML/Markdown、小说库扫描 |
@@ -47,20 +48,25 @@
 | `:shared:domain` | Aniyomi 域模型、偏好 API、排序/集号识别 |
 | `:shared:i18n` / `:shared:i18n-aniyomi` | moko-resources 字符串资源（en + zh-CN） |
 | `:shared:presentation-core` / `:shared:presentation` | 移植的 Aniyomi 组件与屏幕层 |
-| `:shared:ui` | 主题、App 壳、书架/详情/阅读器/播放器/源仓库/设置 |
-| `:androidApp` / `:desktopApp` | Android / 桌面入口 |
+| `:shared:ui-core` | `MiyomuGraph`、主题、Navigation 3 键、共享组件 |
+| `:shared:ui-library` / `ui-entries` / `ui-novel` / `ui-reader` / `ui-sources` / `ui-player` / `ui-settings` | 功能界面模块（单向依赖） |
+| `:shared:ui` | App 壳：`MiyomuApp`、`MiyomuNavHost`、`HomeScreen` |
+| `:shared:application` | 组合根：数据、偏好、源运行时、下载、小说抓取的统一装配 |
+| `:app:android` / `:app:desktop` | Android / 桌面入口，只提供平台环境 |
 
-工具链：AGP 9.4.1 + Kotlin 2.3.21 + Gradle 9.6 + compileSdk 37 + JDK 21。
+工具链：AGP 9.4.1 + Kotlin 2.3.21 + Gradle 9.6.0 + compileSdk 37 + JDK 21。
+构建约定集中在 `build-logic/`（`miyomu.kmp-library`、`miyomu.kmp-compose`、
+`miyomu.android-application`、`miyomu.jvm-compose`），模块脚本不再重复 toolchain/sdk/test 配置。
 
 ## 构建与运行
 
 ```bash
 # 桌面
 python3 tools/make_sample_library.py
-./gradlew :desktopApp:run
+./gradlew :app:desktop:run
 
 # Android debug 包
-./gradlew :androidApp:assembleDebug
+./gradlew :app:android:assembleDebug
 
 # 模块测试（不代表可用性验收）
 ./gradlew :shared:ui:jvmTest :shared:source-runtime:jvmTest :shared:source-novel:jvmTest \

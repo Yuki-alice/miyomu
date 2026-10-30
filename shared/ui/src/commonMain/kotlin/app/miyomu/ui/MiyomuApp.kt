@@ -8,7 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import app.miyomu.data.MiyomuData
+import app.miyomu.contract.DataPort
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.ThemeMode
 import app.miyomu.download.DownloadQueue
@@ -21,10 +21,8 @@ import app.miyomu.novel.LocalNovelRepository
 import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.source.manager.SourceRuntimeManager
 import app.miyomu.source.repo.SourceInstallManager
-import app.miyomu.ui.home.HomeScreen
 import app.miyomu.ui.library.installLocalCoverLoader
 import app.miyomu.ui.library.localCoverResolver
-import cafe.adriel.voyager.navigator.Navigator
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
 import tachiyomi.core.common.preference.PreferenceStore
 
@@ -34,7 +32,7 @@ fun MiyomuApp(
     comics: LocalComicRepository,
     novels: LocalNovelRepository,
     novelLibrary: NovelLibraryRepository,
-    data: MiyomuData,
+    data: DataPort,
     root: LocalFileRef,
     deviceId: String,
     nowMillis: () -> Long,
@@ -51,6 +49,8 @@ fun MiyomuApp(
     onOpenLibraryFolder: (() -> Unit)? = null,
     onPickLibraryDirectory: (() -> Unit)? = null,
     novelFetcher: (suspend (String) -> String)? = null,
+    /** Invoked when back is pressed on the root destination (finish the activity/window). */
+    onExit: () -> Unit = {},
 ) {
     val store = preferenceStore ?: remember { InMemoryPreferenceStore() }
 
@@ -121,7 +121,7 @@ fun MiyomuApp(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
         ) {
-            Navigator(HomeScreen(graph))
+            MiyomuNavHost(graph = graph, onExit = onExit)
         }
     }
 }

@@ -32,26 +32,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.navigation.MiyomuKey
 import app.miyomu.ui.novel.NovelSourcesSection
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabOptions
 import kotlinx.coroutines.launch
 
 /** Source tab: installed JS sources and their entry points, plus the legado novel shelf. */
-class BrowseTab(
-    private val graph: MiyomuGraph,
-    private val onOpenSource: (SourceRuntimeInfo) -> Unit,
-    private val onManageSources: () -> Unit,
-    private val onOpenGlobalSearch: () -> Unit = {},
-    private val onOpenScreen: (Screen) -> Unit = {},
-) : Tab {
+@Composable
+fun BrowseTab(
+    graph: MiyomuGraph,
+    onOpenSource: (SourceRuntimeInfo) -> Unit,
+    onManageSources: () -> Unit,
+    onOpenGlobalSearch: () -> Unit = {},
+    onOpenScreen: (MiyomuKey) -> Unit = {},) {
 
-    override val options: TabOptions
-        @Composable get() = TabOptions(index = 4u, title = "浏览")
 
-    @Composable
-    override fun Content() {
+
         val runtime = graph.sourceRuntime
         val state by runtime.state.collectAsState()
         val scope = rememberCoroutineScope()
@@ -126,7 +121,7 @@ class BrowseTab(
             }
         }
     }
-}
+
 
 @Composable
 private fun SourceRow(info: SourceRuntimeInfo, onClick: () -> Unit) {

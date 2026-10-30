@@ -15,6 +15,7 @@ room = "2.8.5"
 ksp = "2.3.12"
 sqlite = "2.6.2"
 voyager = "2.2.21-1.10.3"
+navigation3 = "1.2.0"
 moko = "0.26.0"
 coil = "3.6.3"
 kotlinx-collections-immutable = "0.3.8"
@@ -24,6 +25,7 @@ mediamp = "0.5.3"
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -45,6 +47,10 @@ voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.
 voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
 voyager-tab-navigator = { module = "cafe.adriel.voyager:voyager-tab-navigator", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
+# Navigation 3: runtime is the AndroidX multiplatform artifact, the UI layer comes from the
+# Compose Multiplatform port (the AndroidX navigation3-ui publishes desktop stubs only).
+navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 moko-resources = { module = "dev.icerock.moko:resources", version.ref = "moko" }
 moko-resources-compose = { module = "dev.icerock.moko:resources-compose", version.ref = "moko" }
 coil-core = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
@@ -61,6 +67,14 @@ mediamp-mpv-runtime-macos-arm64 = { module = "org.openani.mediamp:mediamp-mpv-ru
 mediamp-mpv-runtime-macos-x64 = { module = "org.openani.mediamp:mediamp-mpv-runtime-macos-x64", version.ref = "mediamp" }
 mediamp-mpv-runtime-windows-x64 = { module = "org.openani.mediamp:mediamp-mpv-runtime-windows-x64", version.ref = "mediamp" }
 mediamp-mpv-runtime-windows-arm64 = { module = "org.openani.mediamp:mediamp-mpv-runtime-windows-arm64", version.ref = "mediamp" }
+
+# Plugin markers for build-logic convention plugins.
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+android-kmp-library-gradle-plugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "agp" }
+android-application-gradle-plugin = { module = "com.android.application:com.android.application.gradle.plugin", version.ref = "agp" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "compose" }
+compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

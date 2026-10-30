@@ -17,7 +17,8 @@ import app.miyomu.source.novel.LegadoBookSource
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.library.installLocalCoverLoader
 import app.miyomu.ui.sources.GlobalSearchRoute
-import cafe.adriel.voyager.navigator.Navigator
+import app.miyomu.ui.navigation.GlobalSearchKey
+import app.miyomu.ui.MiyomuNavHost
 import kotlinx.io.files.Path
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -91,7 +92,7 @@ class GlobalSearchNovelTest {
             // for every later test in this task.
             installLocalCoverLoader { null }
 
-            setContent { Navigator(GlobalSearchRoute(graph)) }
+            setContent { MiyomuNavHost(graph, start = GlobalSearchKey) }
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("全局搜索").fetchSemanticsNodes().isNotEmpty()

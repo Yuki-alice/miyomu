@@ -25,7 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -33,218 +36,257 @@ import app.miyomu.local.LocalBook
 import app.miyomu.model.MediaType
 import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.ui.MiyomuGraph
-import app.miyomu.ui.entries.MangaDetailScreen
-import app.miyomu.ui.entries.VideoDetailScreen
 import app.miyomu.ui.history.MangaHistoryTab
-import app.miyomu.ui.novel.NovelDetailScreen
-import app.miyomu.ui.sources.SourceRepositoryScreen
-import app.miyomu.ui.sources.SourceSearchScreen
+import app.miyomu.ui.navigation.BackupKey
+import app.miyomu.ui.navigation.DanmakuSettingsKey
+import app.miyomu.ui.navigation.DownloadsKey
+import app.miyomu.ui.navigation.GlobalSearchKey
+import app.miyomu.ui.navigation.LocalMiyomuNavigator
+import app.miyomu.ui.navigation.MangaDetailKey
+import app.miyomu.ui.navigation.MangaReaderKey
+import app.miyomu.ui.navigation.MiyomuKey
+import app.miyomu.ui.navigation.NovelDetailKey
+import app.miyomu.ui.navigation.SettingsKey
+import app.miyomu.ui.navigation.SourceDetailKey
+import app.miyomu.ui.navigation.SourceRepositoryKey
+import app.miyomu.ui.navigation.SourceSearchKey
+import app.miyomu.ui.navigation.VideoDetailKey
 import app.miyomu.ui.updates.UpdatesTab
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
-import cafe.adriel.voyager.navigator.tab.CurrentTab
-import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabNavigator
+import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.i18n.stringResource
 
 /**
- * Port of Aniyomi's ui/home/HomeScreen.kt: a Voyager TabNavigator with the bottom tabs,
- * adaptive NavigationBar (narrow) / NavigationRail (>=720dp), adapted to constructor injection.
+ * The tab shell.
  *
- * Each medium owns its library tab: novels first, then the comic/video shelf.
+ * Tabs are local state, not back stack entries: the stack only holds destinations the user can pop
+ * out of, so switching tabs never grows history. Anything a tab opens (detail, reader, player) is
+ * pushed onto the single root stack, which is what makes "back" predictable and lets a reader be
+ * restored from a key alone.
  */
-class HomeScreen(private val graph: MiyomuGraph) : Screen {
+@Composable
+fun HomeScreen(graph: MiyomuGraph) {
+    val navigator = LocalMiyomuNavigator.current
+    val books by graph.library.books.collectAsState()
+    val novelBooks by graph.novelLibrary.books.collectAsState()
 
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val books by graph.library.books.collectAsState()
-        val novelBooks by graph.novelLibrary.books.collectAsState()
+    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+    val tabs = HomeTab.entries
+    val selected = tabs[selectedIndex.coerceIn(0, tabs.lastIndex)]
 
-        val onOpenBook: (LocalBook) -> Unit = remember(navigator) {
-            { book ->
-                // Novels and videos own their detail screens; comics use the ported manga one.
+    val onOpenBook: (LocalBook) -> Unit = remember(navigator) {
+        { book ->
+            navigator.push(
                 when (book.mediaType) {
-                    MediaType.NOVEL -> navigator.push(NovelDetailScreen(graph, book))
-                    MediaType.VIDEO -> navigator.push(VideoDetailScreen(graph, book))
-                    else -> navigator.push(MangaDetailScreen(graph, book))
-                }
-            }
-        }
-        val onHistoryResume: (String, String) -> Unit = remember(navigator) {
-            { itemId, entryId ->
-                val scopeId = itemId.substringBefore(':')
-                val sourceKey = itemId.substringAfter(':')
-                if (scopeId == "local") {
-                    val book = graph.library.books.value.firstOrNull { it.id == sourceKey }
-                    if (book != null) {
-                        navigator.push(app.miyomu.ui.reader.ReaderScreen(graph, book, 0, 0))
-                    }
-                } else {
-                    val item = runCatching { kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) } }.getOrNull()
-                    if (item != null) {
-                        navigator.push(
-                            app.miyomu.ui.sources.SourceDetailScreen(
-                                graph = graph,
-                                sourceId = scopeId,
-                                sourceName = scopeId,
-                                summary = app.miyomu.model.ComicSummary(
-                                    id = sourceKey,
-                                    title = item.title,
-                                    coverUrl = item.coverUrl,
-                                ),
-                            ),
-                        )
-                    }
-                }
-            }
-        }
-        val onHistoryOpenDetails: (String) -> Unit = remember(navigator) {
-            { itemId ->
-                val scopeId = itemId.substringBefore(':')
-                val sourceKey = itemId.substringAfter(':')
-                if (scopeId == "local") {
-                    graph.library.books.value.firstOrNull { it.id == sourceKey }?.let(onOpenBook)
-                } else {
-                    val item = runCatching { kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) } }.getOrNull()
-                    if (item != null) {
-                        navigator.push(
-                            app.miyomu.ui.sources.SourceDetailScreen(
-                                graph = graph,
-                                sourceId = scopeId,
-                                sourceName = scopeId,
-                                summary = app.miyomu.model.ComicSummary(
-                                    id = sourceKey,
-                                    title = item.title,
-                                    coverUrl = item.coverUrl,
-                                ),
-                            ),
-                        )
-                    }
-                }
-            }
-        }
-        val onOpenSources: () -> Unit = remember(navigator) {
-            { navigator.push(SourceRepositoryScreen(graph)) }
-        }
-        val onOpenDownloads: (() -> Unit)? = graph.downloadQueue?.let { queue ->
-            val open: () -> Unit = { navigator.push(app.miyomu.ui.download.DownloadQueueRoute(queue)) }
-            open
-        }
-        val onOpenBackup: (() -> Unit)? = graph.backupFile?.let {
-            val open: () -> Unit = { navigator.push(app.miyomu.ui.backup.BackupSyncRoute(graph)) }
-            open
-        }
-        val onOpenGlobalSearch: () -> Unit = remember(navigator) {
-            val open: () -> Unit = { navigator.push(app.miyomu.ui.sources.GlobalSearchRoute(graph)) }
-            open
-        }
-        val onOpenDanmaku: () -> Unit = remember(navigator) {
-            val open: () -> Unit = { navigator.push(app.miyomu.ui.settings.DanmakuSettingsRoute(graph)) }
-            open
-        }
-        val onOpenSettings: () -> Unit = remember(navigator) {
-            val open: () -> Unit = { navigator.push(app.miyomu.ui.settings.SettingsMainRoute(graph)) }
-            open
-        }
-        val onOpenSource: (SourceRuntimeInfo) -> Unit = remember(navigator) {
-            { info -> navigator.push(SourceSearchScreen(graph, info.id, info.name, info.mediaType)) }
-        }
-        val onOpenScreen: (Screen) -> Unit = remember(navigator) {
-            { screen -> navigator.push(screen) }
-        }
-        val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource, onOpenScreen) {
-            listOf(
-                NovelLibraryTab(graph, onOpenBook),
-                MangaLibraryTab(graph, onOpenBook),
-                UpdatesTab(graph, onHistoryOpenDetails),
-                MangaHistoryTab(graph, onHistoryResume, onHistoryOpenDetails),
-                BrowseTab(graph, onOpenSource, onOpenSources, onOpenGlobalSearch, onOpenScreen),
-                MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku, onOpenSettings),
+                    MediaType.NOVEL -> NovelDetailKey(book.id)
+                    MediaType.VIDEO -> VideoDetailKey(book.id)
+                    else -> MangaDetailKey(book.id)
+                },
             )
         }
-        val badgeCount: (Tab) -> Int = { tab ->
-            when (tab) {
-                is NovelLibraryTab -> novelBooks.size
-                is MangaLibraryTab -> books.size
-                else -> 0
-            }
-        }
+    }
 
-        TabNavigator(tabs.first()) { tabNavigator ->
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val wide = maxWidth >= 720.dp
-
-                if (wide) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        NavigationRail(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            header = {
-                                Text(
-                                    text = "Miyomu",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(vertical = 12.dp),
-                                )
-                            },
-                        ) {
-                            tabs.forEach { tab ->
-                                NavigationRailItem(
-                                    selected = tabNavigator.current == tab,
-                                    onClick = { tabNavigator.current = tab },
-                                    icon = { TabIcon(tab, badgeCount(tab)) },
-                                    label = { Text(tab.options.title) },
-                                    alwaysShowLabel = true,
-                                )
-                            }
-                        }
-                        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-                            CurrentTab()
-                        }
-                    }
-                } else {
-                    Scaffold(
-                        bottomBar = {
-                            NavigationBar {
-                                tabs.forEach { tab ->
-                                    NavigationBarItem(
-                                        selected = tabNavigator.current == tab,
-                                        onClick = { tabNavigator.current = tab },
-                                        icon = { TabIcon(tab, badgeCount(tab)) },
-                                        label = { Text(tab.options.title) },
-                                        alwaysShowLabel = true,
-                                    )
-                                }
-                            }
-                        },
-                    ) { padding ->
-                        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                            CurrentTab()
-                        }
-                    }
+    // History rows point at either a local book or an item that lives in an installed source.
+    val onHistoryResume: (String, String) -> Unit = remember(navigator) {
+        { itemId, _ ->
+            val scopeId = itemId.substringBefore(':')
+            val sourceKey = itemId.substringAfter(':')
+            if (scopeId == "local") {
+                graph.library.books.value.firstOrNull { it.id == sourceKey }?.let {
+                    navigator.push(MangaReaderKey(it.id, 0, 0))
+                }
+            } else {
+                val item = runCatching {
+                    kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) }
+                }.getOrNull()
+                if (item != null) {
+                    navigator.push(
+                        SourceDetailKey(scopeId, scopeId, sourceKey, item.title, item.coverUrl),
+                    )
                 }
             }
         }
+    }
+    val onHistoryOpenDetails: (String) -> Unit = remember(navigator, onOpenBook) {
+        { itemId ->
+            val scopeId = itemId.substringBefore(':')
+            val sourceKey = itemId.substringAfter(':')
+            if (scopeId == "local") {
+                graph.library.books.value.firstOrNull { it.id == sourceKey }?.let(onOpenBook)
+            } else {
+                val item = runCatching {
+                    kotlinx.coroutines.runBlocking { graph.data.library.get(itemId) }
+                }.getOrNull()
+                if (item != null) {
+                    navigator.push(
+                        SourceDetailKey(scopeId, scopeId, sourceKey, item.title, item.coverUrl),
+                    )
+                }
+            }
+        }
+    }
+
+    val onOpenSources: () -> Unit = remember(navigator) { { navigator.push(SourceRepositoryKey) } }
+    val onOpenDownloads: (() -> Unit)? = graph.downloadQueue?.let { { navigator.push(DownloadsKey) } }
+    val onOpenBackup: (() -> Unit)? = graph.backupFile?.let { { navigator.push(BackupKey) } }
+    val onOpenGlobalSearch: () -> Unit = remember(navigator) { { navigator.push(GlobalSearchKey) } }
+    val onOpenDanmaku: () -> Unit = remember(navigator) { { navigator.push(DanmakuSettingsKey) } }
+    val onOpenSettings: () -> Unit = remember(navigator) { { navigator.push(SettingsKey) } }
+    val onOpenSource: (SourceRuntimeInfo) -> Unit = remember(navigator) {
+        { info -> navigator.push(SourceSearchKey(info.id, info.name, info.mediaType)) }
+    }
+    val onOpenScreen: (MiyomuKey) -> Unit = remember(navigator) { { key -> navigator.push(key) } }
+
+    val badgeCount: (HomeTab) -> Int = { tab ->
+        when (tab) {
+            HomeTab.Novels -> novelBooks.size
+            HomeTab.Library -> books.size
+            else -> 0
+        }
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val wide = maxWidth >= 720.dp
+
+        val content: @Composable () -> Unit = {
+            HomeTabContent(
+                tab = selected,
+                graph = graph,
+                onOpenBook = onOpenBook,
+                onOpenHistoryResume = onHistoryResume,
+                onOpenHistoryDetails = onHistoryOpenDetails,
+                onOpenSources = onOpenSources,
+                onOpenDownloads = onOpenDownloads,
+                onOpenBackup = onOpenBackup,
+                onOpenGlobalSearch = onOpenGlobalSearch,
+                onOpenDanmaku = onOpenDanmaku,
+                onOpenSettings = onOpenSettings,
+                onOpenSource = onOpenSource,
+                onOpenScreen = onOpenScreen,
+            )
+        }
+
+        if (wide) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                NavigationRail(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    header = {
+                        Text(
+                            text = "Miyomu",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(vertical = 12.dp),
+                        )
+                    },
+                ) {
+                    tabs.forEach { tab ->
+                        NavigationRailItem(
+                            selected = tab == selected,
+                            onClick = { selectedIndex = tab.ordinal },
+                            icon = { TabIcon(tab, badgeCount(tab)) },
+                            label = { Text(tab.title()) },
+                            alwaysShowLabel = true,
+                        )
+                    }
+                }
+                Box(modifier = Modifier.fillMaxSize().weight(1f)) { content() }
+            }
+        } else {
+            Scaffold(
+                bottomBar = {
+                    NavigationBar {
+                        tabs.forEach { tab ->
+                            NavigationBarItem(
+                                selected = tab == selected,
+                                onClick = { selectedIndex = tab.ordinal },
+                                icon = { TabIcon(tab, badgeCount(tab)) },
+                                label = { Text(tab.title()) },
+                                alwaysShowLabel = true,
+                            )
+                        }
+                    }
+                },
+            ) { padding ->
+                Box(modifier = Modifier.fillMaxSize().padding(padding)) { content() }
+            }
+        }
+    }
+}
+
+/** The six shelves; this order is the order in the rail/bar. */
+private enum class HomeTab {
+    Novels,
+    Library,
+    Updates,
+    History,
+    Browse,
+    More,
+}
+
+@Composable
+private fun HomeTabContent(
+    tab: HomeTab,
+    graph: MiyomuGraph,
+    onOpenBook: (LocalBook) -> Unit,
+    onOpenHistoryResume: (String, String) -> Unit,
+    onOpenHistoryDetails: (String) -> Unit,
+    onOpenSources: () -> Unit,
+    onOpenDownloads: (() -> Unit)?,
+    onOpenBackup: (() -> Unit)?,
+    onOpenGlobalSearch: () -> Unit,
+    onOpenDanmaku: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenSource: (SourceRuntimeInfo) -> Unit,
+    onOpenScreen: (MiyomuKey) -> Unit,
+) {
+    when (tab) {
+        HomeTab.Novels -> NovelLibraryTab(graph, onOpenBook)
+        HomeTab.Library -> MangaLibraryTab(graph, onOpenBook)
+        HomeTab.Updates -> UpdatesTab(graph, onOpenHistoryDetails)
+        HomeTab.History -> MangaHistoryTab(graph, onOpenHistoryResume, onOpenHistoryDetails)
+        HomeTab.Browse -> BrowseTab(
+            graph = graph,
+            onOpenSource = onOpenSource,
+            onManageSources = onOpenSources,
+            onOpenGlobalSearch = onOpenGlobalSearch,
+            onOpenScreen = onOpenScreen,
+        )
+        HomeTab.More -> MoreTab(
+            graph = graph,
+            onOpenSources = onOpenSources,
+            onOpenDownloads = onOpenDownloads,
+            onOpenBackup = onOpenBackup,
+            onOpenDanmaku = onOpenDanmaku,
+            onOpenSettings = onOpenSettings,
+        )
     }
 }
 
 @Composable
-private fun TabIcon(tab: Tab, badgeCount: Int) {
-    val icon = tab.icon() ?: return
-    if (badgeCount > 0) {
-        BadgedBox(badge = { Badge { Text(badgeCount.toString()) } }) {
-            Icon(icon, contentDescription = tab.options.title)
-        }
-    } else {
-        Icon(icon, contentDescription = tab.options.title)
-    }
+private fun HomeTab.title(): String = when (this) {
+    HomeTab.Novels -> stringResource(MR.strings.label_novels)
+    HomeTab.Library -> stringResource(MR.strings.label_library)
+    HomeTab.Updates -> "更新"
+    HomeTab.History -> "历史"
+    HomeTab.Browse -> "浏览"
+    HomeTab.More -> "更多"
 }
 
-private fun Tab.icon(): ImageVector? = when (this) {
-    is NovelLibraryTab -> Icons.Outlined.ImportContacts
-    is MangaLibraryTab -> Icons.AutoMirrored.Outlined.MenuBook
-    is UpdatesTab -> Icons.Outlined.Update
-    is MangaHistoryTab -> Icons.Outlined.History
-    is BrowseTab -> Icons.Outlined.Explore
-    is MoreTab -> Icons.Outlined.MoreHoriz
-    else -> null
+private fun HomeTab.icon(): ImageVector = when (this) {
+    HomeTab.Novels -> Icons.Outlined.ImportContacts
+    HomeTab.Library -> Icons.AutoMirrored.Outlined.MenuBook
+    HomeTab.Updates -> Icons.Outlined.Update
+    HomeTab.History -> Icons.Outlined.History
+    HomeTab.Browse -> Icons.Outlined.Explore
+    HomeTab.More -> Icons.Outlined.MoreHoriz
+}
+
+@Composable
+private fun TabIcon(tab: HomeTab, badgeCount: Int) {
+    val icon = tab.icon()
+    if (badgeCount > 0) {
+        BadgedBox(badge = { Badge { Text(badgeCount.toString()) } }) {
+            Icon(icon, contentDescription = tab.title())
+        }
+    } else {
+        Icon(icon, contentDescription = tab.title())
+    }
 }

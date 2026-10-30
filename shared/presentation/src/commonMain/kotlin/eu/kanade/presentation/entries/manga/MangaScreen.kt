@@ -48,8 +48,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.relativeDateTimeText
 import eu.kanade.presentation.entries.DownloadAction
 import eu.kanade.presentation.entries.EntryScreenItem
@@ -66,7 +64,6 @@ import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.manga.getNameForMangaInfo
-import eu.kanade.tachiyomi.ui.browse.manga.extension.details.MangaSourcePreferencesScreen
 import eu.kanade.tachiyomi.ui.entries.manga.ChapterList
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreenModel
 
@@ -141,10 +138,10 @@ fun MangaScreen(
         }
     }
 
-    val navigator = LocalNavigator.currentOrThrow
-    val onSettingsClicked: (() -> Unit)? = {
-        navigator.push(MangaSourcePreferencesScreen(state.source.id))
-    }.takeIf { state.source is ConfigurableSource }
+    // Miyomu has no ConfigurableSource implementation yet, so the source-settings entry stays
+    // absent. Voyager's LocalNavigator used to back this; the ported screen no longer reaches for
+    // a navigator so it can be hosted by Navigation 3.
+    val onSettingsClicked: (() -> Unit)? = null
 
     if (!isTabletUi) {
         MangaScreenSmallImpl(

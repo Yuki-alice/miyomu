@@ -17,6 +17,7 @@ internal class FakeSourceRuntimeManager(
     private val details: ComicDetails? = null,
     private val pages: List<PageRef> = emptyList(),
     private val imageBytes: ByteArray = ByteArray(0),
+    private val resolvedVideo: ResolvedVideo = ResolvedVideo(),
 ) : SourceRuntimeManager {
     private val _state = MutableStateFlow(state)
     override val state: StateFlow<SourceRuntimeState> = _state.asStateFlow()
@@ -33,7 +34,7 @@ internal class FakeSourceRuntimeManager(
         pages
 
     override suspend fun resolveVideo(sourceId: String, episodeUrl: String): ResolvedVideo =
-        ResolvedVideo(streams = emptyList(), headers = emptyMap())
+        resolvedVideo
 
     override suspend fun loadImage(sourceId: String, url: String, headers: Map<String, String>): ByteArray =
         imageBytes

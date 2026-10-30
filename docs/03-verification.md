@@ -4,9 +4,39 @@
 
 ## 模块 / fixture 测试
 
-- 210 个 JVM 测试通过（2026-10-30）。
-- 分布：`ui` 43、`novel` 30、`source-novel` 29、`source-runtime` 22、`reader-novel` 16、`player` 12、`data` 10、`network` 10、`source-repo` 9、`reader-comic` 8、`local` 7、`danmaku` 4、`download` 4、`source-manager` 3、`domain` 3。
+- 213 个 JVM 测试通过（2026-10-30），0 失败、0 跳过。
+- 分布：`novel` 30、`source-novel` 29、`source-runtime` 22、`ui` 21、`reader-novel` 16、`player` 12、`network` 10、`data` 10、`source-repo` 9、`ui-entries` 9、`reader-comic` 8、`ui-reader` 7、`local` 7、`ui-novel` 4、`danmaku` 4、`ui-library` 4、`download` 4、`domain` 3、`source-manager` 3、`ui-core` 1。
 - 这些测试主要用 fixture、内存数据或 headless UI，**不覆盖**真实用户导入、真实第三方源、真实网络稳定性或重启后的完整状态。
+
+## 架构重构（2026-10-30，仅构建验证）
+
+- build-logic 约定插件接管 30 个模块的 toolchain / compileSdk / Android / JUnit 配置。
+- 入口迁移到 `:app:android` / `:app:desktop`，新增 `:shared:application` 组合根。
+- 验证命令：`:app:desktop:compileKotlin`、`:app:android:assembleDebug`、各模块 `jvmTest`。
+- 这只证明结构改动可以编译和跑通既有模块测试，**不证明**真实导入、阅读/播放或重启持久化。
+
+## 导航走查（2026-10-30，真实点击 + 真实图 + 真实 Room）
+
+`NavWalkthroughTest`（3 个用例）在真实 `MiyomuApp` / `MiyomuNavHost` 上逐页点击，截图见 `evidence/nav-*.png`：
+
+- 六个 Tab 都能切换，窄/宽两种壳（底部栏 / 侧栏）都正常。
+- 设置链：设置 → 外观 / 阅读 / 下载 / 数据与存储 / 弹幕 / 关于 Miyomu，**每一页都能打开并 pop 回设置页**。
+- 更多页可达：源仓库、备份与同步、下载队列，均能打开并 pop 回。
+- 漫画：书架 → 详情 → 阅读器 → pop 回详情 → pop 回书架，三层都对。
+- 番剧源：浏览 → 源 → 搜索 → 详情 → 播放器（MPV 真的起来了，返回详情正常）。
+- 仍未覆盖：全局搜索入口、`OnlineReaderKey`（由 `SourceBrowseFlowTest` 覆盖）、进程重建后的回退栈恢复。
+
+### 走查发现的非路由问题（未修）
+
+1. `MoreTab` 的「本地库」和「关于 Miyomu」两行没有 `onClick`，点了没反应；`MiyomuGraph.onOpenLibraryFolder` 已存在但没接上。
+2. 播放器失败态直接显示 `mpv playback failed (mpv_error=-13)`：未本地化，且把 mpv 错误码暴露给用户，没有重试。
+3. 本地库扫描会把**空目录**当成一本书（走查里 `sources/` 目录出现在书架上，封面空白）。
+
+## 导航（2026-10-30）
+
+- 4 个 UI 流程测试改为渲染真实的 `MiyomuNavHost`（`start = <Key>`），因此它们现在覆盖键到页面的映射，
+  而不只是单个 composable：`GlobalSearchNovelTest`、`NovelExploreFlowTest`（2 个）、其余 `MiyomuApp` 流程测试不变。
+- 仍未覆盖：进程重建后的回退栈恢复（`rememberMiyomuNavigator` 用的是 `remember`，未接 `rememberNavBackStack`）。
 
 ## Venera 源
 
@@ -36,6 +66,9 @@
 # 模块测试（不代表可用性验收）
 ./gradlew :shared:ui:jvmTest :shared:source-runtime:jvmTest :shared:source-novel:jvmTest \
   :shared:novel:jvmTest :shared:reader-novel:jvmTest :shared:data:jvmTest
+
+# 入口编译
+./gradlew :app:desktop:compileKotlin :app:android:assembleDebug
 
 # Venera 静态审计 + 构造（需要本地 reference/）
 python3 tools/venera_compat.py reference/venera-yuan/*.js --summary

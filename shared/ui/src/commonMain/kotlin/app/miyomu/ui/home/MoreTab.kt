@@ -25,23 +25,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.miyomu.ui.MiyomuGraph
-import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabOptions
 
-class MoreTab(
-    private val graph: MiyomuGraph,
-    private val onOpenSources: () -> Unit,
-    private val onOpenDownloads: (() -> Unit)? = null,
-    private val onOpenBackup: (() -> Unit)? = null,
-    private val onOpenDanmaku: (() -> Unit)? = null,
-    private val onOpenSettings: () -> Unit = {},
-) : Tab {
+@Composable
+fun MoreTab(
+    graph: MiyomuGraph,
+    onOpenSources: () -> Unit,
+    onOpenDownloads: (() -> Unit)? = null,
+    onOpenBackup: (() -> Unit)? = null,
+    onOpenDanmaku: (() -> Unit)? = null,
+    onOpenSettings: () -> Unit = {},) {
 
-    override val options: TabOptions
-        @Composable get() = TabOptions(index = 5u, title = "更多")
 
-    @Composable
-    override fun Content() {
+
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = "更多",
@@ -88,7 +83,7 @@ class MoreTab(
             MoreRow(icon = Icons.Outlined.Info, title = "关于 Miyomu", subtitle = "0.1.0 · Apache-2.0")
         }
     }
-}
+
 
 @Composable
 private fun MoreRow(

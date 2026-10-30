@@ -1,57 +1,31 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.kmp.library)
+    id("miyomu.kmp-library")
     alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
-    jvmToolchain(21)
-
-    jvm {
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
-    }
     android {
         namespace = "app.miyomu.source.novel"
-        compileSdk = 37
-        minSdk = 26
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
     }
 
     sourceSets {
         commonMain.dependencies {
-            api(project(":shared:novel"))
-            implementation(project(":shared:domain"))
-            implementation(project(":shared:network"))
+            api(projects.shared.novel)
+            implementation(projects.shared.domain)
+            implementation(projects.shared.network)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
         }
-        jvmMain {
-            kotlin.srcDir("src/jvmShared/kotlin")
-            dependencies {
-                implementation(libs.ksoup)
-                implementation(libs.quickjs.kt)
-            }
+        jvmMain.dependencies {
+            implementation(libs.ksoup)
+            implementation(libs.quickjs.kt)
         }
-        androidMain {
-            kotlin.srcDir("src/jvmShared/kotlin")
-            dependencies {
-                implementation(libs.ksoup.android)
-                implementation(libs.quickjs.kt)
-            }
-        }
-        commonTest.dependencies {
-            implementation(kotlin("test"))
+        androidMain.dependencies {
+            implementation(libs.ksoup.android)
+            implementation(libs.quickjs.kt)
         }
         jvmTest.dependencies {
-            implementation(libs.junit.jupiter)
             implementation(libs.kotlinx.coroutines.test)
-            runtimeOnly("org.junit.platform:junit-platform-launcher")
         }
     }
 }

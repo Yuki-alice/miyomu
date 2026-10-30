@@ -1,5 +1,6 @@
 package app.miyomu.data
 
+import app.miyomu.contract.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -10,7 +11,7 @@ import java.io.File
  * read/seen/bookmark marks are covered.
  */
 class BackupManager(
-    private val data: MiyomuData,
+    private val data: DataPort,
 ) {
 
     private val json = Json {
