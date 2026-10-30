@@ -6,7 +6,7 @@
 
 ## 1. 一句话状态
 
-CI 门禁已恢复并全绿；三种媒介同仓；**204 个 JVM 测试全绿**；Venera 参考源
+CI 门禁已恢复并全绿；三种媒介同仓；**205 个 JVM 测试全绿**；Venera 参考源
 **13/13 零改构造 + 13/13 静态 API 全兼容**，hitomi 已在桌面 JVM 与 Android 模拟器
 跑通真站 search → details → pages（含图片渲染）。按用户 2026-10-30 的决定，
 **打包/发布延后**，近期目标是完成度而非出产物。
@@ -23,6 +23,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**204 个 JVM 测试全绿**�
 | `1c79480` | UI 测试竞态：删除前清空搜索过滤 |
 | `32816b8` | 真站暴露的两个适配缺陷：DOM 上限淘汰最旧文档；单画廊源合成默认章节 |
 | `c40dd68` | `onImageLoad` 钩子：把源声明的图片 URL/headers 带进 `PageRef`（hitomi 的 Referer） |
+| `d7cedd1` | 小说正文 `nextContentUrl` 多页合并（去重 + 20 页上限） |
 | 文档 | `docs/14` 结果更新、README/AGENTS 状态同步、本文件 |
 
 ## 3. 验证基线
@@ -36,7 +37,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**204 个 JVM 测试全绿**�
   :desktopApp:compileKotlin :androidApp:assembleDebug
 ```
 
-当前：**204 tests / 0 failures**。分布：`ui` 41、`novel` 30、`source-novel` 25、
+当前：**205 tests / 0 failures**。分布：`ui` 41、`novel` 30、`source-novel` 26、
 `source-runtime` 22、`reader-novel` 16、`player` 12、`data` 10、`network` 10、
 `source-repo` 9、`reader-comic` 8、`local` 7、`danmaku` 4、`download` 4、
 `source-manager` 3、`domain` 3。
