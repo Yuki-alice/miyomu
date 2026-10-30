@@ -47,6 +47,7 @@ suspend fun loadJsAnimeSource(
             httpClient = httpClient,
             keyValueStore = keyValueStore,
             dom = createHtmlDomBridge(maxDocuments = 16),
+            convert = createConvertBridge(),
             timeoutMillis = timeoutMillis,
             maxResponseBytes = maxResponseBytes,
             maxImageBytes = maxImageBytes,

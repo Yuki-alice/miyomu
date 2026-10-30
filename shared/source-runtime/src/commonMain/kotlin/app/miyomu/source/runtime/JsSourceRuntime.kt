@@ -34,6 +34,7 @@ internal class JsSourceRuntime(
     private val httpClient: HttpClient,
     private val keyValueStore: FileSourceKeyValueStore,
     private val dom: HtmlDomBridge,
+    private val convert: ConvertBridge,
     private val timeoutMillis: Long,
     private val maxResponseBytes: Long,
     private val maxImageBytes: Int,
@@ -119,6 +120,24 @@ internal class JsSourceRuntime(
                 println("[source] ${args.joinToString(" ")}")
             }
 
+            function<String>("__hostConvertText") { args ->
+                convertToText(
+                    op = args.string(0),
+                    value = args.getOrNull(1),
+                    key = args.getOrNull(2),
+                    iv = args.getOrNull(3),
+                )
+            }
+
+            function<ByteArray>("__hostConvertBytes") { args ->
+                val op = args.string(0)
+                try {
+                    convertToBytes(op, args.getOrNull(1), args.getOrNull(2), args.getOrNull(3))
+                } catch (error: Throwable) {
+                    throw IllegalArgumentException("Convert.$op failed: ${error.message}", error)
+                }
+            }
+
             asyncFunction<String>("__hostHttpRequest") { args ->
                 httpRequest(
                     method = args.string(0),
@@ -195,6 +214,40 @@ internal class JsSourceRuntime(
         if (raw.isNullOrBlank()) return emptyMap()
         return runCatching { json.decodeFromString<Map<String, String>>(raw) }
             .getOrDefault(emptyMap())
+    }
+
+    /** `Convert` operations that hand text back to JS (hex digests, base64, decoded strings). */
+    private fun convertToText(op: String, value: Any?, key: Any?, iv: Any?): String = when (op) {
+        "utf8:decode" -> convert.utf8Decode(value.convertBytes())
+        "gbk:decode" -> convert.gbkDecode(value.convertBytes())
+        "base64:encode" -> convert.base64Encode(value.convertBytes())
+        "hex:encode" -> convert.hexEncode(value.convertBytes())
+        else -> if (op.startsWith("digest:")) {
+            convert.hexEncode(convert.digest(op.substringAfter(':'), value.convertBytes()))
+        } else if (op.startsWith("hmac-string:")) {
+            convert.hexEncode(convert.hmac(op.substringAfter(':'), key.convertBytes(), value.convertBytes()))
+        } else {
+            throw IllegalArgumentException("unsupported Convert text op: $op")
+        }
+    }
+
+    /** `Convert` operations that hand binary back to JS (encoded strings, digests, AES). */
+    private fun convertToBytes(op: String, value: Any?, key: Any?, iv: Any?): ByteArray = when (op) {
+        "utf8:encode" -> convert.utf8Encode(value.convertText())
+        "gbk:encode" -> convert.gbkEncode(value.convertText())
+        "base64:decode" -> convert.base64Decode(value.convertText())
+        else -> when {
+            op.startsWith("digest-raw:") ->
+                convert.digest(op.substringAfter(':'), value.convertBytes())
+            op.startsWith("hmac:") ->
+                convert.hmac(op.substringAfter(':'), key.convertBytes(), value.convertBytes())
+            op.startsWith("aes-") -> {
+                val mode = op.substringAfter("aes-").substringBefore(':')
+                val encrypt = op.substringAfter(':') == "enc"
+                convert.aes(mode, encrypt, value.convertBytes(), key.convertBytes(), iv?.convertBytes())
+            }
+            else -> throw IllegalArgumentException("unsupported Convert binary op: $op")
+        }
     }
 
     private fun Array<Any?>.string(index: Int): String =

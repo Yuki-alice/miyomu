@@ -1,6 +1,6 @@
 # 14 Venera 源零改验证
 
-> 2026-10-30 · 状态：**已建立可重复的验证手段，首轮结果见下**；`Convert` 仍是主要缺口。
+> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；宿主编解码/加密（`Convert`）已补齐，剩余缺口见文末。
 > 关联：[ADR-0008](adr/0008-venera-source-runtime.md)（源运行时）、[ADR-0003](adr/0003-js-extension-runtime.md)、[03 风险登记](03-risk-register.md) R4
 
 ## 为什么需要这份验证
@@ -29,49 +29,56 @@ git clone --depth 1 https://github.com/yzlvhell/venera-yuan reference/venera-yua
 python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 ./gradlew :shared:source-runtime:jvmTest --tests '*VeneraSourceCompatTest*'
 # 报告写到 build/reports/venera-compat.md
+
+# Convert 宿主实现的自测（RFC 1321 / FIPS 180 / RFC 4231 向量）
+./gradlew :shared:source-runtime:jvmTest --tests '*ConvertRuntimeTest*'
 ```
 
-## 首轮结果（2026-10-30，13 个真实源）
+## 实测结果（2026-10-30，13 个真实源）
 
-**12 / 13 在未作任何修改的情况下构造成功**，只有 `jm.js` 失败。
+**12 / 13 在未作任何修改的情况下构造成功**；静态审计 **7 个完全兼容、6 个只差登录态、1 个阻塞**。
 
 | 源 | 构造 | 静态审计 | 说明 |
 |---|---|---|---|
-| comick.js | ok | OK | 读路径应当可以直接跑 |
+| comick.js | ok | OK | 读路径 API 齐全 |
 | komiic.js | ok | OK | 同上 |
 | manga_dex.js | ok | OK | 同上（MangaDex 公开 API） |
 | shonenjumpplus.js | ok | OK | 同上 |
-| baozi.js | ok | RISK | 只用 `Network.setCookie*`（登录用），读路径不受影响 |
-| wnacg / ikmmh / nhentai / ehentai | ok | RISK | 同上 |
-| copy_manga / picacg | ok | BLOCKED | 构造没问题，首次用到 `Convert.encodeUtf8` 才失败 |
-| hitomi | ok | BLOCKED | `Convert.sha256` + `Network.fetchBytes` |
-| jm | **FAIL** | BLOCKED | `initialize()` 里就调 `Convert`，直接 ReferenceError |
+| copy_manga.js | ok | OK | 补 `Convert` 后由 BLOCKED 转 OK |
+| picacg.js | ok | OK | 同上（`Convert.hmacString`） |
+| baozi / wnacg / ikmmh / nhentai / ehentai | ok | RISK | 只用 `Network.setCookie*`（登录态），读路径不受影响 |
+| jm.js | **FAIL** | RISK | `initialize()` 期间抛 `Not enough data available`。已排除 `Convert`（同链路在单测里正常，且 AES 错误会被包装成 `Convert.aes-ecb:dec failed: ...`）；待定位 |
+| hitomi.js | ok | BLOCKED | 仅缺 `Network.fetchBytes`（二进制响应） |
 
-结论：**兼容性的瓶颈不是语言层，而是宿主 API 的覆盖面**。QuickJS + 我们的预加载脚本足以承载社区源的实际写法。
+结论：**兼容性的瓶颈不是语言层，而是宿主 API 的覆盖面**。QuickJS + 预加载脚本足以承载社区源的实际写法。
 
-## 本轮补齐的 API
+## 已补齐的 API
 
 | 补的东西 | 影响 | 备注 |
 |---|---|---|
+| `Convert`（22 个方法） | 7 个源 | 宿主实现（`MessageDigest` / `javax.crypto`）。摘要返回原始 `ArrayBuffer`（源里显式 `hexEncode`），二进制结果统一包成真 `ArrayBuffer` 以满足 `instanceof` |
 | `console.*` | 4 个源 | 转 `__hostLog` 宿主绑定，源日志可见 |
 | `Comment` | 4 个源 | 仅评论页展示，数据载体 |
 | `Image` + `Image.empty` | 1 个源 | 图像变换仍未实现，句柄足够 |
 | `APP.version/locale` | 2 个源 | `APP.platform` 故意不提供：preamble 由 JVM/Android 共用，报错平台名会静默改变源的分支 |
 | `UI.showMessage/showDialog` | 1 个源 | 由"抛异常"改为写日志——headless 下抛错会让源在流程中途中断 |
 | `randomInt/randomDouble/createUuid/log` | 1 个源 | 上游 `init.js` 的全局小工具 |
-| `fetch` | 1 个源 | 基于 `Network.sendRequest` 的 Response 形状适配；`arrayBuffer()` 仍显式报错 |
+| `fetch` | 1 个源 | `Network.sendRequest` 的 Response 形状适配；`arrayBuffer()` 仍显式报错 |
 
-补齐后静态全兼容的源从 3 个增加到 5 个，构造成功从 10/13 提升到 12/13。
-
-## 剩余缺口与代价
+## 剩余缺口
 
 | 缺口 | 被引用次数 | 代价 | 判断 |
 |---|---|---|---|
-| `Convert`（utf8/base64/hex/md5/sha256/hmac/aesEcb） | 4 个源，其中 3 个是唯一阻塞项 | 中高：二进制跨 JS 边界 + 双向加密实现。JVM 与 Android 同为 JVM 目标，可共用一份 `jvmShared` 桥，无需 expect/actual | **下一批优先做**，收益最集中 |
-| `Network.setCookies/getCookies/deleteCookies` | 5 个源 | 中：只影响登录态，读路径不阻塞 | 第二批 |
-| `Network.fetchBytes` | 1 个源 | 低中：二进制响应 + `arrayBuffer()` | 跟随 Convert |
+| `Network.fetchBytes` | 1 个源（hitomi 的唯一阻塞项） | 中：二进制响应 + `arrayBuffer()` | 下一个做 |
+| `Network.setCookies/getCookies/deleteCookies` | 6 个源 | 中：只影响登录态，不阻塞读路径 | 第二批 |
 | `setTimeout/setInterval` | 本轮未出现 | 中：需要宿主定时器 | 按需 |
+| `Convert.decryptRsa` | 本轮未出现 | 高：RSA 私钥解密 | 按需 |
 | `getClipboard/setClipboard/compute` | 本轮未出现 | 低：可 stub | 按需 |
+
+## 工具自身的两个坑（已修，避免复现）
+
+1. **桩要算作缺口**。第一版把"声明了但抛异常"的成员算成支持，`baozi.js` 因此被判假通过。判定必须是三档：已实现 / 抛异常的桩 / 缺失。
+2. **成员归属要按边界切**。定位"桩"时向前找下一个 `{` 会把相邻成员的函数体算进来——`Convert.decryptRsa` 的 `throw` 一度让 `encodeUtf8`、`sha256` 都被标成桩。现在先收集 depth-0 的成员起始行，再按行切片。
 
 ## 已知边界
 

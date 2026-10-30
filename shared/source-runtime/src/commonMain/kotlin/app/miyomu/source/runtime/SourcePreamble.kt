@@ -201,6 +201,68 @@ globalThis.log = function (...args) {
     __hostLog("log", Array.from(args).join(" "));
 };
 
+// Venera's encoding/crypto helpers. Everything runs on the host (java.security / javax.crypto)
+// so binary data never crosses the JS boundary twice; `__bytesOf` normalises whatever a source
+// hands us (string, Uint8Array, ArrayBuffer, view) into something the host can read.
+function __bytesOf(value) {
+    if (value == null) return new Uint8Array(0);
+    if (typeof value === "string") return value;
+    if (value instanceof ArrayBuffer) return new Uint8Array(value);
+    if (ArrayBuffer.isView(value)) {
+        return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+    }
+    return new Uint8Array(0);
+}
+
+// Everything the host returns for a binary result is handed back as a real ArrayBuffer, which
+// is what Venera's own globals return and what `instanceof` checks in sources expect.
+function __toArrayBuffer(value) {
+    if (value instanceof ArrayBuffer) return value;
+    if (ArrayBuffer.isView(value)) {
+        return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+    }
+    return new ArrayBuffer(0);
+}
+
+globalThis.Convert = {
+    encodeUtf8: (str) => __toArrayBuffer(__hostConvertBytes("utf8:encode", str, null, null)),
+    decodeUtf8: (value) => __hostConvertText("utf8:decode", __bytesOf(value), null, null),
+    encodeGbk: (str) => __toArrayBuffer(__hostConvertBytes("gbk:encode", str, null, null)),
+    decodeGbk: (value) => __hostConvertText("gbk:decode", __bytesOf(value), null, null),
+    encodeBase64: (value) => __hostConvertText("base64:encode", __bytesOf(value), null, null),
+    decodeBase64: (value) => __toArrayBuffer(__hostConvertBytes("base64:decode", String(value), null, null)),
+    hexEncode: (value) => __hostConvertText("hex:encode", __bytesOf(value), null, null),
+    // Digests return the raw ArrayBuffer, matching Venera: sources hex-encode them explicitly
+    // (`Convert.hexEncode(Convert.md5(...))`).
+    md5: (value) => __toArrayBuffer(__hostConvertBytes("digest-raw:md5", __bytesOf(value), null, null)),
+    sha1: (value) => __toArrayBuffer(__hostConvertBytes("digest-raw:sha1", __bytesOf(value), null, null)),
+    sha256: (value) => __toArrayBuffer(__hostConvertBytes("digest-raw:sha256", __bytesOf(value), null, null)),
+    sha512: (value) => __toArrayBuffer(__hostConvertBytes("digest-raw:sha512", __bytesOf(value), null, null)),
+    hmac: (key, value, hash) =>
+        __toArrayBuffer(__hostConvertBytes("hmac:" + (hash || "sha256"), __bytesOf(value), __bytesOf(key), null)),
+    hmacString: (key, value, hash) =>
+        __hostConvertText("hmac-string:" + (hash || "sha256"), __bytesOf(value), __bytesOf(key), null),
+    encryptAesEcb: (value, key) =>
+        __toArrayBuffer(__hostConvertBytes("aes-ecb:enc", __bytesOf(value), __bytesOf(key), null)),
+    decryptAesEcb: (value, key) =>
+        __toArrayBuffer(__hostConvertBytes("aes-ecb:dec", __bytesOf(value), __bytesOf(key), null)),
+    encryptAesCbc: (value, key, iv) =>
+        __toArrayBuffer(__hostConvertBytes("aes-cbc:enc", __bytesOf(value), __bytesOf(key), __bytesOf(iv))),
+    decryptAesCbc: (value, key, iv) =>
+        __toArrayBuffer(__hostConvertBytes("aes-cbc:dec", __bytesOf(value), __bytesOf(key), __bytesOf(iv))),
+    encryptAesCfb: (value, key, iv) =>
+        __toArrayBuffer(__hostConvertBytes("aes-cfb:enc", __bytesOf(value), __bytesOf(key), __bytesOf(iv))),
+    decryptAesCfb: (value, key, iv) =>
+        __toArrayBuffer(__hostConvertBytes("aes-cfb:dec", __bytesOf(value), __bytesOf(key), __bytesOf(iv))),
+    encryptAesOfb: (value, key, iv) =>
+        __toArrayBuffer(__hostConvertBytes("aes-ofb:enc", __bytesOf(value), __bytesOf(key), __bytesOf(iv))),
+    decryptAesOfb: (value, key, iv) =>
+        __toArrayBuffer(__hostConvertBytes("aes-ofb:dec", __bytesOf(value), __bytesOf(key), __bytesOf(iv))),
+    decryptRsa: () => {
+        throw new Error("Convert.decryptRsa is not supported in this runtime yet");
+    },
+};
+
 globalThis.UI = {
     // Headless runtime: a toast/dialog is a side effect we cannot honour, but throwing would
     // abort the source mid-flow (sources do call these for user feedback). Log instead.

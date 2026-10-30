@@ -75,7 +75,7 @@ class VeneraSourceCompatTest {
                 }
             }.fold(
                 onSuccess = { Outcome(file.name, it, null) },
-                onFailure = { Outcome(file.name, null, it.message?.take(160) ?: it::class.simpleName) },
+                onFailure = { Outcome(file.name, null, it.stackTraceToString().replace("\n", " \u23ce ").take(500)) },
             )
         }
 

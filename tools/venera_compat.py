@@ -87,23 +87,25 @@ def provided_api(js: str) -> dict[str, dict[str, str]]:
         if close_at < 0:
             continue
         body = js[open_at + 1: close_at]
-        members: dict[str, str] = {}
+        # Collect depth-0 member start lines first, then slice each member's own text: looking
+        # ahead for the next `{` mis-attributes a neighbouring arrow body (that is how a
+        # throwing `decryptRsa` once made every member before it look like a stub).
+        lines = body.splitlines()
+        starts: list[tuple[int, str]] = []
         depth = 0
-        cursor = 0
-        for line in body.splitlines():
+        for index, line in enumerate(lines):
             stripped = line.strip()
             if depth == 0:
                 m = re.match(r"(?:async\s+|static\s+|get\s+|set\s+)*([\w$]+)\s*(?:\(|=|:)", stripped)
                 if m and m.group(1) not in {"if", "for", "while", "return", "const", "let", "var"}:
-                    state = "impl"
-                    brace = body.find("{", cursor)
-                    if brace >= 0:
-                        end = _block_end(body, brace)
-                        if end > 0 and any(marker in body[brace:end] for marker in STUB_MARKERS):
-                            state = "stub"
-                    members[m.group(1)] = state
+                    starts.append((index, m.group(1)))
             depth += line.count("{") - line.count("}")
-            cursor += len(line) + 1
+
+        members: dict[str, str] = {}
+        for position, (index, member) in enumerate(starts):
+            end_index = starts[position + 1][0] if position + 1 < len(starts) else len(lines)
+            chunk = "\n".join(lines[index:end_index])
+            members[member] = "stub" if any(marker in chunk for marker in STUB_MARKERS) else "impl"
         api[name] = members
 
     for match in re.finditer(r"globalThis\.(\w+)\s*=\s*(?!class|\{)", js):
