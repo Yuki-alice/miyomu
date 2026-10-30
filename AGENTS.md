@@ -5,7 +5,7 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- **2026-10-30: Phase A/B/C/D complete, and the novel line is merged into `main`.** Android + desktop are the production targets (both builds green); iOS is not started. All three media (comic / video / novel) now live on one branch. The current handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; the novel plan is `docs/12-novel-plan.md`; decisions are ADR-0011/0012/0013/0014.
+- **2026-10-30 (afternoon): the novel line is merged and pushed; `main` = `ca1d05b`.** Start from `docs/15-handoff-2026-10-30-afternoon.md`. Android + desktop are the production targets (both builds green); iOS is not started. All three media (comic / video / novel) now live on one branch. The Phase-D handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; the novel plan is `docs/12-novel-plan.md`; decisions are ADR-0011/0012/0013/0014.
 - `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, and `docs/09-handoff-2026-10-29.md` are **historical** (pre-Phase-D) and are kept for implementation records only.
 - Production build lives at the repository root (`androidApp/`, `desktopApp/`, `shared/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
 - Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
@@ -49,7 +49,7 @@ Rules:
 
 - **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). See `docs/11-handoff-2026-10-30.md` §5.
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
-- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS shell, legado discovery/category pages. The novel line is merged (doc numbers 12/13); do not re-introduce the old "unmerged branch" workflow.
+- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS (no `iosMain` target exists at all), legado discovery/category pages, no release artifacts, CI red since the first commit. Venera source compatibility is measured by `tools/venera_compat.py` + `VeneraSourceCompatTest` — see `docs/14-venera-compat.md`; remaining host gaps are `Network.fetchBytes` and the cookie APIs.
 - **Novel wiring**: `HomeScreen` has six tabs with `NovelLibraryTab` at index 0 (manga/updates/history/browse/more shifted by one). Novel bookmarks, reader prefs and legado sources all live in the JSON `PreferenceStore`, so the novel side still has **zero Room schema impact** — keep it that way unless a migration is planned.
 - **CI gaps**: all jobs currently fail at KSP `2.3.12` resolution on GitHub runners (works locally); `download`/`danmaku` tests are not in CI; no Windows job; no packaging smoke.
 
@@ -57,7 +57,7 @@ Rules:
 
 - Product: `docs/00-product-brief.md`
 - Architecture: `docs/01-architecture.md` (note: module list predates Phase D; see README/11)
-- Current handoff: `docs/11-handoff-2026-10-30.md`
+- Current handoff: `docs/15-handoff-2026-10-30-afternoon.md` (Phase-D era: `docs/11-handoff-2026-10-30.md`)
 - Anime/player plan: `docs/10-anime-source-and-player-plan.md`
 - Novel plan: `docs/12-novel-plan.md` (benchmark research: `docs/13-novel-benchmark.md`)
 - Brand: `docs/06-brand.md`
