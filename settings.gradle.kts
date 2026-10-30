@@ -1,22 +1,35 @@
 pluginManagement {
     repositories {
-        google()
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/central")
-        maven("https://maven-central.storage-download.googleapis.com/maven2")
-        mavenCentral()
-        gradlePluginPortal()
+        // GitHub runners cannot reliably reach the Aliyun mirrors, so use the
+        // canonical repositories there and keep the faster mirrors locally.
+        if (System.getenv("CI") == "true") {
+            google()
+            mavenCentral()
+            gradlePluginPortal()
+        } else {
+            google()
+            maven("https://maven.aliyun.com/repository/google")
+            maven("https://maven.aliyun.com/repository/central")
+            maven("https://maven-central.storage-download.googleapis.com/maven2")
+            mavenCentral()
+            gradlePluginPortal()
+        }
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/central")
-        maven("https://maven-central.storage-download.googleapis.com/maven2")
-        mavenCentral()
+        if (System.getenv("CI") == "true") {
+            google()
+            mavenCentral()
+        } else {
+            google()
+            maven("https://maven.aliyun.com/repository/google")
+            maven("https://maven.aliyun.com/repository/central")
+            maven("https://maven-central.storage-download.googleapis.com/maven2")
+            mavenCentral()
+        }
     }
 }
 
