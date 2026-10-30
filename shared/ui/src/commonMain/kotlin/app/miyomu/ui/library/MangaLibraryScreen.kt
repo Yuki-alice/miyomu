@@ -1,18 +1,26 @@
 package app.miyomu.ui.library
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.miyomu.local.LocalBook
 import app.miyomu.model.LibraryItem
 import app.miyomu.ui.MiyomuGraph
@@ -53,13 +61,16 @@ fun MangaLibraryScreen(
 
     // System "Default" tab plus user categories from the v3 schema; memberships filter per tab.
     val userCategories by graph.data.categories.observeCategories().collectAsState(initial = emptyList())
-    val memberships by produceState(initialValue = emptyList<Pair<String, Long>>()) {
-        value = runCatching { graph.data.categories.allMemberships() }.getOrDefault(emptyList())
+    var memberships by remember { mutableStateOf(emptyList<Pair<String, Long>>()) }
+    var membershipsRefresh by remember { mutableStateOf(0) }
+    LaunchedEffect(membershipsRefresh) {
+        memberships = runCatching { graph.data.categories.allMemberships() }.getOrDefault(emptyList())
     }
     val categories = remember(userCategories) {
         listOf(Category(id = 0L, name = "", order = 0L, flags = 0L, hidden = false)) + userCategories
     }
     var currentPage by remember { mutableStateOf(0) }
+    var showBulkCategoryDialog by remember { mutableStateOf(false) }
 
     val displayModeState = remember(scope) { preferences.displayMode().asState(scope) }
     val portraitColumns = remember(scope) { preferences.mangaPortraitColumns().asState(scope) }
@@ -123,6 +134,17 @@ fun MangaLibraryScreen(
             scrollBehavior = null,
         )
 
+        if (selection.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(onClick = { showBulkCategoryDialog = true }) {
+                    Text("编辑分类")
+                }
+            }
+        }
+
         MangaLibraryContent(
             categories = categories,
             searchQuery = searchQuery,
@@ -163,6 +185,33 @@ fun MangaLibraryScreen(
                 if (isLandscape) landscapeColumns else portraitColumns
             },
             getLibraryForPage = { page -> itemsForCategory(page) },
+        )
+    }
+
+    if (showBulkCategoryDialog) {
+        CategoryEditDialog(
+            categories = userCategories,
+            memberOf = emptySet(),
+            onDismiss = { showBulkCategoryDialog = false },
+            onConfirm = { selectedIds_, newName ->
+                scope.launch {
+                    var targetIds = selectedIds_
+                    if (newName != null) {
+                        val id = graph.data.categories.upsert(
+                            Category(id = Category.UNCATEGORIZED_ID, name = newName, order = userCategories.size.toLong()),
+                        )
+                        targetIds = selectedIds_ + id
+                    }
+                    val itemIds = selection.mapNotNull { libraryManga ->
+                        books.firstOrNull { it.mangaId() == libraryManga.id }
+                            ?.let { LibraryItem.idOf("local", it.id) }
+                    }
+                    itemIds.forEach { itemId -> graph.data.categories.setItemCategories(itemId, targetIds) }
+                    selection.clear()
+                    membershipsRefresh++
+                }
+                showBulkCategoryDialog = false
+            },
         )
     }
 
