@@ -118,6 +118,16 @@ class JsComicSourceTest {
     }
 
     @Test
+    fun toleratesFireAndForgetAsyncRejections() = runBlocking {
+        val source = loadSource("rejection_fixture", "rejection", expectedKey = "rejection_fixture")
+        try {
+            assertEquals("ok", source.search("x").items.single().id)
+        } finally {
+            source.close()
+        }
+    }
+
+    @Test
     fun persistsSourceKeyValueAcrossReloads() = runBlocking {
         val first = loadSource("kv_source", "kv", expectedKey = "kv_source")
         try {

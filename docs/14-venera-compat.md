@@ -1,6 +1,6 @@
 # 14 Venera 源零改验证
 
-> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes` 与 cookie API 均已补齐，静态审计 13/13 无缺口；唯一剩余的动态问题是 jm.js 的构造错误，见文末。
+> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes`、cookie API 与异步 rejection 兜底均已补齐，**13/13 构造成功、13/13 静态兼容**；剩余验证为真站往返。
 > 关联：[ADR-0008](adr/0008-venera-source-runtime.md)（源运行时）、[ADR-0003](adr/0003-js-extension-runtime.md)、[03 风险登记](03-risk-register.md) R4
 
 ## 为什么需要这份验证
@@ -36,7 +36,7 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 
 ## 实测结果（2026-10-30，13 个真实源）
 
-**12 / 13 在未作任何修改的情况下构造成功**；静态审计 **13 个真实源全部兼容（0 缺口）**，jm.js 的构造失败与静态 API 面无关。
+**13 / 13 在未作任何修改的情况下构造成功**；静态审计 **13 个真实源全部兼容（0 缺口）**。
 
 | 源 | 构造 | 静态审计 | 说明 |
 |---|---|---|---|
@@ -47,7 +47,7 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 | copy_manga.js | ok | OK | 补 `Convert` 后由 BLOCKED 转 OK |
 | picacg.js | ok | OK | 同上（`Convert.hmacString`） |
 | baozi / wnacg / ikmmh / nhentai / ehentai | ok | OK | 补 cookie API 后由 RISK 转 OK；登录态读写路径均可运行 |
-| jm.js | **FAIL** | OK | `initialize()` 期间抛 `Not enough data available`。已排除 `Convert`（同链路在单测里正常，且 AES 错误会被包装成 `Convert.aes-ecb:dec failed: ...`）；静态 API 已齐，问题在构造/执行期，待定位 |
+| jm.js | ok | OK | `init()` 中 fire-and-forget 的图片线路刷新失败会被 quickjs-kt 当成致命错误；宿主包装源实例的异步方法后不再触发，构造成功 |
 | hitomi.js | ok | OK | 补 `Network.fetchBytes` 后由 BLOCKED 转 OK（Range 请求 + 二进制 body） |
 
 结论：**兼容性的瓶颈不是语言层，而是宿主 API 的覆盖面**。QuickJS + 预加载脚本足以承载社区源的实际写法。
@@ -66,6 +66,7 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 | `fetch` | 1 个源 | `Network.sendRequest` 的 Response 形状适配；`arrayBuffer()` 仍显式报错 |
 | `Network.fetchBytes` | 1 个源（hitomi） | 二进制响应；宿主返回 `status`/小写 `headers`/`body(ArrayBuffer)`，body 经 token 暂存避免把二进制塞进 JSON |
 | `Network.setCookies/getCookies/deleteCookies` | 6 个源 | 复用持久 cookie jar；URL 支持裸域名，`deleteCookies` 按 URL 匹配清除 |
+| 未处理 Promise rejection | 1 个源（jm） | 包装源实例的异步方法，给返回的 Promise 挂 no-op catch；`await` 方仍能收到 rejection |
 
 ## 剩余缺口
 

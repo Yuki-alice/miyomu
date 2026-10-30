@@ -476,10 +476,46 @@ globalThis.Std = {
     }
 };
 
+// quickjs-kt treats an unhandled rejection as a fatal evaluation error. Sources do call
+// fire-and-forget async helpers (e.g. jm's image-stream refresh), so attach a no-op rejection
+// handler to every method result. Awaited calls still reject for their caller.
+function __guardAsyncResult(result) {
+    if (result != null && typeof result.then === "function") {
+        result.catch(() => {});
+    }
+    return result;
+}
+
+function __wrapSourceMethod(target, name) {
+    if (name === "constructor") return;
+    const descriptor = Object.getOwnPropertyDescriptor(target, name);
+    if (!descriptor || typeof descriptor.value !== "function") return;
+    const method = descriptor.value;
+    try {
+        Object.defineProperty(target, name, {
+            ...descriptor,
+            value: function (...args) {
+                return __guardAsyncResult(method.apply(this, args));
+            }
+        });
+    } catch (error) {
+        // Frozen/native members keep their original behavior.
+    }
+}
+
+function __installAsyncRejectionGuard(source) {
+    const prototype = Object.getPrototypeOf(source);
+    if (prototype && prototype !== Object.prototype) {
+        Object.getOwnPropertyNames(prototype).forEach(name => __wrapSourceMethod(prototype, name));
+    }
+    Object.getOwnPropertyNames(source).forEach(name => __wrapSourceMethod(source, name));
+}
+
 globalThis.__miyomuCreateSource = async function (source) {
     if (source == null || typeof source !== "object") {
         throw new Error("source instance is required");
     }
+    __installAsyncRejectionGuard(source);
     if (typeof source.init === "function") {
         await source.init();
     }
