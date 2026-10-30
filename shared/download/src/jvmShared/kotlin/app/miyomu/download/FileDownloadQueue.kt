@@ -228,10 +228,14 @@ class FileDownloadQueue(
             if (stream == null) {
                 throw IllegalStateException("该剧集没有可用的视频流")
             }
-            if (stream.type != "mp4" && stream.type != "hls") {
-                throw IllegalStateException("该流的格式（${stream.type}）暂不支持离线下载，仅支持 MP4/HLS")
+            if (stream.type != "mp4" && stream.type != "hls" && stream.type != "dash") {
+                throw IllegalStateException("该流的格式（${stream.type}）暂不支持离线下载，仅支持 MP4/HLS/DASH")
             }
-            val ext = if (stream.type == "hls") "ts" else "mp4"
+            val ext = when (stream.type) {
+                "hls" -> "ts"
+                "dash" -> "mp4"
+                else -> "mp4"
+            }
             val response = client.get(stream.url) {
                 resolved.headers.forEach { (name, value) -> headers.append(name, value) }
             }
@@ -244,6 +248,11 @@ class FileDownloadQueue(
                 // P1-2: HLS media segments are concatenated into one MPEG-TS file (players
                 // handle TS natively; remux-to-MP4 is a dedicated slice).
                 done = downloadHls(client, stream.url, target) { bytes ->
+                    setStatus(task.id) { it.copy(bytesDone = bytes) }
+                }
+            } else if (stream.type == "dash") {
+                // P1-2: fMP4 init+segments concatenate into a valid fragmented MP4 directly.
+                done = downloadDash(client, stream.url, target) { bytes ->
                     setStatus(task.id) { it.copy(bytesDone = bytes) }
                 }
             } else {
