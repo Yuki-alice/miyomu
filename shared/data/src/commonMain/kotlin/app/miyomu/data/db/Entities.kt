@@ -106,3 +106,13 @@ data class MangaCategoryEntity(
     val itemId: String,
     val categoryId: Long,
 )
+
+/** A chapter discovered by a library update check (Aniyomi's updates table, minimal form). */
+@Entity(tableName = "library_updates", primaryKeys = ["itemId", "key"])
+data class LibraryUpdateEntity(
+    val itemId: String,
+    val key: String,
+    val name: String,
+    val chapterNumber: Double?,
+    val fetchedAt: Long,
+)

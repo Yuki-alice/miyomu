@@ -15,8 +15,9 @@ import androidx.sqlite.execSQL
         VideoResolveEntity::class,
         CategoryEntity::class,
         MangaCategoryEntity::class,
+        LibraryUpdateEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class MiyomuDatabase : RoomDatabase() {
@@ -77,6 +78,17 @@ abstract class MiyomuDatabase : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SQLiteConnection) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `library_updates` (" +
+                        "`itemId` TEXT NOT NULL, `key` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`chapterNumber` REAL, `fetchedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`itemId`, `key`))",
+                )
+            }
+        }
+
+        val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
     }
 }

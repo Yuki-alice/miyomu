@@ -33,6 +33,7 @@ import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.model.MediaType
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.history.MangaHistoryTab
+import app.miyomu.ui.updates.UpdatesTab
 import app.miyomu.ui.entries.MangaDetailScreen
 import app.miyomu.ui.entries.VideoDetailScreen
 import app.miyomu.ui.sources.SourceRepositoryScreen
@@ -143,7 +144,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
         val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource) {
             listOf(
                 MangaLibraryTab(graph, onOpenBook),
-                UpdatesTab(graph),
+                UpdatesTab(graph, onHistoryOpenDetails),
                 MangaHistoryTab(graph, onHistoryResume, onHistoryOpenDetails),
                 BrowseTab(graph, onOpenSource, onOpenSources, onOpenGlobalSearch),
                 MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku),

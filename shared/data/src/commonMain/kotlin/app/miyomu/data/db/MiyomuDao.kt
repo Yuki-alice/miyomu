@@ -154,4 +154,15 @@ interface MiyomuDao {
 
     @Query("DELETE FROM manga_category WHERE itemId = :itemId")
     suspend fun clearItemCategories(itemId: String)
+
+    // --- Library updates ---
+
+    @Query("SELECT * FROM library_updates ORDER BY fetchedAt DESC")
+    fun observeLibraryUpdates(): Flow<List<LibraryUpdateEntity>>
+
+    @Upsert
+    suspend fun upsertLibraryUpdates(rows: List<LibraryUpdateEntity>)
+
+    @Query("DELETE FROM library_updates")
+    suspend fun clearLibraryUpdates()
 }

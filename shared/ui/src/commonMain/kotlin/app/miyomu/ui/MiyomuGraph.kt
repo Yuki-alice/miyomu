@@ -5,6 +5,7 @@ import app.miyomu.danmaku.DanmakuCredentials
 import app.miyomu.danmaku.DandanplayRepository
 import app.miyomu.download.DownloadQueue
 import app.miyomu.download.FileDownloadStore
+import app.miyomu.ui.library.LibraryUpdater
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
@@ -41,6 +42,8 @@ class MiyomuGraph(
     val readerPreferences: ReaderPreferences = ReaderPreferences(preferenceStore)
 
     val danmakuKeys: DanmakuPrefKeys = DanmakuPrefKeys
+
+    val libraryUpdater: LibraryUpdater by lazy { LibraryUpdater(this, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)) }
 
     /** Danmaku repo; credentials are re-read from prefs before each load (settings may change). */
     val danmaku: DandanplayRepository by lazy {

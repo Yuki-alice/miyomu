@@ -123,7 +123,10 @@ fun MangaLibraryScreen(
             onClickFilter = { showSettings = true },
             onClickRefresh = { scope.launch { graph.library.refresh(graph.root) } },
             // Local books have no remote source to update; refreshing rescans the directory.
-            onClickGlobalUpdate = { scope.launch { graph.library.refresh(graph.root) } },
+            onClickGlobalUpdate = {
+                scope.launch { graph.library.refresh(graph.root) }
+                graph.libraryUpdater.checkNow()
+            },
             onClickOpenRandomEntry = {
                 allItems.randomOrNull()?.let { item ->
                     books.firstOrNull { it.mangaId() == item.libraryManga.id }?.let(onOpenBook)
