@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -77,7 +78,11 @@ fun MiyomuApp(
         library.refresh(root)
     }
 
-    MiyomuTheme {
+    val themeModeState = remember(store) {
+        store.getInt("pref_theme_mode_key", 0).changes()
+    }.collectAsState(initial = store.getInt("pref_theme_mode_key", 0).get())
+
+    MiyomuTheme(darkTheme = resolveDarkTheme(themeModeState.value)) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,

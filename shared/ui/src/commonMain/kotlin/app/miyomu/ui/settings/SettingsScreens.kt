@@ -59,6 +59,11 @@ class SettingsMainRoute(private val graph: MiyomuGraph) : Screen {
         ) { padding ->
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 item {
+                    SettingsEntry(Icons.Outlined.Palette, "外观") {
+                        navigator.push(SettingsAppearanceRoute(graph))
+                    }
+                }
+                item {
                     SettingsEntry(Icons.AutoMirrored.Outlined.MenuBook, "阅读") {
                         navigator.push(SettingsReaderRoute(graph))
                     }
@@ -256,6 +261,58 @@ class AboutRoute : Screen {
                         "跨平台漫画/视频阅读器，以 Aniyomi 体验为基准的 KMP 重实现。" +
                             "Apache-2.0；移植来源见 NOTICE。",
                         style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+/** Appearance settings: theme mode (Aniyomi's `pref_theme_mode_key` semantics). */
+class SettingsAppearanceRoute(private val graph: MiyomuGraph) : Screen {
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        val scope = rememberCoroutineScope()
+        val prefs = remember(graph) { graph.preferenceStore.getInt("pref_theme_mode_key", 0) }
+        val modeState = remember(prefs) { prefs.asState(scope) }
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("外观") },
+                    navigationIcon = {
+                        IconButton(onClick = { navigator.pop() }) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                item { HeadingItem("主题模式") }
+                item {
+                    RadioItem(
+                        label = "跟随系统",
+                        selected = modeState.value == 0,
+                        onClick = { prefs.set(0) },
+                    )
+                }
+                item {
+                    RadioItem(
+                        label = "亮色",
+                        selected = modeState.value == 1,
+                        onClick = { prefs.set(1) },
+                    )
+                }
+                item {
+                    RadioItem(
+                        label = "暗色",
+                        selected = modeState.value == 2,
+                        onClick = { prefs.set(2) },
                     )
                 }
             }

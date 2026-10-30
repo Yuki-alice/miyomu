@@ -95,3 +95,11 @@ fun MiyomuTheme(
         content = content,
     )
 }
+
+/** Aniyomi's `pref_theme_mode_key` semantics: 0 = system, 1 = light, 2 = dark. */
+@Composable
+fun resolveDarkTheme(themeMode: Int): Boolean = when (themeMode) {
+    1 -> false
+    2 -> true
+    else -> isSystemInDarkTheme()
+}
