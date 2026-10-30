@@ -118,6 +118,15 @@ class MangaHistoryModelTest {
             model.state.first { it.list?.none { it is eu.kanade.presentation.history.manga.MangaHistoryUiModel.Item } == true }
         }
 
+        // Clear the filter first, otherwise an empty filtered list would satisfy the
+        // post-delete wait before the database work completes.
+        model.search(null)
+        withTimeout(15_000) {
+            model.state.first { state ->
+                state.list?.any { it is eu.kanade.presentation.history.manga.MangaHistoryUiModel.Item } == true
+            }
+        }
+
         // Delete removes the progress row (reset also clears the chapter mark).
         model.deleteHistory(item.item, removeEverything = true)
         withTimeout(15_000) {
