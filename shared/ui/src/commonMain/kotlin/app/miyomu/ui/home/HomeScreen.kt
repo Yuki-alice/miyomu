@@ -129,6 +129,10 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
             val open: () -> Unit = { navigator.push(app.miyomu.ui.backup.BackupSyncRoute(graph)) }
             open
         }
+        val onOpenGlobalSearch: () -> Unit = remember(navigator) {
+            val open: () -> Unit = { navigator.push(app.miyomu.ui.sources.GlobalSearchRoute(graph)) }
+            open
+        }
         val onOpenDanmaku: () -> Unit = remember(navigator) {
             val open: () -> Unit = { navigator.push(app.miyomu.ui.settings.DanmakuSettingsRoute(graph)) }
             open
@@ -141,7 +145,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph),
                 MangaHistoryTab(graph, onHistoryResume, onHistoryOpenDetails),
-                BrowseTab(graph, onOpenSource, onOpenSources),
+                BrowseTab(graph, onOpenSource, onOpenSources, onOpenGlobalSearch),
                 MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku),
             )
         }

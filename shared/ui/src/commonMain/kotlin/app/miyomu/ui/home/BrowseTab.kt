@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
@@ -42,6 +43,7 @@ class BrowseTab(
     private val graph: MiyomuGraph,
     private val onOpenSource: (SourceRuntimeInfo) -> Unit,
     private val onManageSources: () -> Unit,
+    private val onOpenGlobalSearch: () -> Unit = {},
 ) : Tab {
 
     override val options: TabOptions
@@ -60,6 +62,9 @@ class BrowseTab(
             ) {
                 Text(text = "浏览", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = onOpenGlobalSearch) {
+                    Icon(Icons.Outlined.Search, contentDescription = "全局搜索")
+                }
                 IconButton(onClick = { scope.launch { runtime.refresh() } }) {
                     Icon(Icons.Outlined.Refresh, contentDescription = "刷新源")
                 }
