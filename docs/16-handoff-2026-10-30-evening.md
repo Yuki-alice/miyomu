@@ -6,8 +6,9 @@
 
 ## 1. 一句话状态
 
-CI 门禁已恢复并全绿；三种媒介同仓；**202 个 JVM 测试全绿**；Venera 参考源
-**13/13 零改构造 + 13/13 静态 API 全兼容**。按用户 2026-10-30 的决定，**打包/发布延后**，
+CI 门禁已恢复并全绿；三种媒介同仓；**204 个 JVM 测试全绿**；Venera 参考源
+**13/13 零改构造 + 13/13 静态 API 全兼容**，hitomi 已在桌面 JVM 跑通真站
+search → details → pages。按用户 2026-10-30 的决定，**打包/发布延后**，
 近期目标是完成度而非出产物。
 
 ## 2. 这一批提交做了什么
@@ -20,6 +21,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**202 个 JVM 测试全绿**�
 | `dc65973` | 异步 rejection 兜底：包装源实例方法，修复 jm.js 构造失败 |
 | `65f815e` | 回归：`await` 方仍能收到 rejection |
 | `1c79480` | UI 测试竞态：删除前清空搜索过滤 |
+| `32816b8` | 真站暴露的两个适配缺陷：DOM 上限淘汰最旧文档；单画廊源合成默认章节 |
 | 文档 | `docs/14` 结果更新、README/AGENTS 状态同步、本文件 |
 
 ## 3. 验证基线
@@ -33,8 +35,8 @@ CI 门禁已恢复并全绿；三种媒介同仓；**202 个 JVM 测试全绿**�
   :desktopApp:compileKotlin :androidApp:assembleDebug
 ```
 
-当前：**202 tests / 0 failures**。分布：`ui` 41、`novel` 30、`source-novel` 25、
-`source-runtime` 20、`reader-novel` 16、`player` 12、`data` 10、`network` 10、
+当前：**204 tests / 0 failures**。分布：`ui` 41、`novel` 30、`source-novel` 25、
+`source-runtime` 22、`reader-novel` 16、`player` 12、`data` 10、`network` 10、
 `source-repo` 9、`reader-comic` 8、`local` 7、`danmaku` 4、`download` 4、
 `source-manager` 3、`domain` 3。
 
@@ -65,12 +67,17 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
    “列表为空”，删除尚未落库也会提前满足。现在删除前先清空搜索并等待条目回来。
 5. **二进制 body 不走 JSON**：`fetchBytes` 的 body 通过 token 在宿主暂存，
    状态/头走 JSON；改这条链路时保持边界，避免把二进制塞进字符串。
+6. **源不 dispose `HtmlDocument`**：hitomi 每个搜索结果建一个文档且从不释放。
+   `KsoupHtmlDomBridge` 在 16 个上限时淘汰最旧文档，而不是抛错；不要把它改回硬失败。
+7. **单画廊源没有 `chapters`**：hitomi 只返回 `maxPage`/`thumbnails`。适配层合成
+   `SingleChapterId` 的默认章节，取页时把它映射回 `epId=null`；改 `JsComicSource.pages`
+   时保留这个映射。
 
 ## 5. 下一步队列（按完成度）
 
 | 顺序 | 任务 | 说明 |
 |---|---|---|
-| 1 | 真实源桌面 + Android 真站往返 | v1 硬指标；目前只验构造 + 静态 API 面，没有真站往返。选 comick/manga_dex/hitomi 等，留 `evidence/` |
+| 1 | 真实源桌面 + Android 真站往返 | hitomi 桌面 JVM 已跑通 search → details → pages（2026-10-30）；Android 端与 comick/manga_dex 仍待验（后两者本机网络/站点不可达），留 `evidence/` |
 | 2 | 大库性能基准（1,000 部 / 10,000 章） | 启动、书架滚动、全局搜索、DB 查询；设预算并修热点 |
 | 3 | 产品完整性 | 小说发现/分类页、`nextContentUrl`、在线正文搜索；播放器 MediaSession/PiP/锁屏；本地 7z/PDF；备份补设置与分类 |
 | 4 | canary 自动化 / Windows job | 把手动 `-Pcanary` 变成定期任务；Windows MPV 与安装包验证 |

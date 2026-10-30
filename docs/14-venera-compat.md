@@ -1,6 +1,6 @@
 # 14 Venera 源零改验证
 
-> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes`、cookie API 与异步 rejection 兜底均已补齐，**13/13 构造成功、13/13 静态兼容**；剩余验证为真站往返。
+> 2026-10-30 · 状态：**验证手段已建立并跑完两轮**；`Convert`、`Network.fetchBytes`、cookie API 与异步 rejection 兜底均已补齐，**13/13 构造成功、13/13 静态兼容**；hitomi 已在桌面 JVM 跑通真站 search → details → pages，Android 与其余源待验。
 > 关联：[ADR-0008](adr/0008-venera-source-runtime.md)（源运行时）、[ADR-0003](adr/0003-js-extension-runtime.md)、[03 风险登记](03-risk-register.md) R4
 
 ## 为什么需要这份验证
@@ -52,6 +52,19 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 
 结论：**兼容性的瓶颈不是语言层，而是宿主 API 的覆盖面**。QuickJS + 预加载脚本足以承载社区源的实际写法。
 
+## 真站冒烟（2026-10-30，桌面 JVM）
+
+| 源 | 结果 | 说明 |
+|---|---|---|
+| hitomi.js | **PASS** | search 25 条 → details 1 章 → pages 30 页；本机网络可达 |
+| comick.js | 环境阻塞 | HTTP 522（站点/边缘） |
+| manga_dex.js | 环境阻塞 | TLS `ProtocolVersion` alert（本机网络） |
+
+hitomi 这次真站往返暴露并修复了两个适配缺陷：源不调用 `dispose()` 时会撞上 16 个
+`HtmlDocument` 硬上限（现在到上限淘汰最旧文档）；单画廊源只返回 `maxPage`/`thumbnails`、
+不返回章节（现在合成一个默认章节，并在取页时映射回 `epId=null`）。
+comick / manga_dex 的失败发生在网络/站点层，与适配无关；换网络后可重跑。
+
 ## 已补齐的 API
 
 | 补的东西 | 影响 | 备注 |
@@ -83,6 +96,6 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 
 ## 已知边界
 
-- 本验证**只覆盖构造与静态 API 面**，不包含真实站点往返。真站可用性受站点稳定性、反爬与地区影响，不属于"兼容性"。逐源真站冒烟仍是手动 `-Pcanary` 的事。
+- 构造与静态 API 面已覆盖；真站往返目前只验了 hitomi（桌面 JVM，2026-10-30）。其余源与 Android 端仍待验；真站可用性受站点稳定性、反爬与地区影响，不属于"兼容性"。逐源冒烟仍是手动 canary 的事。
 - 参考源集合在 `reference/` 本地保存，**不提交**（第三方脚本，许可证与内容均不属于本项目）。文档只记录测量结果与文件名。
 - 清单会随上游 `init.js` 变化失效；`tools/venera_compat.py` 每次从当前 preamble 重新推导，因此换 preamble 后重跑即可得到新结论。
