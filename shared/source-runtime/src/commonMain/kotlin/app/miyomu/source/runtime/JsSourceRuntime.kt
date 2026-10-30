@@ -49,6 +49,8 @@ internal class JsSourceRuntime(
     }
     private val mutex = Mutex()
     private var closed = false
+    private val pendingBinaryResponses = mutableMapOf<String, ByteArray>()
+    private var binaryResponseToken = 0L
 
     init {
         quickJs.evaluationTimeoutMillis = timeoutMillis
@@ -109,6 +111,7 @@ internal class JsSourceRuntime(
     override fun close() {
         if (closed) return
         closed = true
+        pendingBinaryResponses.clear()
         runCatching { dom.close() }
         runCatching { quickJs.close() }
         runCatching { httpClient.close() }
@@ -145,6 +148,18 @@ internal class JsSourceRuntime(
                     headersJson = args.getOrNull(2) as? String,
                     data = args.getOrNull(3) as? String,
                 )
+            }
+
+            asyncFunction<String>("__hostHttpRequestBytes") { args ->
+                httpRequestBytes(
+                    method = args.string(0),
+                    url = args.string(1),
+                    headersJson = args.getOrNull(2) as? String,
+                    data = args.getOrNull(3),
+                )
+            }
+            function<ByteArray>("__hostHttpTakeBytes") { args ->
+                pendingBinaryResponses.remove(args.string(0)) ?: ByteArray(0)
             }
 
             function<String?>("__hostKvGet") { args ->
@@ -210,6 +225,49 @@ internal class JsSourceRuntime(
         )
     }
 
+    private suspend fun httpRequestBytes(
+        method: String,
+        url: String,
+        headersJson: String?,
+        data: Any?,
+    ): String {
+        if (url.isBlank()) throw IllegalArgumentException("request url is empty")
+
+        val requestHeaders = parseHeaders(headersJson)
+        val response = httpClient.request(url) {
+            this.method = HttpMethod.parse(method.uppercase())
+            requestHeaders.forEach { (name, value) -> header(name, value) }
+            when (data) {
+                null -> Unit
+                is String -> setBody(data)
+                else -> setBody(data.convertBytes())
+            }
+        }
+
+        val bytes = response.body<ByteArray>()
+        if (bytes.size.toLong() > maxResponseBytes) {
+            throw IllegalStateException(
+                "response body exceeds $maxResponseBytes bytes for $url",
+            )
+        }
+        val responseHeaders = response.headers.entries()
+            .associate { entry -> entry.key.lowercase() to entry.value.joinToString(",") }
+
+        binaryResponseToken += 1
+        val token = binaryResponseToken.toString()
+        pendingBinaryResponses[token] = bytes
+        while (pendingBinaryResponses.size > PendingBinaryResponseLimit) {
+            pendingBinaryResponses.remove(pendingBinaryResponses.keys.first())
+        }
+        return json.encodeToString(
+            HostHttpBytesMeta(
+                status = response.status.value,
+                headers = responseHeaders,
+                token = token,
+            ),
+        )
+    }
+
     private fun parseHeaders(raw: String?): Map<String, String> {
         if (raw.isNullOrBlank()) return emptyMap()
         return runCatching { json.decodeFromString<Map<String, String>>(raw) }
@@ -257,6 +315,8 @@ internal class JsSourceRuntime(
         (getOrNull(index) as? Number)?.toInt() ?: -1
 
     companion object {
+        private const val PendingBinaryResponseLimit = 8
+
         fun jsString(value: String): String = buildString {
             append('"')
             for (character in value) {

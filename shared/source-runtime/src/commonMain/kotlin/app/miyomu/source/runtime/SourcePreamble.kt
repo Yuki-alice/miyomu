@@ -134,6 +134,20 @@ globalThis.Network = {
         return this.sendRequest("DELETE", url, headers, null);
     },
 
+    async fetchBytes(method, url, headers, data) {
+        const meta = JSON.parse(await __hostHttpRequestBytes(
+            method,
+            url,
+            JSON.stringify(headers || {}),
+            data
+        ));
+        return {
+            status: meta.status,
+            headers: meta.headers,
+            body: __toArrayBuffer(__hostHttpTakeBytes(meta.token))
+        };
+    },
+
     setCookies() {
         throw new Error("Network.setCookies is not supported in this runtime yet");
     },
@@ -148,8 +162,7 @@ globalThis.Network = {
 };
 
 // Web-fetch shaped adapter over Network: sources written for Venera expect a `Response`-like
-// object. Binary paths (`arrayBuffer`) stay unsupported until Network.fetchBytes exists, and
-// say so instead of returning garbage.
+// object. Sources that need a binary body use Network.fetchBytes; this adapter stays text-only.
 globalThis.fetch = async function (url, options) {
     options = options || {};
     const response = await Network.sendRequest(

@@ -61,6 +61,13 @@ internal data class HostHttpResponse(
 )
 
 @Serializable
+internal data class HostHttpBytesMeta(
+    val status: Int,
+    val headers: Map<String, String>,
+    val token: String,
+)
+
+@Serializable
 internal data class SearchPayload(
     val query: String,
     val page: Int,

@@ -44,6 +44,7 @@ class JsComicSourceTest {
             createContext("/html/comic", ::handleDetails)
             createContext("/html/chapter", ::handleChapter)
             createContext("/images", ::handleImage)
+            createContext("/binary", ::handleBinary)
             this.executor = this@JsComicSourceTest.executor
             start()
         }
@@ -83,6 +84,20 @@ class JsComicSourceTest {
             assertEquals("search", receivedTestHeaders.single())
             assertEquals(4, receivedCookies.size)
             assertTrue(receivedCookies.drop(1).all { it?.contains("sid=abc123") == true })
+        } finally {
+            source.close()
+        }
+    }
+
+    @Test
+    fun fetchesBinaryResponsesWithStatusAndHeaders() = runBlocking {
+        val source = loadSource("bytes_fixture", "bytes", expectedKey = "bytes_fixture")
+        try {
+            val item = source.search("x").items.single()
+            assertEquals("200", item.id)
+            assertEquals("0,1,2,127,255", item.title)
+            assertEquals("binary-ok", item.author)
+            assertEquals("bytes", receivedTestHeaders.single())
         } finally {
             source.close()
         }
@@ -194,6 +209,15 @@ class JsComicSourceTest {
         receivedCookies += exchange.requestHeaders.getFirst("Cookie")
         val bytes = byteArrayOf(1, 2, 3, 4)
         exchange.responseHeaders.add("Content-Type", "image/png")
+        exchange.sendResponseHeaders(200, bytes.size.toLong())
+        exchange.responseBody.use { it.write(bytes) }
+    }
+
+    private fun handleBinary(exchange: HttpExchange) {
+        receivedTestHeaders += exchange.requestHeaders.getFirst("X-Miyomu-Test")
+        val bytes = byteArrayOf(0, 1, 2, 127, -1)
+        exchange.responseHeaders.add("X-Miyomu-Header", "binary-ok")
+        exchange.responseHeaders.add("Content-Type", "application/octet-stream")
         exchange.sendResponseHeaders(200, bytes.size.toLong())
         exchange.responseBody.use { it.write(bytes) }
     }
