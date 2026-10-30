@@ -187,12 +187,13 @@ chrome，页面与图片经源运行时加载）。
 
 ## 已知限制
 
-- 本地漫画：目录/ZIP/CBZ；7Z/PDF/EPUB/TXT 与本地小说阅读器尚未开始。
+- 本地漫画：目录/ZIP/CBZ；7Z/PDF/EPUB/TXT 加载器尚未接入 main。
+- 小说阅读器（TXT/EPUB/FB2/HTML/Markdown 与 legado 在线阅读）已在 `feature/novel` 分支实现，但尚未合并进 main；合并前需 rebase 并解决文档编号/接线冲突。
 - 本地视频：混合目录（直接视频 + 季子目录）只取直接视频；本地剧集书签未持久化（已看由播放进度推导）；“设为默认”暂无全局存储。
 - 播放器：音轨/字幕选择不持久化；无锁屏/画中画/MediaSession；外挂字幕（同名 .srt/.ass）受 mediamp 0.5.3 限制暂不加载，待上游支持或自研；Linux 桌面无视频（ADR-0012）。
 - 在线源：第一波为 omofun + 苹果CMS 采集站家族；canary 需手动 `-Pcanary`；站点改版维护由项目承担；tracker 未实现；WebDAV 仅 Basic 认证；弹幕需自配弹弹play AppId/AppSecret。
 - 平台：Windows 端 MPV 播放与安装包（jpackage msi）尚未实机验证；桌面暂无自动更新；iOS 生产壳/AVKit 未开始。
-- CI：`download`/`danmaku` 测试尚未加入 CI；无 Windows job 与安装包冒烟。
+- CI：KSP 2.3.12 在 GitHub runner 上解析失败导致所有 job 红（本地可解析）；`download`/`danmaku` 测试尚未加入；无 Windows job 与安装包冒烟。
 
 ## 文档
 

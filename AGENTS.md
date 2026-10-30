@@ -44,8 +44,8 @@ Rules:
 
 - **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). See `docs/11-handoff-2026-10-30.md` §5.
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
-- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, novel reader + local 7z/PDF/EPUB/TXT, source coverage/canary automation, iOS shell.
-- **CI gaps**: `download`/`danmaku` tests are not in CI; no Windows job; no packaging smoke.
+- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF/EPUB/TXT, source coverage/canary automation, iOS shell. Novel work exists on the unmerged `feature/novel` branch (based on `c8c74b2`); it must be rebased before merge and it reuses doc numbers 10/11.
+- **CI gaps**: all jobs currently fail at KSP `2.3.12` resolution on GitHub runners (works locally); `download`/`danmaku` tests are not in CI; no Windows job; no packaging smoke.
 
 ## Canonical files
 
