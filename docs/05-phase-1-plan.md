@@ -1,5 +1,7 @@
 # Phase 1 计划（提案）
 
+> **历史计划（2026-10-28）**：里程碑排序已被 [ADR-0011](adr/0011-kmp-aniyomi-port.md) / [ADR-0014](adr/0014-anime-source-site-rewrite-and-player-alignment.md) 取代；当前状态见 [11 交接](11-handoff-2026-10-30.md)。保留作为范围与验收参考。
+
 - 状态：已确认（Apache-2.0；Miyomu；单人全职；Android + 桌面并行）· 2026-10-28
 - M0：核心完成（2026-10-28），见 [M0 清单](checklists/phase-1-m0.md) · [ADR-0006](adr/0006-unified-android-toolchain.md) · [ADR-0007](adr/0007-network-and-cookie-storage.md)
 - M1：进行中（2026-10-28），见 [M1 清单](checklists/phase-1-m1.md) · [M1 任务重排](08-m1-task-plan.md) · [ADR-0008](adr/0008-venera-source-runtime.md)

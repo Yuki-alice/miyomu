@@ -1,5 +1,7 @@
 # Skills 与参考仓库
 
+> **历史记录（2026-10-29 起）**：`.qoder/skills` 不在本机，技能策略已停用（见 AGENTS.md）。下表为历史安装记录；参考仓库部分仍有效。
+
 - 安装日期：2026-10-28
 - 使用策略：`AGENTS.md` / `agent.md`
 - 技能索引：`.qoder/skills/INDEX.md`

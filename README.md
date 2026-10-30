@@ -14,17 +14,21 @@
 |---|---|
 | `:shared:model` | 领域模型、源描述、章节/页面 |
 | `:shared:network` | Ktor 3.6、OkHttp/CIO、持久 Cookie |
-| `:shared:source-api` | `ComicSource` / `ManagedComicSource` |
+| `:shared:source-api` | `ComicSource` / `ManagedComicSource`、`AnimeSource` / `ManagedAnimeSource` |
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
 | `:shared:source-repo` | 源仓库索引、安装/更新/卸载与本地清单 |
 | `:shared:source-manager` | 已安装源的运行时加载与搜索/详情/页面/图片/视频解析 |
 | `:shared:download` | 漫画章节下载队列、离线页源 |
 | `:shared:danmaku` | dandanplay 弹幕客户端（用户自配凭据） |
-| `:shared:data` | Room 2.8.5 + KSP；库/进度 schema 与 repository |
+| `:shared:data` | Room 2.8.5 + KSP（schema v4）；库/进度/章节/剧集/分类/更新/下载/解析缓存 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
 | `:shared:reader-comic` | 漫画阅读状态、模式、页配对 |
 | `:shared:player` | mediamp 播放器、播放器 chrome、音轨/字幕轨选择 |
-| `:shared:ui` | 主题、App 壳、书架/详情/阅读器/播放器 |
+| `:shared:domain` | Aniyomi 域模型、偏好 API、排序/集号识别服务 |
+| `:shared:presentation-core` | 移植的 Aniyomi presentation-core 组件与主题 |
+| `:shared:presentation` | 移植的 Aniyomi 屏幕层（库/详情/阅读器/anime） |
+| `:shared:i18n` / `:shared:i18n-aniyomi` | moko-resources 字符串资源（en + zh-CN） |
+| `:shared:ui` | 主题、App 壳、书架/详情/阅读器/播放器/源仓库/设置 |
 | `:androidApp` | Android 应用入口 |
 | `:desktopApp` | 桌面应用入口 |
 
@@ -46,20 +50,21 @@ Phase 0 已完成：决策 **Go（缩范围）** —— Android + 桌面首发�
 
 Phase 1 M0 已完成：单轨工具链（AGP 9.4.1 + Kotlin 2.3.21 + compileSdk 37）跑通 QuickJS、mediamp、Compose、Ktor；Ktor + 持久 Cookie 网络层通过 JVM 测试与 Android 运行时验证。
 
-Phase 1 M1 进行中：M1 重排为**表现层 + 本地漫画/小说阅读器**。共享 UI、本地库导入、漫画阅读器（目录/ZIP/CBZ/7Z/PDF）和小说阅读器（TXT/EPUB）是主线；源运行时读路径与 Room 数据层已完成并冻结，真实 Venera 源与源仓库移到 M2。详见 [M1 任务重排](docs/08-m1-task-plan.md)、[M1 清单](docs/checklists/phase-1-m1.md) 与 [ADR-0010](docs/adr/0010-aniyomi-local-reader-reuse.md)。
+Phase 1 / M1 的里程碑排序已被 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md) 与 [ADR-0014](docs/adr/0014-anime-source-site-rewrite-and-player-alignment.md) 取代：Phase A/B/C/D 已全部完成。当前状态与缺口见 [11 号交接](docs/11-handoff-2026-10-30.md)；[Phase 1 计划](docs/05-phase-1-plan.md) 与 [M1 任务重排](docs/08-m1-task-plan.md) 仅保留为历史范围与验收参考。
 
 ## 仓库结构
 
 ```text
 androidApp/     Android 应用入口（Compose）
 desktopApp/     桌面应用入口（Compose Desktop）
-shared/         共享 KMP 模块
-  model/ network/ source-api/ source-runtime/ data/
-  local/ reader-comic/ ui/
-demo-resources/ 本地自造 HTML 源（源运行时 M2）
-tools/          fixture server 与本地样例库生成器
-evidence/       M1 双端读路径截图
-docs/           产品、架构、Phase 1 计划、ADR、风险
+shared/         共享 KMP 模块（18 个）
+  model/ network/ domain/ source-api/ source-runtime/ source-repo/ source-manager/
+  download/ danmaku/ data/ local/ reader-comic/ player/ ui/
+  presentation/ presentation-core/ i18n/ i18n-aniyomi/
+demo-resources/ 自造漫画/anime 源（含苹果CMS 模板）
+tools/          fixture server 与样例库生成器
+evidence/       各阶段双端截图与验证证据
+docs/           产品、架构、交接、ADR、计划
 experiments/    Phase 0/1 验证代码（独立 Gradle 构建）
   phase1/       M0 工具链与网络层探针
   spikes/       Phase 0 S1/S2/S3
@@ -81,9 +86,9 @@ python3 tools/make_sample_library.py
 ./gradlew :desktopApp:build
 ./gradlew :androidApp:assembleDebug
 ./gradlew :shared:local:jvmTest :shared:reader-comic:jvmTest :shared:ui:jvmTest :shared:player:jvmTest
-./gradlew :shared:source-runtime:jvmTest :shared:source-manager:jvmTest :shared:data:jvmTest
+./gradlew :shared:source-runtime:jvmTest :shared:source-repo:jvmTest :shared:source-manager:jvmTest :shared:data:jvmTest :shared:domain:jvmTest
 ./gradlew :shared:download:jvmTest :shared:danmaku:jvmTest :shared:network:jvmTest
-# 真站弹幕源冒烟（手动，第三方站点不进 CI）：
+# 真站源冒烟（手动，第三方站点不进 CI）：
 ./gradlew :shared:source-runtime:jvmTest -Pcanary
 ```
 
@@ -101,7 +106,10 @@ python3 tools/make_sample_library.py
 - 详情：移植的 `MangaScreen`（宽屏双栏、窄屏单栏），信息头、章节列表、筛选、继续阅读 FAB。
 - 阅读器：移植的 `ReaderAppBars`（顶栏、章节导航、页码滑条、模式/方向/裁边/设置）、阅读设置三页、阅读模式与方向选择弹窗。
 - 视频详情：移植的 `AnimeScreen`（信息头、剧集/季列表、继续观看 FAB、多选），本地视频映射为单集 anime。
-- 播放器：mediamp Surface + 播放器 chrome（顶栏/底栏、自动隐藏、双击 ±10 秒、倍速与音轨/字幕选择）。
+- 播放器：mediamp Surface + 播放器 chrome（顶栏/底栏、自动隐藏、双击 ±10 秒、倍速、音轨/字幕、亮度/音量手势、下一集/连播、弹幕）。
+- 在线源：源仓库管理、浏览/全局搜索、源详情（漫画/anime）、在线阅读与在线播放。
+- 书架/数据：分类 Tab、批量分类、更新检查、历史/更新、下载队列、备份/WebDAV。
+- 设置：外观（主题/动态色）、阅读、播放、下载、数据与同步、弹幕。
 - 窄屏用底部导航，宽屏（≥720dp）用侧边 NavigationRail。
 
 截图：[书架](evidence/a2-library-port.png) · [漫画详情](evidence/a2-detail-port.png) · [阅读器](evidence/a2-reader-port.png) · [视频详情](evidence/b2-video-detail.png) · [播放器](evidence/b1-player-controls.png) · [播放设置](evidence/b1-player-settings.png)
@@ -120,7 +128,7 @@ python3 tools/make_sample_library.py
 ./gradlew :desktopApp:run
 ```
 
-Android 使用应用私有目录，debug 包可通过 `run-as` 放入样例书：
+Android 可在应用内通过 SAF 选择库目录（持久权限）；debug 包也可用 `run-as` 放入样例书：
 
 ```bash
 ./gradlew :androidApp:assembleDebug
@@ -165,9 +173,9 @@ anime 源用自有的 `AnimeSource` JS 格式（ADR-0014）：`search` / `detail
 点源进入搜索，点结果进入详情（移植的 `MangaScreen`），点章节进入阅读器（复用移植的阅读
 chrome，页面与图片经源运行时加载）。
 
-## 源运行时（M2）
+## 源运行时
 
-源运行时读路径已实现，但当前 UI 不加载 JS 源；M2 继续真实源与源仓库。
+源运行时已接入产品链路：安装的 JS 源由 `source-manager` 加载，浏览/搜索/详情/阅读与 anime 播放都走这一套。真实第三方源（Venera 风格漫画源与自写 anime 站源）只用于本地验证，不提交；兼容范围见 [ADR-0008](docs/adr/0008-venera-source-runtime.md) 与 [ADR-0014](docs/adr/0014-anime-source-site-rewrite-and-player-alignment.md)。
 
 `demo-resources/sources/demo_source.js` 是自写的 Venera 风格源，使用：
 
@@ -179,20 +187,12 @@ chrome，页面与图片经源运行时加载）。
 
 ## 已知限制
 
-- 本地阅读器当前支持目录与 ZIP/CBZ；7Z/PDF/EPUB/TXT 尚未接入。
-- 阅读器支持 LTR/RTL/纵向/Webtoon、双页、缩放平移、进度续读；裁边开关会记偏好但尚未按它裁图。
-- **章节的已读/书签标记没有持久化**：本地库没有章节表，详情页的"标记已读""书签""删除章节"和阅读器的书签按钮只改界面状态。
-- 分类系统未移植：书架只有一个合成分类，分类 Tab 恒隐藏；多选后的批量操作没有数据层支撑。
-- 阅读器主题未移植（`readerTheme`），chrome 跟随 App 浅色主题而背景为纯黑。
-- 本地小说（TXT/EPUB）尚未开始。
-- Android 本地库暂用应用私有目录，SAF 文件选择器待补。
-- 真实 Venera 源尚未零修改验证；源运行时兼容层已冻结到 M2。
-- 视频（Android）：倍速与轨道选择不持久化；不加载外挂字幕文件；无集数导航、手势调亮度/音量、锁屏与画中画。
-- 视频详情：混合目录（直接视频 + 季子目录）只取直接视频；没有下一集/自动连播；下载与追踪入口未接线；剧集书签无存储（已看由播放进度 ≥85% 推导）；设置对话框的“设为默认”暂为空实现。
-- Linux 桌面不提供视频：MPV 的 Linux 运行时是 GPL-3.0，与 Apache-2.0 定位冲突（ADR-0012 方案 A）。
-- 外挂字幕（.srt/.ass 同名文件）暂不加载：mediamp 0.5.3 两个后端都不应用 `MediaExtraFiles`，待上游支持。
-- 弹幕需要用户自配弹弹play AppId/AppSecret；自动按标题+集号匹配，无匹配则不显示。
-- 第一波在线站：omofun（真站验证）+ 苹果CMS 采集站家族；AGE（PC 播放关闭）等站无头不可行，见 10 号计划的选站记录。
+- 本地漫画：目录/ZIP/CBZ；7Z/PDF/EPUB/TXT 与本地小说阅读器尚未开始。
+- 本地视频：混合目录（直接视频 + 季子目录）只取直接视频；本地剧集书签未持久化（已看由播放进度推导）；“设为默认”暂无全局存储。
+- 播放器：音轨/字幕选择不持久化；无锁屏/画中画/MediaSession；外挂字幕（同名 .srt/.ass）受 mediamp 0.5.3 限制暂不加载，待上游支持或自研；Linux 桌面无视频（ADR-0012）。
+- 在线源：第一波为 omofun + 苹果CMS 采集站家族；canary 需手动 `-Pcanary`；站点改版维护由项目承担；tracker 未实现；WebDAV 仅 Basic 认证；弹幕需自配弹弹play AppId/AppSecret。
+- 平台：Windows 端 MPV 播放与安装包（jpackage msi）尚未实机验证；桌面暂无自动更新；iOS 生产壳/AVKit 未开始。
+- CI：`download`/`danmaku` 测试尚未加入 CI；无 Windows job 与安装包冒烟。
 
 ## 文档
 
@@ -205,10 +205,13 @@ chrome，页面与图片经源运行时加载）。
 - [Phase 1 计划](docs/05-phase-1-plan.md)
 - [Phase 1 M0 清单](docs/checklists/phase-1-m0.md)
 - [Phase 1 M1 清单](docs/checklists/phase-1-m1.md)
-- [M1 任务重排](docs/08-m1-task-plan.md)
+- [M1 任务重排（历史）](docs/08-m1-task-plan.md)
+- [09 交接（历史，B1–C2）](docs/09-handoff-2026-10-29.md)
+- [10 anime 源与播放器计划](docs/10-anime-source-and-player-plan.md)
+- [11 当前交接（Phase D）](docs/11-handoff-2026-10-30.md)
 - [品牌备忘](docs/06-brand.md)
-- [Skills 与参考仓库](docs/07-skills-and-references.md)
-- ADR：[KMP/CMP](docs/adr/0001-kmp-cmp-baseline.md) · [Fork + Strangler](docs/adr/0002-fork-and-strangler.md) · [JS 扩展运行时](docs/adr/0003-js-extension-runtime.md) · [许可证边界](docs/adr/0004-licensing-and-clean-room.md) · [mediamp](docs/adr/0005-mediamp-player.md) · [单轨工具链](docs/adr/0006-unified-android-toolchain.md) · [网络与 Cookie](docs/adr/0007-network-and-cookie-storage.md) · [Venera 源运行时](docs/adr/0008-venera-source-runtime.md) · [Room 数据层](docs/adr/0009-room-kmp-data-layer.md) · [Aniyomi 本地阅读器复用](docs/adr/0010-aniyomi-local-reader-reuse.md)
+- [Skills 与参考仓库（历史）](docs/07-skills-and-references.md)
+- ADR：[KMP/CMP](docs/adr/0001-kmp-cmp-baseline.md) · [Fork + Strangler](docs/adr/0002-fork-and-strangler.md) · [JS 扩展运行时](docs/adr/0003-js-extension-runtime.md) · [许可证边界](docs/adr/0004-licensing-and-clean-room.md) · [mediamp](docs/adr/0005-mediamp-player.md) · [单轨工具链](docs/adr/0006-unified-android-toolchain.md) · [网络与 Cookie](docs/adr/0007-network-and-cookie-storage.md) · [Venera 源运行时](docs/adr/0008-venera-source-runtime.md) · [Room 数据层](docs/adr/0009-room-kmp-data-layer.md) · [Aniyomi 本地阅读器复用](docs/adr/0010-aniyomi-local-reader-reuse.md) · [KMP 移植](docs/adr/0011-kmp-aniyomi-port.md) · [桌面运行时许可](docs/adr/0012-desktop-video-backend-licensing.md) · [源仓库格式](docs/adr/0013-js-source-repository-format.md) · [anime 源与播放器](docs/adr/0014-anime-source-site-rewrite-and-player-alignment.md)
 
 ## 原则
 

@@ -5,8 +5,8 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- Phase 0 complete; decision **Go (reduced scope)**: Android + desktop first, iOS later.
-- Read `docs/05-phase-1-plan.md` for milestones and `docs/checklists/phase-0.md` for evidence.
+- **2026-10-30: Phase A/B/C/D complete.** Android + desktop are the production targets (both builds green); iOS is not started. The current handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; decisions are ADR-0011/0012/0013/0014.
+- `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, and `docs/09-handoff-2026-10-29.md` are **historical** (pre-Phase-D) and are kept for implementation records only.
 - Production build lives at the repository root (`androidApp/`, `desktopApp/`, `shared/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
 - Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
 
@@ -40,16 +40,18 @@ Rules:
 - **general-purpose / implementer**: read `AGENTS.md` before editing; run build/test after changes.
 - **All agents**: follow project docs and explicit user decisions; they override general guidance.
 
-## Phase 1 focus
+## Current focus (2026-10-30)
 
-- M0: unify the Android toolchain conflict (AGP 9.4 / Kotlin 2.2 vs quickjs-kt Kotlin 2.4), adopt Ktor, persistent cookies, Miyomu identifiers.
-- Player: add audio-track / embedded-subtitle selection behind a backend abstraction.
-- UI: fork + strangler migration to CMP; follow Material 3 / MD3E guidance and the S3 evidence.
-- iOS: validate AVKit in a real app shell before expanding scope.
+- **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). See `docs/11-handoff-2026-10-30.md` §5.
+- **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
+- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, novel reader + local 7z/PDF/EPUB/TXT, source coverage/canary automation, iOS shell.
+- **CI gaps**: `download`/`danmaku` tests are not in CI; no Windows job; no packaging smoke.
 
 ## Canonical files
 
 - Product: `docs/00-product-brief.md`
-- Architecture: `docs/01-architecture.md`
-- Phase 1: `docs/05-phase-1-plan.md`
+- Architecture: `docs/01-architecture.md` (note: module list predates Phase D; see README/11)
+- Current handoff: `docs/11-handoff-2026-10-30.md`
+- Anime/player plan: `docs/10-anime-source-and-player-plan.md`
 - Brand: `docs/06-brand.md`
+- Historical plans: `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, `docs/09-handoff-2026-10-29.md`

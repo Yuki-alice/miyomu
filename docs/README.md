@@ -1,24 +1,27 @@
 # 文档索引
 
+> 最后整理：2026-10-30。当前交接见 [11-handoff-2026-10-30.md](11-handoff-2026-10-30.md)；05/07/08/09 等为历史文档，保留实施记录。
+
 | 文档 | 内容 | 状态 |
 |---|---|---|
 | [00 产品简报](00-product-brief.md) | 产品定位、v1 范围、原则、非目标 | 草案 |
 | [01 目标架构](01-architecture.md) | 模块划分、数据模型、源协议、播放器、迁移策略 | 草案 |
-| [02 Phase 0 计划](02-phase-0.md) | 时间盒、三个 Spike、决策门、交付物 | 执行中 |
+| [02 Phase 0 计划](02-phase-0.md) | 时间盒、三个 Spike、决策门、交付物 | 已完成（历史） |
 | [03 风险登记](03-risk-register.md) | 风险、触发条件、缓解措施、退出标准 | 维护中 |
 | [04 开放问题](04-open-questions.md) | 待决策事项与建议选项 | 待输入 |
-| [05 Phase 1 计划](05-phase-1-plan.md) | 缩范围后的里程碑、任务与验收 | 已确认（单人全职，5–7 个月） |
+| [05 Phase 1 计划](05-phase-1-plan.md) | 缩范围后的里程碑、任务与验收 | 历史（被 ADR-0011/0014 取代） |
 | [06 品牌备忘](06-brand.md) | Miyomu 名称、标识符、看板娘方向 | 名称已确认；域名/商标待清查 |
-| [07 Skills 与参考仓库](07-skills-and-references.md) | 已安装技能、许可、参考仓库与 agent 策略 | 已安装 |
+| [07 Skills 与参考仓库](07-skills-and-references.md) | 已安装技能、许可、参考仓库与 agent 策略 | 历史（技能库不在本机，策略停用） |
 | [08 M1 任务重排](08-m1-task-plan.md) | M1 本地漫画/小说阅读器、共享 UI、Aniyomi 复用边界 | 里程碑排序被 ADR-0011 取代，工程细节仍可引用 |
-| [09 交接文档](09-handoff-2026-10-29.md) | KMP 版 Aniyomi 移植进度、环境、逐阶段替换记录 | 最新（2026-10-30，Phase C1/C2 + D 完成） |
+| [09 交接文档](09-handoff-2026-10-29.md) | KMP 版 Aniyomi 移植进度、环境、逐阶段替换记录 | 历史（截至 C2，保留 B1–C2 记录） |
 | [10 anime 源与播放器计划](10-anime-source-and-player-plan.md) | anime 站点重写策略、覆盖面盘点、AnimeSource API、canary、播放器对齐 Animeko | 已实施完成（2026-10-30，D1–D9） |
-| [Phase 0 清单](checklists/phase-0.md) | 可勾选的任务列表与命令 | 执行中 |
+| [11 当前交接](11-handoff-2026-10-30.md) | Phase D 后的能力、模块/数据层、CI 缺口、并行开发规则与下一步队列 | **最新（2026-10-30）** |
+| [Phase 0 清单](checklists/phase-0.md) | 可勾选的任务列表与命令 | 已完成（历史） |
 | [Phase 1 M0 清单](checklists/phase-1-m0.md) | 工具链、Ktor/Cookie、标识符、CI | 核心完成 |
-| [Phase 1 M1 清单](checklists/phase-1-m1.md) | 共享 UI、本地库、漫画/小说阅读器 | 进行中 |
-| [Spike S1 播放器](spikes/s1-player.md) | mediamp 三端验证规格 | 桌面部分通过，移动端未开始 |
-| [Spike S2 源运行时](spikes/s2-js-runtime.md) | QuickJS + Venera 兼容源验证规格 | 三端 JSON + 三端 HTML/Cookie 通过；M0 已补 Ktor 与持久 Cookie |
-| [Spike S3 UI](spikes/s3-cmp-ui.md) | CMP + MD3E 屏幕迁移验证规格 | 验证完成（headless）；Conditional Go |
+| [Phase 1 M1 清单](checklists/phase-1-m1.md) | 共享 UI、本地库、漫画/小说阅读器 | 历史（被 ADR-0011/0014 取代） |
+| [Spike S1 播放器](spikes/s1-player.md) | mediamp 三端验证规格 | 桌面/Android 通过；iOS 壳未开始 |
+| [Spike S2 源运行时](spikes/s2-js-runtime.md) | QuickJS + Venera 兼容源验证规格 | 已完成（C2/D 已接入产品链路） |
+| [Spike S3 UI](spikes/s3-cmp-ui.md) | CMP + MD3E 屏幕迁移验证规格 | 已完成（A/B 移植已落地） |
 
 ## Spike 结果
 
@@ -41,7 +44,7 @@
 | [0008](adr/0008-venera-source-runtime.md) | Venera 风格 JS 源运行时读路径 | 接受（M1 切片；真实源待验证） |
 | [0009](adr/0009-room-kmp-data-layer.md) | Room KMP 作为数据层 | 接受（M1 验证） |
 | [0010](adr/0010-aniyomi-local-reader-reuse.md) | Aniyomi 本地阅读器复用边界 | 接受（M1） |
-| [0011](adr/0011-kmp-aniyomi-port.md) | KMP 版 Aniyomi 大面积移植策略（取代 08 的里程碑排序） | 接受（A2-2 ~ A2-5 完成） |
+| [0011](adr/0011-kmp-aniyomi-port.md) | KMP 版 Aniyomi 大面积移植策略（取代 08 的里程碑排序） | 接受（A2–D 已实施） |
 | [0012](adr/0012-desktop-video-backend-licensing.md) | 桌面视频后端的许可证边界（MPV 原生库 GPL-3.0） | 接受（方案 A：macOS/Windows LGPL 运行时） |
 | [0013](adr/0013-js-source-repository-format.md) | JS 源包与仓库索引格式 | 接受（C1） |
 | [0014](adr/0014-anime-source-site-rewrite-and-player-alignment.md) | anime 源站点重写策略与播放器对齐 Animeko（AGPL 行为对齐红线） | 接受（D1–D9 完成，含实施记录） |
