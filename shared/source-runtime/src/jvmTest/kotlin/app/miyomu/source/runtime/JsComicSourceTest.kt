@@ -122,6 +122,8 @@ class JsComicSourceTest {
         val source = loadSource("rejection_fixture", "rejection", expectedKey = "rejection_fixture")
         try {
             assertEquals("ok", source.search("x").items.single().id)
+            val error = assertFailsWith<SourceException> { source.search("fail") }
+            assertTrue(error.message.orEmpty().contains("search failed"))
         } finally {
             source.close()
         }

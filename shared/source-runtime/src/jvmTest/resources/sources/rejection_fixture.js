@@ -14,9 +14,12 @@ class RejectionFixtureSource extends ComicSource {
     }
 
     search = {
-        load: async () => ({
-            comics: [new Comic({ id: "ok", title: "ok" })],
-            maxPage: 1
-        })
+        load: async keyword => {
+            if (keyword === "fail") throw new Error("search failed");
+            return {
+                comics: [new Comic({ id: "ok", title: "ok" })],
+                maxPage: 1
+            };
+        }
     };
 }
