@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.runComposeUiTest
@@ -275,6 +276,79 @@ class NovelFlowTest {
             }
             waitUntil(timeoutMillis = 10_000) {
                 onAllNodesWithTag("novel-page-0").fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            data.close()
+        }
+    }
+
+    /**
+     * Regression for the wiring gap where `NovelBookSearch` was unit-tested but the reader
+     * handed the catalog a lambda that always returned an empty list.
+     */
+    @Test
+    fun novelInBookSearchFindsBodyText() = runComposeUiTest {
+        writeNovelFixture()
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "search.db").absolutePath))
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试小说").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("测试小说").performClick()
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第一章 起点").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第一章 起点").performClick()
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            val catalogLabels = listOf("目录", "Contents")
+            waitUntil(timeoutMillis = 10_000) {
+                catalogLabels.any { label ->
+                    onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+                }
+            }
+            onNodeWithContentDescription(
+                catalogLabels.first { label ->
+                    onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+                },
+            ).performClick()
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-catalog-chapters").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            // Body-only phrase from the chapter 2 fixture; no chapter title contains it.
+            onNodeWithTag("novel-catalog-search").performTextInput("继续撑长正文")
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-catalog-results").fetchSemanticsNodes().isNotEmpty()
+            }
+            assertTrue(
+                onAllNodesWithText("继续撑长正文", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty(),
+            )
+
+            // Jumping from a result must not throw and must leave the reader intact.
+            onAllNodesWithText("继续撑长正文", substring = true)[0].performClick()
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
             }
         } finally {
             data.close()

@@ -204,10 +204,15 @@ fun NovelReaderContent(
         }
     }
 
-    // In-book search works over locally parsed chapters; online sources search chapter
-    // titles only via the catalog filter (docs/12 known limitation).
-    val searchInBook: suspend (String) -> List<NovelBookSearch.Match> = remember(bookKey) {
-        { _ -> emptyList() }
+    // In-book search scans the parsed chapters. Online sources cannot hand out every chapter
+    // body without downloading the book, so they degrade to a chapter-title search.
+    val searchInBook: suspend (String) -> List<NovelBookSearch.Match> = { query ->
+        val chapters = contentSource.chapters(bookKey)
+        if (chapters.isNotEmpty()) {
+            NovelBookSearch.search(chapters, query)
+        } else {
+            NovelBookSearch.searchTitles(state.chapterTitles, query)
+        }
     }
 
     // ---- Paged mode machinery ----

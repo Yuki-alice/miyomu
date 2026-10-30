@@ -45,4 +45,8 @@ class LocalNovelContentSource(
             fallback.copy(error = failure.message ?: failure.toString())
         }
     }
+
+    /** The parse is cached in [LocalNovelRepository], so this is cheap after the first load. */
+    override suspend fun chapters(bookKey: String): List<NovelChapter> =
+        runCatching { novels.parse(book).chapters }.getOrDefault(emptyList())
 }

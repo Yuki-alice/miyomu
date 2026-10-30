@@ -7,6 +7,15 @@ package app.miyomu.novel
  */
 interface NovelContentSource {
     suspend fun load(bookKey: String, chapterIndex: Int, offset: Int): NovelChapterData
+
+    /**
+     * Every chapter of the book, for whole-book features such as in-book search.
+     *
+     * Sources that cannot materialise the whole book up front (an online source would have
+     * to download each chapter) keep the default and the caller falls back to a
+     * titles-only search.
+     */
+    suspend fun chapters(bookKey: String): List<NovelChapter> = emptyList()
 }
 
 data class NovelChapterData(

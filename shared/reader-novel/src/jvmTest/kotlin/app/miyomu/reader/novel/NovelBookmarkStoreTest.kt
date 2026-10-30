@@ -116,4 +116,17 @@ class NovelBookSearchTest {
         val novel = ParsedNovel(title = "t", chapters = listOf(chapter("x", "abc")))
         assertTrue(NovelBookSearch.search(novel.chapters, "  ").isEmpty())
     }
+
+    @Test
+    fun `titles-only search matches chapter titles for online books`() {
+        val titles = listOf<String?>("第一章 起点", null, "第三章 小路")
+
+        val matches = NovelBookSearch.searchTitles(titles, "小路")
+
+        assertEquals(1, matches.size)
+        assertEquals(2, matches.single().chapterIndex)
+        assertTrue(matches.single().inTitle)
+        assertEquals(0, matches.single().offset)
+        assertTrue(NovelBookSearch.searchTitles(titles, "   ").isEmpty())
+    }
 }

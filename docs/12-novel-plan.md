@@ -91,11 +91,11 @@ shared/ui/novel      适配层:Novel → 合成 Manga/Chapter → 复用库/详�
 
 ## 7. 后续增强(按对标 Google Play Books 排序;2026-10-30 对标调研见 [13](13-novel-benchmark.md))
 
-1. ~~**目录/书签/书内搜索**~~ ✅ 2026-10-30(目录面板 + JSON 偏好书签 + 全书搜索)
+1. ~~**目录/书签/书内搜索**~~ ✅ 2026-10-30(目录面板 + JSON 偏好书签 + 全书搜索)；**2026-10-30 补接**:`NovelReaderScreen` 之前给目录面板传的是空 lambda(引擎与单测都在、UI 没接上),现已接通 `NovelContentSource.chapters()` → `NovelBookSearch.search()`;在线书源无正文时降级为 `searchTitles()`(章节标题搜索)。回归测试:`NovelFlowTest.novelInBookSearchFindsBodyText`。
 2. ~~**护眼暖色滤镜 / 音量键翻页**~~ ✅ 2026-10-30
 3. ~~**EPUB 插画渲染**~~ ✅ 2026-10-30(内容块架构 NovelBlock.Text/Image,分页/滚动双端渲染,尺寸嗅探)
 4. ~~**更多文件格式**~~ ✅ 2026-10-30(FB2 含 base64 插画与封面、HTML、Markdown;TXT/EPUB 已有)
-5. ~~**legado 书源引擎(读路径 + 应用内闭环)**~~ ✅ 2026-10-30(`shared:source-novel`:书源 JSON 导入、规则子集求值器、搜索/详情/目录/正文;`NovelContentSource` 抽象让阅读器同时服务本地与在线;浏览 Tab 书源管理/搜索/书架/在线阅读;20+ 测试)——**剩余**:发现/分类页、正文分页抓取(nextContentUrl)、在线书源的书内搜索
+5. ~~**legado 书源引擎(读路径 + 应用内闭环)**~~ ✅ 2026-10-30(`shared:source-novel`:书源 JSON 导入、规则子集求值器、搜索/详情/目录/正文;`NovelContentSource` 抽象让阅读器同时服务本地与在线;浏览 Tab 书源管理/搜索/书架/在线阅读;20+ 测试)——**剩余**:发现/分类页、正文分页抓取(nextContentUrl)、在线书源的书内**正文**搜索(现降级为仅章节标题,抓全文需要逐章下载)
 6. **书内长按与注释**:选中文本、高亮/笔记(需要 Room 新表,建议等分支合并后统一动 schema)。
 7. **翻页动画**:覆盖/仿真 page delegate(平移已有)。
 8. **自动翻页与亮度控制**(Android window attributes,expect/actual)。

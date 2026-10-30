@@ -49,6 +49,29 @@ object NovelBookSearch {
         return matches
     }
 
+    /**
+     * Titles-only search, for sources that cannot hand out every chapter body (online books).
+     * Same [Match] shape so the catalog sheet renders both paths identically.
+     */
+    fun searchTitles(
+        titles: List<String?>,
+        rawQuery: String,
+        maxResults: Int = DEFAULT_MAX_RESULTS,
+    ): List<Match> {
+        val query = rawQuery.trim()
+        if (query.isEmpty()) return emptyList()
+        val lowerQuery = query.lowercase()
+        return titles.withIndex()
+            .mapNotNull { (index, title) ->
+                if (title?.lowercase()?.contains(lowerQuery) == true) {
+                    Match(index, 0, title, inTitle = true)
+                } else {
+                    null
+                }
+            }
+            .take(maxResults)
+    }
+
     private fun excerptOf(text: String, at: Int, matchLength: Int, radius: Int): String {
         val start = (at - radius).coerceAtLeast(0)
         val end = (at + matchLength + radius).coerceAtMost(text.length)
