@@ -25,8 +25,10 @@ internal class KsoupHtmlDomBridge(
 
     @Synchronized
     override fun parse(html: String): Int {
-        check(documents.size < maxDocuments) {
-            "Too many open HtmlDocument instances (max $maxDocuments)"
+        // Sources do not always call dispose() (Venera relies on GC); evicting the oldest
+        // document keeps the cap without failing the whole source mid-request.
+        if (documents.size >= maxDocuments) {
+            documents.keys.firstOrNull()?.let(::dispose)
         }
         val document = Ksoup.parse(html, "")
         val id = nextId++

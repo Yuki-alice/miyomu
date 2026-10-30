@@ -118,6 +118,22 @@ class JsComicSourceTest {
     }
 
     @Test
+    fun synthesizesAChapterForSingleGallerySources() = runBlocking {
+        val source = loadSource("single_chapter_fixture", "single", expectedKey = "single_chapter_fixture")
+        try {
+            val details = source.details("g1")
+            val chapter = details.chapters.single()
+            assertEquals(SingleChapterId, chapter.id)
+            assertEquals(
+                listOf("$baseUrl/single-1.jpg", "$baseUrl/single-2.jpg"),
+                source.pages("g1", chapter.id).map { it.url },
+            )
+        } finally {
+            source.close()
+        }
+    }
+
+    @Test
     fun toleratesFireAndForgetAsyncRejections() = runBlocking {
         val source = loadSource("rejection_fixture", "rejection", expectedKey = "rejection_fixture")
         try {

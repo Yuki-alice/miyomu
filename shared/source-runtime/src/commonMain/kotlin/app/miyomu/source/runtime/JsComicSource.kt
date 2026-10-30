@@ -144,9 +144,10 @@ internal class JsComicSource(
 
     override suspend fun pages(comicId: String, chapterId: String?): List<PageRef> =
         runtime.guarded("pages") {
+            val effectiveChapterId = chapterId?.takeIf { it != SingleChapterId }
             val raw = runtime.invoke(
                 "pages",
-                runtime.json.encodeToString(PagesPayload(comicId = comicId, chapterId = chapterId)),
+                runtime.json.encodeToString(PagesPayload(comicId = comicId, chapterId = effectiveChapterId)),
                 descriptor.id,
             )
             val dto = runtime.json.decodeFromString<JsPagesDto>(raw)

@@ -44,9 +44,13 @@ internal data class JsComicDetailsDto(
     val description: String? = null,
     val tags: JsonElement? = null,
     val chapters: JsonElement? = null,
+    val maxPage: Int? = null,
+    val thumbnails: List<String> = emptyList(),
     val updateTime: String? = null,
     val url: String? = null,
 )
+
+internal const val SingleChapterId = "__miyomu_single__"
 
 @Serializable
 internal data class JsPagesDto(
@@ -99,16 +103,25 @@ internal fun JsComicDto.toSummary(): ComicSummary = ComicSummary(
     tags = tags,
 )
 
-internal fun JsComicDetailsDto.toDetails(comicId: String): ComicDetails = ComicDetails(
-    id = comicId,
-    title = title,
-    coverUrl = cover?.takeIf { it.isNotBlank() },
-    description = description?.takeIf { it.isNotBlank() },
-    tags = parseTags(tags),
-    chapters = parseChapters(chapters),
-    updateTime = updateTime?.takeIf { it.isNotBlank() },
-    url = url?.takeIf { it.isNotBlank() },
-)
+internal fun JsComicDetailsDto.toDetails(comicId: String): ComicDetails {
+    val parsedChapters = parseChapters(chapters)
+    val resolvedChapters = if (parsedChapters.isEmpty() && (maxPage != null || thumbnails.isNotEmpty())) {
+        // Single-gallery sources (e.g. hitomi) return maxPage/thumbnails but no chapters.
+        listOf(Chapter(id = SingleChapterId, title = "1"))
+    } else {
+        parsedChapters
+    }
+    return ComicDetails(
+        id = comicId,
+        title = title,
+        coverUrl = cover?.takeIf { it.isNotBlank() },
+        description = description?.takeIf { it.isNotBlank() },
+        tags = parseTags(tags),
+        chapters = resolvedChapters,
+        updateTime = updateTime?.takeIf { it.isNotBlank() },
+        url = url?.takeIf { it.isNotBlank() },
+    )
+}
 
 internal fun JsPagesDto.toPages(): List<PageRef> = images
     .asSequence()
