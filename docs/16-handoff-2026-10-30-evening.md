@@ -6,7 +6,7 @@
 
 ## 1. 一句话状态
 
-CI 门禁已恢复并全绿；三种媒介同仓；**205 个 JVM 测试全绿**；Venera 参考源
+CI 门禁已恢复并全绿；三种媒介同仓；**209 个 JVM 测试全绿**；Venera 参考源
 **13/13 零改构造 + 13/13 静态 API 全兼容**，hitomi 已在桌面 JVM 与 Android 模拟器
 跑通真站 search → details → pages（含图片渲染）。按用户 2026-10-30 的决定，
 **打包/发布延后**，近期目标是完成度而非出产物。
@@ -24,6 +24,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**205 个 JVM 测试全绿**�
 | `32816b8` | 真站暴露的两个适配缺陷：DOM 上限淘汰最旧文档；单画廊源合成默认章节 |
 | `c40dd68` | `onImageLoad` 钩子：把源声明的图片 URL/headers 带进 `PageRef`（hitomi 的 Referer） |
 | `d7cedd1` | 小说正文 `nextContentUrl` 多页合并（去重 + 20 页上限） |
+| `aec24d8` | 小说发现/分类页：解析 `exploreUrl`/`ruleExplore`，浏览 Tab 增加「发现」入口与 UI 流程测试 |
 | 文档 | `docs/14` 结果更新、README/AGENTS 状态同步、本文件 |
 
 ## 3. 验证基线
@@ -37,7 +38,7 @@ CI 门禁已恢复并全绿；三种媒介同仓；**205 个 JVM 测试全绿**�
   :desktopApp:compileKotlin :androidApp:assembleDebug
 ```
 
-当前：**205 tests / 0 failures**。分布：`ui` 41、`novel` 30、`source-novel` 26、
+当前：**209 tests / 0 failures**。分布：`ui` 42、`novel` 30、`source-novel` 29、
 `source-runtime` 22、`reader-novel` 16、`player` 12、`data` 10、`network` 10、
 `source-repo` 9、`reader-comic` 8、`local` 7、`danmaku` 4、`download` 4、
 `source-manager` 3、`domain` 3。
@@ -84,7 +85,7 @@ python3 tools/venera_compat.py reference/venera-yuan/*.js --summary
 |---|---|---|
 | 1 | 真实源桌面 + Android 真站往返 | hitomi 桌面 JVM + Android 模拟器均已跑通 search → details → pages（含图片，2026-10-30）；comick/manga_dex 本机网络/站点不可达，其余源待验。真站截图含第三方内容，不入库 |
 | 2 | 大库性能基准（1,000 部 / 10,000 章） | 启动、书架滚动、全局搜索、DB 查询；设预算并修热点 |
-| 3 | 产品完整性 | 小说发现/分类页、`nextContentUrl`、在线正文搜索；播放器 MediaSession/PiP/锁屏；本地 7z/PDF；备份补设置与分类 |
+| 3 | 产品完整性 | 在线书源正文搜索；播放器 MediaSession/PiP/锁屏；本地 7z/PDF；备份补设置与分类（小说发现/分类页与 `nextContentUrl` 已完成） |
 | 4 | canary 自动化 / Windows job | 把手动 `-Pcanary` 变成定期任务；Windows MPV 与安装包验证 |
 | 5 | iOS | 21 个模块仍无 `iosMain`，独立立项 |
 | **延后** | 打包 + tag | 用户 2026-10-30 明确完成度不足，暂不打包发布 |

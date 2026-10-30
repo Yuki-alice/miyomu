@@ -95,7 +95,7 @@ shared/ui/novel      适配层:Novel → 合成 Manga/Chapter → 复用库/详�
 2. ~~**护眼暖色滤镜 / 音量键翻页**~~ ✅ 2026-10-30
 3. ~~**EPUB 插画渲染**~~ ✅ 2026-10-30(内容块架构 NovelBlock.Text/Image,分页/滚动双端渲染,尺寸嗅探)
 4. ~~**更多文件格式**~~ ✅ 2026-10-30(FB2 含 base64 插画与封面、HTML、Markdown;TXT/EPUB 已有)
-5. ~~**legado 书源引擎(读路径 + 应用内闭环)**~~ ✅ 2026-10-30(`shared:source-novel`:书源 JSON 导入、规则子集求值器、搜索/详情/目录/正文;`NovelContentSource` 抽象让阅读器同时服务本地与在线;浏览 Tab 书源管理/搜索/书架/在线阅读;20+ 测试)——**剩余**:发现/分类页、在线书源的书内**正文**搜索(现降级为仅章节标题,抓全文需要逐章下载);正文分页(nextContentUrl)✅ 2026-10-30
+5. ~~**legado 书源引擎(读路径 + 应用内闭环)**~~ ✅ 2026-10-30(`shared:source-novel`:书源 JSON 导入、规则子集求值器、搜索/详情/目录/正文;`NovelContentSource` 抽象让阅读器同时服务本地与在线;浏览 Tab 书源管理/搜索/书架/在线阅读;20+ 测试)——**剩余**:在线书源的书内**正文**搜索(现降级为仅章节标题,抓全文需要逐章下载);正文分页(nextContentUrl)与发现/分类页 ✅ 2026-10-30
 6. **书内长按与注释**:选中文本、高亮/笔记(需要 Room 新表,建议等分支合并后统一动 schema)。
 7. **翻页动画**:覆盖/仿真 page delegate(平移已有)。
 8. **自动翻页与亮度控制**(Android window attributes,expect/actual)。

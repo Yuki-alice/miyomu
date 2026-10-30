@@ -211,7 +211,7 @@ chrome，页面与图片经源运行时加载）。
 - 本地视频：混合目录（直接视频 + 季子目录）只取直接视频；本地剧集书签未持久化（已看由播放进度推导）；“设为默认”暂无全局存储。
 - 播放器：音轨/字幕选择不持久化；无锁屏/画中画/MediaSession；外挂字幕（同名 .srt/.ass）受 mediamp 0.5.3 限制暂不加载，待上游支持或自研；Linux 桌面无视频（ADR-0012）。
 - 小说：EPUB 只取纯文本与封面（图片/脚注/CSS 后置）；TXT 章节启发式对正文以“第X章”开头的行会误判；单行高于一页的极端段落会被裁剪；无章节标记的超大 TXT 整本单章，首次打开偏慢；MOBI/AZW3 不支持。
-- 小说在线阅读（legado 书源）：发现/分类页、在线书源的书内全文搜索待补；正文已支持 `nextContentUrl` 多页合并；真实第三方书源兼容性需实测（引擎对自造 fixture 全绿）。
+- 小说在线阅读（legado 书源）：在线书源的书内全文搜索待补；发现/分类页与 `nextContentUrl` 正文分页已支持；真实第三方书源兼容性需实测（引擎对自造 fixture 全绿）。
 - 在线源：Venera 兼容性已量化（13 个社区源全部零改构造通过、静态审计 13/13 全兼容，见 [14](docs/14-venera-compat.md)）；hitomi 已在桌面与 Android 模拟器跑通真站搜索→详情→页面（含图片），其余源仍待验；第一波为 omofun + 苹果CMS 采集站家族；canary 需手动 `-Pcanary`；站点改版维护由项目承担；tracker 未实现；WebDAV 仅 Basic 认证；弹幕需自配弹弹play AppId/AppSecret。
 - 平台：Windows 端 MPV 播放与安装包（jpackage msi）尚未实机验证；桌面暂无自动更新；iOS 生产壳/AVKit 未开始。
 - CI：2026-10-30 已恢复全绿（runner 使用规范 Maven 仓库；`download`/`danmaku` 已加入）；无 Windows job 与安装包冒烟。
