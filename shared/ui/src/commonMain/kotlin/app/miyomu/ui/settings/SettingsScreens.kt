@@ -279,6 +279,8 @@ class SettingsAppearanceRoute(private val graph: MiyomuGraph) : Screen {
         val scope = rememberCoroutineScope()
         val prefs = remember(graph) { graph.preferenceStore.getInt("pref_theme_mode_key", 0) }
         val modeState = remember(prefs) { prefs.asState(scope) }
+        val darkStylePrefs = remember(graph) { graph.preferenceStore.getInt("app_dark_theme_key", 0) }
+        val darkStyleState = remember(darkStylePrefs) { darkStylePrefs.asState(scope) }
 
         Scaffold(
             topBar = {
@@ -314,6 +316,17 @@ class SettingsAppearanceRoute(private val graph: MiyomuGraph) : Screen {
                         selected = modeState.value == 2,
                         onClick = { prefs.set(2) },
                     )
+                }
+                item {
+                    HeadingItem("暗色主题风格（暗色模式下生效）")
+                    val styles = listOf("默认", "青苹果", "午夜薄暮", "薰衣草", "草莓")
+                    styles.forEachIndexed { index, label ->
+                        RadioItem(
+                            label = label,
+                            selected = darkStyleState.value == index,
+                            onClick = { darkStylePrefs.set(index) },
+                        )
+                    }
                 }
             }
         }

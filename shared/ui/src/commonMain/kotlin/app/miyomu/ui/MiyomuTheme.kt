@@ -11,6 +11,10 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import app.miyomu.ui.theme.greenAppleDarkColors
+import app.miyomu.ui.theme.lavenderDarkColors
+import app.miyomu.ui.theme.midnightDuskDarkColors
+import app.miyomu.ui.theme.strawberryDarkColors
 
 private val MiyomuDarkColors = darkColorScheme(
     primary = Color(0xFFB0C6FF),
@@ -102,4 +106,30 @@ fun resolveDarkTheme(themeMode: Int): Boolean = when (themeMode) {
     1 -> false
     2 -> true
     else -> isSystemInDarkTheme()
+}
+
+/** Aniyomi's `app_dark_theme_key`: 0 default, 1 green apple, 2 midnight dusk, 3 lavender, 4 strawberry. */
+@Composable
+fun MiyomuTheme(
+    themeMode: Int,
+    darkThemeStyle: Int,
+    content: @Composable () -> Unit,
+) {
+    val dark = resolveDarkTheme(themeMode)
+    val colors = if (!dark) {
+        MiyomuLightColors
+    } else {
+        when (darkThemeStyle) {
+            1 -> greenAppleDarkColors
+            2 -> midnightDuskDarkColors
+            3 -> lavenderDarkColors
+            4 -> strawberryDarkColors
+            else -> MiyomuDarkColors
+        }
+    }
+    MaterialTheme(
+        colorScheme = colors,
+        typography = Typography(),
+        content = content,
+    )
 }
