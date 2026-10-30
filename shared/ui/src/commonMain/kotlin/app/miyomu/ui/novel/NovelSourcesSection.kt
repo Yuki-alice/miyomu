@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.miyomu.source.novel.LegadoBookSource
 import app.miyomu.source.novel.LegadoOnlineBook
@@ -85,7 +86,10 @@ fun NovelSourcesSection(
                     )
                 }
                 if (source.exploreCategories().isNotEmpty()) {
-                    TextButton(onClick = { onOpenScreen(NovelExploreScreen(graph, source)) }) {
+                    TextButton(
+                        onClick = { onOpenScreen(NovelExploreScreen(graph, source)) },
+                        modifier = Modifier.testTag("novel-explore-open"),
+                    ) {
                         Text(stringResource(MR.strings.novel_explore))
                     }
                 }

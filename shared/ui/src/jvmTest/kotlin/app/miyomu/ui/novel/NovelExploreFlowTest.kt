@@ -3,6 +3,7 @@ package app.miyomu.ui.novel
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
@@ -16,10 +17,14 @@ import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.source.novel.LegadoBookSource
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.FakeSourceRuntimeManager
+import app.miyomu.ui.MiyomuApp
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.library.installLocalCoverLoader
 import cafe.adriel.voyager.navigator.Navigator
 import kotlinx.io.files.Path
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
@@ -67,6 +72,73 @@ class NovelExploreFlowTest {
           </ul>
         </body></html>
     """.trimIndent()
+
+    @Test
+    fun browseDiscoverUsesTheRootNavigator() = runComposeUiTest {
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "explore-app.db").absolutePath))
+
+        try {
+            val source = LegadoBookSource.fromJson(sourceJson)
+            val savedSources = Json.encodeToString(
+                ListSerializer(LegadoBookSource.serializer()),
+                listOf(source),
+            )
+            val preferences = InMemoryPreferenceStore(
+                sequenceOf(
+                    InMemoryPreferenceStore.InMemoryPreference("legado_sources", savedSources, "[]"),
+                ),
+            )
+            installLocalCoverLoader { null }
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                    preferenceStore = preferences,
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
+                    novelFetcher = { url ->
+                        when {
+                            url.startsWith("https://novel.example/list/") -> explorePage
+                            url.startsWith("https://novel.example/book/") -> tocPage
+                            else -> error("unexpected url: $url")
+                        }
+                    },
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("浏览").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("浏览").performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("发现书源").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithTag("novel-explore-open").performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("玄幻").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("玄幻").performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithText("斗破苍穹").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("斗破苍穹").performClick()
+
+            waitUntil(timeoutMillis = 5_000) {
+                onAllNodesWithTag("novel-online-chapters").fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            data.close()
+        }
+    }
 
     @Test
     fun discoverCategoryOpensBookDetail() = runComposeUiTest {

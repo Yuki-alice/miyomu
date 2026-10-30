@@ -150,13 +150,16 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
         val onOpenSource: (SourceRuntimeInfo) -> Unit = remember(navigator) {
             { info -> navigator.push(SourceSearchScreen(graph, info.id, info.name, info.mediaType)) }
         }
-        val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource) {
+        val onOpenScreen: (Screen) -> Unit = remember(navigator) {
+            { screen -> navigator.push(screen) }
+        }
+        val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource, onOpenScreen) {
             listOf(
                 NovelLibraryTab(graph, onOpenBook),
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph, onHistoryOpenDetails),
                 MangaHistoryTab(graph, onHistoryResume, onHistoryOpenDetails),
-                BrowseTab(graph, onOpenSource, onOpenSources, onOpenGlobalSearch),
+                BrowseTab(graph, onOpenSource, onOpenSources, onOpenGlobalSearch, onOpenScreen),
                 MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku, onOpenSettings),
             )
         }

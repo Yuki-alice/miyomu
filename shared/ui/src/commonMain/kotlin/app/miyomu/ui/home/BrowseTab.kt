@@ -33,8 +33,7 @@ import androidx.compose.ui.unit.dp
 import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.ui.MiyomuGraph
 import app.miyomu.ui.novel.NovelSourcesSection
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import kotlinx.coroutines.launch
@@ -45,6 +44,7 @@ class BrowseTab(
     private val onOpenSource: (SourceRuntimeInfo) -> Unit,
     private val onManageSources: () -> Unit,
     private val onOpenGlobalSearch: () -> Unit = {},
+    private val onOpenScreen: (Screen) -> Unit = {},
 ) : Tab {
 
     override val options: TabOptions
@@ -55,7 +55,6 @@ class BrowseTab(
         val runtime = graph.sourceRuntime
         val state by runtime.state.collectAsState()
         val scope = rememberCoroutineScope()
-        val navigator = LocalNavigator.currentOrThrow
 
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
@@ -120,7 +119,7 @@ class BrowseTab(
                 item(key = "novel-online") {
                     NovelSourcesSection(
                         graph = graph,
-                        onOpenScreen = { screen -> navigator.push(screen) },
+                        onOpenScreen = onOpenScreen,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     )
                 }
