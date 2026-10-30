@@ -6,6 +6,8 @@ import app.miyomu.data.MiyomuData
 import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.model.LibraryItem
 import app.miyomu.model.MediaType
 import app.miyomu.model.ProgressKind
@@ -55,6 +57,8 @@ class MangaHistoryModelTest {
         return app.miyomu.ui.MiyomuGraph(
             library = LocalLibraryRepository(),
             comics = FileLocalComicRepository(),
+            novels = LocalNovelRepository(),
+            novelLibrary = NovelLibraryRepository(),
             data = data,
             root = app.miyomu.local.FileLocalFileRef(root),
             deviceId = "test",

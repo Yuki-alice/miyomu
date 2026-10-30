@@ -2,21 +2,19 @@ package app.miyomu.ui.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -34,11 +32,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.ui.MiyomuGraph
+import app.miyomu.ui.novel.NovelSourcesSection
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import kotlinx.coroutines.launch
 
-/** Source tab: installed JS sources and their entry points. */
+/** Source tab: installed JS sources and their entry points, plus the legado novel shelf. */
 class BrowseTab(
     private val graph: MiyomuGraph,
     private val onOpenSource: (SourceRuntimeInfo) -> Unit,
@@ -47,13 +48,14 @@ class BrowseTab(
 ) : Tab {
 
     override val options: TabOptions
-        @Composable get() = TabOptions(index = 3u, title = "浏览")
+        @Composable get() = TabOptions(index = 4u, title = "浏览")
 
     @Composable
     override fun Content() {
         val runtime = graph.sourceRuntime
         val state by runtime.state.collectAsState()
         val scope = rememberCoroutineScope()
+        val navigator = LocalNavigator.currentOrThrow
 
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
@@ -77,29 +79,28 @@ class BrowseTab(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
-            if (state.sources.isEmpty() && !state.loading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(24.dp),
-                    ) {
-                        Text(
-                            text = "还没有可用的源",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = "在“源仓库”里添加索引 JSON 并安装源。",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Button(onClick = onManageSources) { Text("打开源仓库") }
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                if (state.sources.isEmpty() && !state.loading) {
+                    item(key = "empty") {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        ) {
+                            Text(
+                                text = "还没有可用的源",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                text = "在“源仓库”里添加索引 JSON 并安装源。",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Button(onClick = onManageSources) { Text("打开源仓库") }
+                        }
                     }
                 }
-                return@Column
-            }
 
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.sources, key = { it.id }) { info ->
                     SourceRow(info = info, onClick = { onOpenSource(info) })
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -113,6 +114,15 @@ class BrowseTab(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
+                }
+
+                // Legado novel sources: hidden when the platform provided no fetcher.
+                item(key = "novel-online") {
+                    NovelSourcesSection(
+                        graph = graph,
+                        onOpenScreen = { screen -> navigator.push(screen) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
                 }
             }
         }

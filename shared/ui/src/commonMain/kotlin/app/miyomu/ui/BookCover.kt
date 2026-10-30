@@ -63,4 +63,7 @@ internal fun LocalBookFormat.shortLabel(): String = when (this) {
     LocalBookFormat.EPUB -> "EPUB"
     LocalBookFormat.TXT -> "TXT"
     LocalBookFormat.VIDEO -> "视频"
+    LocalBookFormat.FB2 -> "FB2"
+    LocalBookFormat.HTML -> "HTML"
+    LocalBookFormat.MARKDOWN -> "MD"
 }

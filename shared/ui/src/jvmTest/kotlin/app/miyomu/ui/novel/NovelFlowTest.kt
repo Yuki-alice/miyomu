@@ -1,0 +1,407 @@
+package app.miyomu.ui.novel
+
+import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.swipeLeft
+import app.miyomu.data.JvmMiyomuDatabaseFactory
+import app.miyomu.data.createMiyomuData
+import app.miyomu.local.FileLocalComicRepository
+import app.miyomu.local.FileLocalFileRef
+import app.miyomu.local.LocalBook
+import app.miyomu.local.LocalBookFormat
+import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.model.LibraryItem
+import app.miyomu.model.MediaType
+import app.miyomu.model.ProgressKind
+import app.miyomu.model.ReadingProgress
+import app.miyomu.source.repo.FileSourceInstallManager
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
+import app.miyomu.ui.FakeSourceRuntimeManager
+import app.miyomu.ui.MiyomuApp
+import kotlinx.coroutines.runBlocking
+import kotlinx.io.files.Path
+import org.jetbrains.skia.EncodedImageFormat
+import org.jetbrains.skia.Image
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
+import kotlin.test.assertTrue
+
+@OptIn(ExperimentalTestApi::class)
+class NovelFlowTest {
+
+    @TempDir
+    lateinit var root: File
+
+    private fun novelFixtureText(): String = buildString {
+        append("第一章 起点\n")
+        repeat(200) { index ->
+            append("这是第一章的第 $index 个段落,内容用来把文本撑到若干页,方便验证分页与翻页。\n")
+        }
+        append("第二章 转折\n")
+        repeat(100) { index ->
+            append("这是第二章的第 $index 个段落,继续撑长正文,保证章节边界可以导航。\n")
+        }
+    }
+
+    private fun writeNovelFixture(): File {
+        val book = File(root, "测试小说.txt")
+        book.writeText(novelFixtureText(), Charsets.UTF_8)
+        return book
+    }
+
+    private fun scannedBook(bookFile: File): LocalBook {
+        val location = FileLocalFileRef(bookFile).location
+        return LocalBook(
+            id = location,
+            title = bookFile.nameWithoutExtension,
+            format = LocalBookFormat.TXT,
+            mediaType = MediaType.NOVEL,
+            location = location,
+        )
+    }
+
+    @Test
+    fun novelLibraryDetailReaderFlow() = runComposeUiTest {
+        val bookFile = writeNovelFixture()
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "novel.db").absolutePath))
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
+                )
+            }
+
+            // The novels tab is the first tab; the scanned TXT shows up in its grid.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试小说").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(400)
+            capture("novel-library")
+            onNodeWithText("测试小说").performClick()
+
+            // Detail lists the parsed chapters; tapping one opens the reader at offset 0.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第一章 起点").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(400)
+            capture("novel-detail")
+            onNodeWithText("第一章 起点").performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-0").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(600)
+            capture("novel-reader")
+
+            // The chrome shows "1 / N"; swiping advances to page 2.
+            onNodeWithTag("novel-reader-pager").performTouchInput { swipeLeft() }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-position", useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .any { node ->
+                        node.config.getOrNull(SemanticsProperties.Text)?.any { it.contains("2 /") } == true
+                    }
+            }
+
+            // Progress was saved for the novel item (kind PAGE, positional chapter id).
+            runBlocking {
+                val itemId = LibraryItem.idOf("local", FileLocalFileRef(bookFile).location)
+                var saved: ReadingProgress? = null
+                repeat(40) {
+                    saved = data.progress.latest(itemId)
+                    if (saved != null) return@repeat
+                    Thread.sleep(50)
+                }
+                assertTrue(saved != null, "expected a saved reading progress row")
+                assertTrue(saved!!.kind == ProgressKind.PAGE)
+            }
+        } finally {
+            data.close()
+        }
+    }
+
+    @Test
+    fun novelResumeRestoresOffset() = runComposeUiTest {
+        val bookFile = writeNovelFixture()
+        val book = scannedBook(bookFile)
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "resume.db").absolutePath))
+
+        // An offset near the end of chapter 1; the reader must land past page 0.
+        runBlocking {
+            data.progress.save(
+                ReadingProgress(
+                    itemId = LibraryItem.idOf("local", book.location),
+                    entryId = LocalNovelRepository.chapterId(book, 0),
+                    kind = ProgressKind.PAGE,
+                    position = (novelFixtureText().length - 150).toDouble(),
+                    updatedAt = 1_000L,
+                    deviceId = "test",
+                ),
+            )
+        }
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 2_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试小说").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("测试小说").performClick()
+
+            val actionLabels = listOf("Resume", "继续阅读", "继续", "Start", "开始")
+            waitUntil(timeoutMillis = 10_000) {
+                actionLabels.any { label -> onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() }
+            }
+            val actionLabel = actionLabels.first { label ->
+                onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText(actionLabel).performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+            // Restore put us on the page containing the saved offset, i.e. not page 0.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-position", useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .any { node ->
+                        node.config.getOrNull(SemanticsProperties.Text)
+                            ?.any { label -> label.contains("/") && !label.startsWith("1 /") } == true
+                    }
+            }
+        } finally {
+            data.close()
+        }
+    }
+
+    @Test
+    fun novelCatalogJumpsChapters() = runComposeUiTest {
+        writeNovelFixture()
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "catalog.db").absolutePath))
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试小说").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("测试小说").performClick()
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第一章 起点").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第一章 起点").performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+
+            // Open the catalog via the bottom-bar button and jump to chapter 2.
+            val catalogLabels = listOf("目录", "Contents")
+            waitUntil(timeoutMillis = 10_000) {
+                catalogLabels.any { label ->
+                    onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+                }
+            }
+            onNodeWithContentDescription(
+                catalogLabels.first { label ->
+                    onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+                },
+            ).performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-catalog-chapters").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第二章 转折").performClick()
+
+            // The reader moved to chapter 2: page 0 reappears and the top bar shows the title.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第二章 转折").fetchSemanticsNodes().isNotEmpty()
+            }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-0").fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            data.close()
+        }
+    }
+
+    @Test
+    fun novelEpubIllustrationFlow() = runComposeUiTest {
+        val epubFile = File(root, "测试画集.epub")
+        epubFile.writeBytes(epubWithIllustration())
+
+        val data = createMiyomuData(JvmMiyomuDatabaseFactory(File(root, "art.db").absolutePath))
+
+        try {
+            setContent {
+                MiyomuApp(
+                    library = LocalLibraryRepository(),
+                    comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
+                    data = data,
+                    root = FileLocalFileRef(root),
+                    deviceId = "test",
+                    nowMillis = { 1_000L },
+                    sourceInstalls = FileSourceInstallManager(Path(File(root, "sources").absolutePath)),
+                    sourceRuntime = FakeSourceRuntimeManager(),
+                )
+            }
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("测试画集").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("测试画集").performClick()
+
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithText("第一章 插画").fetchSemanticsNodes().isNotEmpty()
+            }
+            onNodeWithText("第一章 插画").performClick()
+
+            // The illustrated chapter paginates with the image block reserved.
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-reader-pager").fetchSemanticsNodes().isNotEmpty()
+            }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-0").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(600)
+            capture("novel-epub-art")
+
+            // The illustration takes its own page after the leading text.
+            onNodeWithTag("novel-reader-pager").performTouchInput { swipeLeft() }
+            waitUntil(timeoutMillis = 10_000) {
+                onAllNodesWithTag("novel-page-1").fetchSemanticsNodes().isNotEmpty()
+            }
+            Thread.sleep(600)
+            capture("novel-epub-art-2")
+        } finally {
+            data.close()
+        }
+    }
+
+    /** Builds a minimal EPUB whose only chapter contains one real PNG illustration. */
+    private fun epubWithIllustration(): ByteArray {
+        val illustration = java.io.ByteArrayOutputStream().use { out ->
+            val image = java.awt.image.BufferedImage(24, 36, java.awt.image.BufferedImage.TYPE_INT_RGB)
+            val graphics = image.createGraphics()
+            graphics.color = java.awt.Color.BLUE
+            graphics.fillRect(0, 0, 24, 36)
+            graphics.dispose()
+            javax.imageio.ImageIO.write(image, "png", out)
+            out.toByteArray()
+        }
+        fun zipOf(vararg entries: Pair<String, ByteArray>): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(out).use { zip ->
+                entries.forEach { (name, bytes) ->
+                    zip.putNextEntry(java.util.zip.ZipEntry(name))
+                    zip.write(bytes)
+                    zip.closeEntry()
+                }
+            }
+            return out.toByteArray()
+        }
+        fun t(text: String) = text.toByteArray(Charsets.UTF_8)
+
+        val opf = """
+            <?xml version="1.0"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+              <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                <dc:title>测试画集</dc:title>
+                <dc:creator>插画师</dc:creator>
+              </metadata>
+              <manifest>
+                <item id="c1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+                <item id="art" href="art/illus.png" media-type="image/png"/>
+              </manifest>
+              <spine><itemref idref="c1"/></spine>
+            </package>
+        """.trimIndent()
+        val container = """
+            <?xml version="1.0"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+              <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+            </container>
+        """.trimIndent()
+        val chapter = """
+            <html><head><title>第一章 插画</title></head><body>
+            <h1>第一章 插画</h1>
+            <p>这是插画前的段落,用来验证图片块前后的文本排布。</p>
+            <div><img src="art/illus.png"/></div>
+            <p>这是插画后的段落,翻页应当同时容纳文本与图片块。</p>
+            </body></html>
+        """.trimIndent()
+
+        return zipOf(
+            "META-INF/container.xml" to t(container),
+            "OEBPS/content.opf" to t(opf),
+            "OEBPS/ch1.xhtml" to t(chapter),
+            "OEBPS/art/illus.png" to illustration,
+        )
+    }
+
+    private fun androidx.compose.ui.test.ComposeUiTest.capture(name: String) {
+        val directory = File("build/reports/miyomu-ui").apply { mkdirs() }
+        val bitmap = onRoot().captureToImage().asSkiaBitmap()
+        val encoded = Image.makeFromBitmap(bitmap).encodeToData(EncodedImageFormat.PNG)
+            ?: error("failed to encode $name")
+        File(directory, "$name.png").writeBytes(encoded.bytes)
+    }
+}

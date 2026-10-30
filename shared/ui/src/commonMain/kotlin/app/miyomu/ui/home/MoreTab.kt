@@ -38,7 +38,7 @@ class MoreTab(
 ) : Tab {
 
     override val options: TabOptions
-        @Composable get() = TabOptions(index = 4u, title = "更多")
+        @Composable get() = TabOptions(index = 5u, title = "更多")
 
     @Composable
     override fun Content() {

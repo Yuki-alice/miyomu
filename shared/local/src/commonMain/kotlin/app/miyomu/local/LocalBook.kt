@@ -10,6 +10,11 @@ enum class LocalBookFormat {
     EPUB,
     TXT,
     VIDEO,
+
+    // Novel-only formats (docs/12-novel-plan.md); the comic scanner keeps ignoring them.
+    FB2,
+    HTML,
+    MARKDOWN,
 }
 
 /**

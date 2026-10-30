@@ -17,14 +17,20 @@ import androidx.compose.ui.platform.LocalContext
 import app.miyomu.data.AndroidMiyomuDatabaseFactory
 import app.miyomu.data.createMiyomuData
 import app.miyomu.domain.preferences.JsonPreferenceStore
+import app.miyomu.download.FileDownloadQueue
+import app.miyomu.download.FileDownloadStore
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
-import app.miyomu.download.FileDownloadQueue
-import app.miyomu.download.FileDownloadStore
+import app.miyomu.network.cookies.FileCookiesStorage
+import app.miyomu.network.createMiyomuHttpClient
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.source.manager.FileSourceRuntimeManager
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.ui.MiyomuApp
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import java.io.File
 import kotlinx.io.files.Path
 
@@ -74,6 +80,8 @@ class MainActivity : ComponentActivity() {
             val pickLibraryDirectory: () -> Unit = { directoryPicker.launch(null) }
             val comics = remember { FileLocalComicRepository() }
             val library = remember { LocalLibraryRepository() }
+            val novels = remember { LocalNovelRepository() }
+            val novelLibrary = remember { NovelLibraryRepository() }
             val sourceInstalls = remember {
                 FileSourceInstallManager(Path(File(context.filesDir, "sources").absolutePath))
             }
@@ -81,6 +89,17 @@ class MainActivity : ComponentActivity() {
             val sourceRuntime = remember { FileSourceRuntimeManager(sourceInstalls, scope) }
             val downloadStore = remember { FileDownloadStore(File(context.filesDir, "downloads")) }
             val downloadQueue = remember { FileDownloadQueue(sourceRuntime, downloadStore, scope) }
+
+            // The legado online novel flow shares the app's persistent cookie jar.
+            val novelClient = remember {
+                createMiyomuHttpClient(
+                    FileCookiesStorage(Path(File(context.filesDir, "cookies.json").absolutePath)),
+                )
+            }
+            val novelFetcher: suspend (String) -> String = { url ->
+                novelClient.get(url).bodyAsText()
+            }
+
             DisposableEffect(sourceRuntime) {
                 onDispose {
                     downloadQueue.close()
@@ -95,6 +114,8 @@ class MainActivity : ComponentActivity() {
             MiyomuApp(
                 library = library,
                 comics = comics,
+                novels = novels,
+                novelLibrary = novelLibrary,
                 data = data,
                 root = root,
                 deviceId = "android",
@@ -106,6 +127,7 @@ class MainActivity : ComponentActivity() {
                 downloadQueue = downloadQueue,
                 downloadStore = downloadStore,
                 backupFile = java.io.File(context.filesDir, "backup.json"),
+                novelFetcher = novelFetcher,
             )
         }
     }

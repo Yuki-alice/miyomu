@@ -33,13 +33,16 @@ kotlin {
         commonMain.dependencies {
             api(project(":shared:model"))
             api(project(":shared:local"))
+            api(project(":shared:novel"))
             api(project(":shared:reader-comic"))
+            api(project(":shared:reader-novel"))
             api(project(":shared:player"))
             api(project(":shared:source-repo"))
             api(project(":shared:source-manager"))
             api(project(":shared:download"))
             api(project(":shared:danmaku"))
             api(project(":shared:data"))
+            api(project(":shared:source-novel"))
             api(project(":shared:presentation-core"))
             // Ported Aniyomi screens (ADR-0011). Wired here so the module stays in the build
             // graph and cannot silently rot while the screens are connected one by one.

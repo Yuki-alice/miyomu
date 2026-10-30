@@ -10,6 +10,8 @@ import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.source.repo.AvailableSource
 import app.miyomu.source.repo.InstalledSource
 import app.miyomu.source.repo.SourceCatalog
@@ -67,6 +69,8 @@ class SourceRepositoryScreenTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -105,6 +109,8 @@ class SourceRepositoryScreenTest {
                     graph = MiyomuGraph(
                         library = LocalLibraryRepository(),
                         comics = FileLocalComicRepository(),
+                        novels = LocalNovelRepository(),
+                        novelLibrary = NovelLibraryRepository(),
                         data = data,
                         root = FileLocalFileRef(root),
                         deviceId = "test",

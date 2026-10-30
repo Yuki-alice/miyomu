@@ -24,6 +24,8 @@ import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.model.LibraryItem
 import app.miyomu.model.ProgressKind
 import app.miyomu.model.ReadingProgress
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -69,6 +71,8 @@ class MiyomuAppTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -78,6 +82,15 @@ class MiyomuAppTest {
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
+
+            // Novels own the first tab (docs/12); switch to the manga library tab first.
+            val mangaTabLabels = listOf("书架", "Library")
+            waitUntil(timeoutMillis = 5_000) {
+                mangaTabLabels.any { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
+            }
+            onNodeWithText(mangaTabLabels.first { label ->
+                onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+            }).performClick()
 
             // The ported library grid renders the title overlay instead of a per-item test tag.
             waitUntil(timeoutMillis = 5_000) {
@@ -147,6 +160,8 @@ class MiyomuAppTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -155,6 +170,15 @@ class MiyomuAppTest {
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
+
+            // Novels own the first tab (docs/12); switch to the manga library tab first.
+            val mangaTabLabels = listOf("书架", "Library")
+            waitUntil(timeoutMillis = 5_000) {
+                mangaTabLabels.any { onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
+            }
+            onNodeWithText(mangaTabLabels.first { label ->
+                onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty()
+            }).performClick()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("Resume Book").fetchSemanticsNodes().isNotEmpty()

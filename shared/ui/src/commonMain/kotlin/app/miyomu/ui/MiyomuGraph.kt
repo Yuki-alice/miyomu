@@ -9,7 +9,12 @@ import app.miyomu.ui.library.LibraryUpdater
 import app.miyomu.local.LocalComicRepository
 import app.miyomu.local.LocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
+import app.miyomu.reader.novel.NovelBookmarkStore
+import app.miyomu.reader.novel.NovelReaderPreferences
 import app.miyomu.source.manager.SourceRuntimeManager
+import app.miyomu.source.novel.LegadoSourceStore
 import app.miyomu.source.repo.SourceInstallManager
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -25,6 +30,8 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 class MiyomuGraph(
     val library: LocalLibraryRepository,
     val comics: LocalComicRepository,
+    val novels: LocalNovelRepository,
+    val novelLibrary: NovelLibraryRepository,
     val data: MiyomuData,
     val root: LocalFileRef,
     val deviceId: String,
@@ -37,10 +44,18 @@ class MiyomuGraph(
     val backupFile: java.io.File? = null,
     val onOpenLibraryFolder: (() -> Unit)? = null,
     val onPickLibraryDirectory: (() -> Unit)? = null,
+    /** Fetches an online novel URL as text; null disables the legado online flow. */
+    val novelFetcher: (suspend (String) -> String)? = null,
 ) {
     val libraryPreferences: LibraryPreferences = LibraryPreferences(preferenceStore)
 
     val readerPreferences: ReaderPreferences = ReaderPreferences(preferenceStore)
+
+    val novelReaderPreferences: NovelReaderPreferences = NovelReaderPreferences(preferenceStore)
+
+    val novelBookmarks: NovelBookmarkStore = NovelBookmarkStore(preferenceStore)
+
+    val novelSourceStore: LegadoSourceStore = LegadoSourceStore(preferenceStore)
 
     val danmakuKeys: DanmakuPrefKeys = DanmakuPrefKeys
 

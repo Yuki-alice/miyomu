@@ -6,6 +6,8 @@ import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.model.ComicDetails
 import app.miyomu.model.ComicSummary
 import app.miyomu.model.LibraryItem
@@ -85,6 +87,8 @@ class LibraryUpdaterTest {
         val graph = app.miyomu.ui.MiyomuGraph(
             library = LocalLibraryRepository(),
             comics = FileLocalComicRepository(),
+            novels = LocalNovelRepository(),
+            novelLibrary = NovelLibraryRepository(),
             data = data,
             root = FileLocalFileRef(root),
             deviceId = "test",

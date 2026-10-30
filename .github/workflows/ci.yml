@@ -43,6 +43,9 @@ jobs:
           :shared:local:jvmTest
           :shared:source-repo:jvmTest
           :shared:source-manager:jvmTest
+          :shared:novel:jvmTest
+          :shared:reader-novel:jvmTest
+          :shared:source-novel:jvmTest
           :shared:reader-comic:jvmTest
           :shared:domain:jvmTest
           :shared:player:jvmTest

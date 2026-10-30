@@ -29,5 +29,7 @@ dependencies {
     implementation(project(":shared:ui"))
     implementation(project(":shared:local"))
     implementation(project(":shared:data"))
+    implementation(project(":shared:network"))
+    implementation(libs.ktor.client.core)
     implementation(libs.androidx.activity.compose)
 }

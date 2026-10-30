@@ -173,6 +173,8 @@ class ComicReaderControllerTest {
         override suspend fun readPage(page: LocalPage): ByteArray = byteArrayOf(page.index.toByte())
 
         override suspend fun cover(book: LocalBook): ByteArray? = null
+
+        override suspend fun delete(book: LocalBook) = Unit
     }
 
     private class EmptyRepository : LocalComicRepository {
@@ -180,5 +182,7 @@ class ComicReaderControllerTest {
         override suspend fun pages(chapter: LocalChapter): List<LocalPage> = emptyList()
         override suspend fun readPage(page: LocalPage): ByteArray = ByteArray(0)
         override suspend fun cover(book: LocalBook): ByteArray? = null
+
+        override suspend fun delete(book: LocalBook) = Unit
     }
 }

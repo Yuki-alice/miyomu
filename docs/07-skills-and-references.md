@@ -44,6 +44,13 @@ rsync -a --exclude .git /tmp/skill-update/ .qoder/skills/<collection>/
 | `reference/aniyomi` | https://github.com/aniyomiorg/aniyomi | `9741444` | Apache-2.0 | UI、阅读器 loader、领域模型、追踪参考；可复用代码但保留版权/NOTICE |
 | `reference/venera-next` | https://github.com/CyrilPeng/Venera-Next | `8bf22f0` | GPL-3.0 | 只参考行为与设计；**不得复制代码**到 Apache-2.0 的 Miyomu |
 | `reference/mediamp` | https://github.com/open-ani/mediamp | `a813e63` | Apache-2.0 | 播放器 API/后端参考；可作为依赖使用 |
+| `reference/NovelDokusha` | https://github.com/nanihadesuka/NovelDokusha | `47d8c40` | GPL-3.0 | Tachiyomi 式小说阅读器（Compose）；小说端信息架构蓝图；只参考设计，**不得复制代码** |
+| `reference/legado-with-MD3` | https://github.com/HapeLee/legado-with-MD3 | `9b434db` | GPL-3.0 | Material 3 化的「阅读」；中文网文排版惯例与章节正则行为参考；**不得复制代码** |
+| `reference/book-story` | https://github.com/Acclorite/book-story | `464891e` | GPL-3.0 | Material You 电子书阅读器（Compose）；排版/阅读器设置面板设计参考；**不得复制代码** |
+| `reference/Myne` | https://github.com/Pool-Of-Tears/Myne | `7ec1fdb` | Apache-2.0 | Gutenberg 电子书阅读器（Compose）；EPUB 阅读实现可参考，可复用代码但保留版权/NOTICE |
+| `reference/material-3-expressive-catalog` | https://github.com/meticha/material-3-expressive-catalog | `d62dfcc` | Apache-2.0 | MD3E 组件目录；设置对话框等 expressive 组件参照；可复用代码但保留版权/NOTICE |
+
+小说端参考决策记录见 [12 小说端计划](12-novel-plan.md)（2026-10-29）。
 
 参考仓库保留各自 `.git`，便于更新；不纳入 Miyomu 的版本控制，也不随项目分发。
 

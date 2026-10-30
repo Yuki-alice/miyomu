@@ -4,7 +4,7 @@
 
 漫画、小说、视频，一套库、一套源、一套进度。以 Aniyomi 的 Android 体验为设计基准，用 Kotlin Multiplatform 共享核心、Compose Multiplatform 构建跨平台 UI，用 JavaScript 扩展源替代 Android-only 的 APK 扩展模型。
 
-> 状态：**Phase A/B/C + D 完成**：书架、漫画/视频详情、阅读器、播放器跑在移植的 Aniyomi 界面上；在线漫画源与 anime 源（自有 JS 格式，ADR-0014）可浏览/搜索/详情/阅读/播放；下载队列、备份与 WebDAV 同步、弹幕（用户自配弹弹play 凭据）已落地。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md) 与 [10 anime 源与播放器计划](docs/10-anime-source-and-player-plan.md)。
+> 状态：**Phase A/B/C/D 完成 + 小说端合入主线（2026-10-30）**：书架、漫画/视频详情、阅读器、播放器跑在移植的 Aniyomi 界面上；在线漫画源与 anime 源（自有 JS 格式，ADR-0014）可浏览/搜索/详情/阅读/播放；下载队列、备份与 WebDAV 同步、弹幕（用户自配弹弹play 凭据）已落地；小说端（TXT/EPUB/FB2/HTML/Markdown 与 legado 在线阅读）已合入 main，三种媒介同仓可用。路线见 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.md)、[10 anime 源与播放器计划](docs/10-anime-source-and-player-plan.md) 与 [12 小说端计划](docs/12-novel-plan.md)。
 > 许可证：Apache-2.0（2026-10-28 确认，见 [ADR-0004](docs/adr/0004-licensing-and-clean-room.md)）
 > 生产构建位于仓库根目录；Phase 0/1 验证代码在 `experiments/`，使用独立 Gradle 构建。
 
@@ -18,17 +18,20 @@
 | `:shared:source-runtime` | 每源 QuickJS、Ktor、Ksoup DOM、KV、配额 |
 | `:shared:source-repo` | 源仓库索引、安装/更新/卸载与本地清单 |
 | `:shared:source-manager` | 已安装源的运行时加载与搜索/详情/页面/图片/视频解析 |
+| `:shared:source-novel` | legado 书源 JSON 导入、规则求值器、在线阅读内容源（搜索/详情/目录/正文） |
 | `:shared:download` | 漫画章节下载队列、离线页源 |
 | `:shared:danmaku` | dandanplay 弹幕客户端（用户自配凭据） |
 | `:shared:data` | Room 2.8.5 + KSP（schema v4）；库/进度/章节/剧集/分类/更新/下载/解析缓存 repository |
 | `:shared:local` | 本地文件抽象、书库扫描、目录/ZIP 页加载 |
+| `:shared:novel` | 小说解析：TXT（编码回退/章节正则）、EPUB、FB2、HTML、Markdown、小说库扫描 |
 | `:shared:reader-comic` | 漫画阅读状态、模式、页配对 |
+| `:shared:reader-novel` | 小说阅读偏好（字号/行距/边距/主题/模式）、分页数学、阅读控制器 |
 | `:shared:player` | mediamp 播放器、播放器 chrome、音轨/字幕轨选择 |
 | `:shared:domain` | Aniyomi 域模型、偏好 API、排序/集号识别服务 |
 | `:shared:presentation-core` | 移植的 Aniyomi presentation-core 组件与主题 |
 | `:shared:presentation` | 移植的 Aniyomi 屏幕层（库/详情/阅读器/anime） |
 | `:shared:i18n` / `:shared:i18n-aniyomi` | moko-resources 字符串资源（en + zh-CN） |
-| `:shared:ui` | 主题、App 壳、书架/详情/阅读器/播放器/源仓库/设置 |
+| `:shared:ui` | 主题、App 壳、书架/详情/阅读器/播放器/源仓库/设置（漫画 + 小说 + 视频） |
 | `:androidApp` | Android 应用入口 |
 | `:desktopApp` | 桌面应用入口 |
 
@@ -57,11 +60,11 @@ Phase 1 / M1 的里程碑排序已被 [ADR-0011](docs/adr/0011-kmp-aniyomi-port.
 ```text
 androidApp/     Android 应用入口（Compose）
 desktopApp/     桌面应用入口（Compose Desktop）
-shared/         共享 KMP 模块（18 个）
-  model/ network/ domain/ source-api/ source-runtime/ source-repo/ source-manager/
-  download/ danmaku/ data/ local/ reader-comic/ player/ ui/
+shared/         共享 KMP 模块（21 个）
+  model/ network/ domain/ source-api/ source-runtime/ source-repo/ source-manager/ source-novel/
+  download/ danmaku/ data/ local/ novel/ reader-comic/ reader-novel/ player/ ui/
   presentation/ presentation-core/ i18n/ i18n-aniyomi/
-demo-resources/ 自造漫画/anime 源（含苹果CMS 模板）
+demo-resources/ 自造漫画/anime/小说源（含苹果CMS 模板）
 tools/          fixture server 与样例库生成器
 evidence/       各阶段双端截图与验证证据
 docs/           产品、架构、交接、ADR、计划
@@ -88,6 +91,7 @@ python3 tools/make_sample_library.py
 ./gradlew :shared:local:jvmTest :shared:reader-comic:jvmTest :shared:ui:jvmTest :shared:player:jvmTest
 ./gradlew :shared:source-runtime:jvmTest :shared:source-repo:jvmTest :shared:source-manager:jvmTest :shared:data:jvmTest :shared:domain:jvmTest
 ./gradlew :shared:download:jvmTest :shared:danmaku:jvmTest :shared:network:jvmTest
+./gradlew :shared:novel:jvmTest :shared:reader-novel:jvmTest :shared:source-novel:jvmTest
 # 真站源冒烟（手动，第三方站点不进 CI）：
 ./gradlew :shared:source-runtime:jvmTest -Pcanary
 ```
@@ -108,11 +112,25 @@ python3 tools/make_sample_library.py
 - 视频详情：移植的 `AnimeScreen`（信息头、剧集/季列表、继续观看 FAB、多选），本地视频映射为单集 anime。
 - 播放器：mediamp Surface + 播放器 chrome（顶栏/底栏、自动隐藏、双击 ±10 秒、倍速、音轨/字幕、亮度/音量手势、下一集/连播、弹幕）。
 - 在线源：源仓库管理、浏览/全局搜索、源详情（漫画/anime）、在线阅读与在线播放。
+- 小说：独立的「小说」Tab（对应 Aniyomi 的 anime/manga 双 Tab 结构），详情/阅读器为自写层，详见下文「小说端」。
 - 书架/数据：分类 Tab、批量分类、更新检查、历史/更新、下载队列、备份/WebDAV。
 - 设置：外观（主题/动态色）、阅读、播放、下载、数据与同步、弹幕。
 - 窄屏用底部导航，宽屏（≥720dp）用侧边 NavigationRail。
 
 截图：[书架](evidence/a2-library-port.png) · [漫画详情](evidence/a2-detail-port.png) · [阅读器](evidence/a2-reader-port.png) · [视频详情](evidence/b2-video-detail.png) · [播放器](evidence/b1-player-controls.png) · [播放设置](evidence/b1-player-settings.png)
+
+### 小说端
+
+小说 UI 是 Miyomu 自写层：复用移植组件的方式与漫画一致（合成 `Manga` 接入网格与详情），阅读器渲染层按小说场景全新实现。
+
+- 解析：TXT（编码回退、章节正则）、EPUB（spine→内容块、封面）、FB2（分节章节、base64 插画与封面）、HTML、Markdown；文内插画按内容块渲染（EPUB `<img>`、FB2 `<binary>`），分页预留图片空间、滚动模式混排。
+- 阅读器：分页（TextMeasurer 按段落度量、超长段落按行切片）与滚动（LazyColumn）双模式；字符偏移进度，续读精确到页。
+- 排版设置：字号、行距、页边距、段落间距、四档主题（浅色/羊皮纸/深色/纯黑），即改即生效，挂全局偏好。
+- 目录/书签/书内搜索：阅读器内呼出章节列表（标题过滤、当前章高亮）与书签列表；全书跨章节搜索直达「章节 + 偏移」；书签按书存 JSON 偏好（零 schema 冲突）。
+- 护眼暖色滤镜四档（Play Books Night Light 同类）与音量键翻页（Android 生效）；chrome：顶栏（书名/章节/书签）、底栏（位置滑条、上一章/下一章、目录、设置）、点击翻页区、桌面键盘翻页。
+- 在线阅读（legado 书源）：浏览 Tab 导入书源 JSON → 搜索 → 加入书架 → 目录/正文在线阅读，进度与书签与本地共用同一套存储；规则引擎为 legado 语法的独立实现（无 GPL 代码）。
+
+截图：[小说库](evidence/novel-library.png) · [小说详情](evidence/novel-detail.png) · [小说阅读器](evidence/novel-reader.png)
 
 ## 本地阅读
 
@@ -138,7 +156,7 @@ adb push "Sample Zip Book.cbz" /data/local/tmp/
 adb shell run-as app.miyomu.android cp "/data/local/tmp/Sample Zip Book.cbz" files/library/
 ```
 
-当前切片支持目录与 ZIP/CBZ；7Z/PDF/EPUB/TXT 和小说阅读器在后续任务接入。
+当前切片支持目录与 ZIP/CBZ；7Z/PDF 在后续任务接入。小说支持 TXT/EPUB：把 `.txt` 或 `.epub` 放进同一库目录，「小说」Tab 即可导入阅读。
 
 Room schema 导出在 `shared/data/schemas/`；修改实体后需同时更新 schema/迁移。
 
@@ -187,10 +205,11 @@ chrome，页面与图片经源运行时加载）。
 
 ## 已知限制
 
-- 本地漫画：目录/ZIP/CBZ；7Z/PDF/EPUB/TXT 加载器尚未接入 main。
-- 小说阅读器（TXT/EPUB/FB2/HTML/Markdown 与 legado 在线阅读）已在 `feature/novel` 分支实现，但尚未合并进 main；合并前需 rebase 并解决文档编号/接线冲突。
+- 本地漫画：目录/ZIP/CBZ；7Z/PDF 加载器尚未接入。
 - 本地视频：混合目录（直接视频 + 季子目录）只取直接视频；本地剧集书签未持久化（已看由播放进度推导）；“设为默认”暂无全局存储。
 - 播放器：音轨/字幕选择不持久化；无锁屏/画中画/MediaSession；外挂字幕（同名 .srt/.ass）受 mediamp 0.5.3 限制暂不加载，待上游支持或自研；Linux 桌面无视频（ADR-0012）。
+- 小说：EPUB 只取纯文本与封面（图片/脚注/CSS 后置）；TXT 章节启发式对正文以“第X章”开头的行会误判；单行高于一页的极端段落会被裁剪；无章节标记的超大 TXT 整本单章，首次打开偏慢；MOBI/AZW3 不支持。
+- 小说在线阅读（legado 书源）：发现/分类页、`nextContentUrl` 分页目录抓取、在线书源的书内全文搜索待补；真实第三方书源兼容性需实测（引擎对自造 fixture 全绿）。
 - 在线源：第一波为 omofun + 苹果CMS 采集站家族；canary 需手动 `-Pcanary`；站点改版维护由项目承担；tracker 未实现；WebDAV 仅 Basic 认证；弹幕需自配弹弹play AppId/AppSecret。
 - 平台：Windows 端 MPV 播放与安装包（jpackage msi）尚未实机验证；桌面暂无自动更新；iOS 生产壳/AVKit 未开始。
 - CI：KSP 2.3.12 在 GitHub runner 上解析失败导致所有 job 红（本地可解析）；`download`/`danmaku` 测试尚未加入；无 Windows job 与安装包冒烟。
@@ -210,6 +229,8 @@ chrome，页面与图片经源运行时加载）。
 - [09 交接（历史，B1–C2）](docs/09-handoff-2026-10-29.md)
 - [10 anime 源与播放器计划](docs/10-anime-source-and-player-plan.md)
 - [11 当前交接（Phase D）](docs/11-handoff-2026-10-30.md)
+- [12 小说端计划](docs/12-novel-plan.md)
+- [13 小说端对标调研](docs/13-novel-benchmark.md)
 - [品牌备忘](docs/06-brand.md)
 - [Skills 与参考仓库（历史）](docs/07-skills-and-references.md)
 - ADR：[KMP/CMP](docs/adr/0001-kmp-cmp-baseline.md) · [Fork + Strangler](docs/adr/0002-fork-and-strangler.md) · [JS 扩展运行时](docs/adr/0003-js-extension-runtime.md) · [许可证边界](docs/adr/0004-licensing-and-clean-room.md) · [mediamp](docs/adr/0005-mediamp-player.md) · [单轨工具链](docs/adr/0006-unified-android-toolchain.md) · [网络与 Cookie](docs/adr/0007-network-and-cookie-storage.md) · [Venera 源运行时](docs/adr/0008-venera-source-runtime.md) · [Room 数据层](docs/adr/0009-room-kmp-data-layer.md) · [Aniyomi 本地阅读器复用](docs/adr/0010-aniyomi-local-reader-reuse.md) · [KMP 移植](docs/adr/0011-kmp-aniyomi-port.md) · [桌面运行时许可](docs/adr/0012-desktop-video-backend-licensing.md) · [源仓库格式](docs/adr/0013-js-source-repository-format.md) · [anime 源与播放器](docs/adr/0014-anime-source-site-rewrite-and-player-alignment.md)

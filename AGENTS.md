@@ -5,7 +5,7 @@ This is the shared instruction file for **every agent** in this workspace: Explo
 ## Project state
 
 - Product: **Miyomu** — cross-platform video / novel / comic reader.
-- **2026-10-30: Phase A/B/C/D complete.** Android + desktop are the production targets (both builds green); iOS is not started. The current handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; decisions are ADR-0011/0012/0013/0014.
+- **2026-10-30: Phase A/B/C/D complete, and the novel line is merged into `main`.** Android + desktop are the production targets (both builds green); iOS is not started. All three media (comic / video / novel) now live on one branch. The current handoff is `docs/11-handoff-2026-10-30.md`; the anime/player plan is `docs/10-anime-source-and-player-plan.md`; the novel plan is `docs/12-novel-plan.md`; decisions are ADR-0011/0012/0013/0014.
 - `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, and `docs/09-handoff-2026-10-29.md` are **historical** (pre-Phase-D) and are kept for implementation records only.
 - Production build lives at the repository root (`androidApp/`, `desktopApp/`, `shared/`); Phase 0/1 probes and spikes live in `experiments/` as a separate Gradle build (`./gradlew -p experiments ...`).
 - Do not re-run Phase 0 spikes unless explicitly asked; build on the reports.
@@ -26,6 +26,11 @@ Local shallow clones (not committed; `reference/` is gitignored):
 | `reference/aniyomi` | https://github.com/aniyomiorg/aniyomi | Apache-2.0 | UI, reader loaders, domain, tracker patterns; code reuse allowed with NOTICE |
 | `reference/venera-next` | https://github.com/CyrilPeng/Venera-Next | GPL-3.0 | Behavior/design reference only; **do not copy code** unless the project relicenses to GPL |
 | `reference/mediamp` | https://github.com/open-ani/mediamp | Apache-2.0 | Player API and backend reference; dependency allowed |
+| `reference/NovelDokusha` | https://github.com/nanihadesuka/NovelDokusha | GPL-3.0 | Novel-side information architecture blueprint (Compose); design reference only, **do not copy code** |
+| `reference/legado-with-MD3` | https://github.com/HapeLee/legado-with-MD3 | GPL-3.0 | Chinese web-novel typography conventions and chapter-regex behavior; design/behavior reference only, **do not copy code** |
+| `reference/book-story` | https://github.com/Acclorite/book-story | GPL-3.0 | Material You reader typography/settings design reference; **do not copy code** |
+| `reference/Myne` | https://github.com/Pool-Of-Tears/Myne | Apache-2.0 | EPUB reading implementation reference; code reuse allowed with NOTICE |
+| `reference/material-3-expressive-catalog` | https://github.com/meticha/material-3-expressive-catalog | Apache-2.0 | MD3E component catalog; code reuse allowed with NOTICE |
 
 Rules:
 
@@ -44,7 +49,8 @@ Rules:
 
 - **Parallel work**: two machines, one short branch + PR per goal; nightly goal window 23:00–09:00 (08:45 stop/commit/push). See `docs/11-handoff-2026-10-30.md` §5.
 - **Schema discipline**: Room is at version 4 (`entry_episode`, `entry_chapter`, `video_resolve_cache`, `category`, `manga_category`, `library_updates`). Only one branch may change `shared/data/schemas`, `shared/model`, or the `MiyomuGraph`/`MiyomuApp`/`HomeScreen` wiring at a time.
-- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF/EPUB/TXT, source coverage/canary automation, iOS shell. Novel work exists on the unmerged `feature/novel` branch (based on `c8c74b2`); it must be rebased before merge and it reuses doc numbers 10/11.
+- **Known gaps**: Windows packaging/MPV verification, external subtitles (blocked on mediamp 0.5.3), player lock/PiP/MediaSession, local 7z/PDF loaders, source coverage/canary automation, iOS shell, legado discovery/category pages. The novel line is merged (doc numbers 12/13); do not re-introduce the old "unmerged branch" workflow.
+- **Novel wiring**: `HomeScreen` has six tabs with `NovelLibraryTab` at index 0 (manga/updates/history/browse/more shifted by one). Novel bookmarks, reader prefs and legado sources all live in the JSON `PreferenceStore`, so the novel side still has **zero Room schema impact** — keep it that way unless a migration is planned.
 - **CI gaps**: all jobs currently fail at KSP `2.3.12` resolution on GitHub runners (works locally); `download`/`danmaku` tests are not in CI; no Windows job; no packaging smoke.
 
 ## Canonical files
@@ -53,5 +59,6 @@ Rules:
 - Architecture: `docs/01-architecture.md` (note: module list predates Phase D; see README/11)
 - Current handoff: `docs/11-handoff-2026-10-30.md`
 - Anime/player plan: `docs/10-anime-source-and-player-plan.md`
+- Novel plan: `docs/12-novel-plan.md` (benchmark research: `docs/13-novel-benchmark.md`)
 - Brand: `docs/06-brand.md`
 - Historical plans: `docs/05-phase-1-plan.md`, `docs/08-m1-task-plan.md`, `docs/09-handoff-2026-10-29.md`

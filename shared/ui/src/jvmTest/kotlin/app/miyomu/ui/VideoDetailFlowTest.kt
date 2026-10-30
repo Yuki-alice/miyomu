@@ -1,6 +1,7 @@
 package app.miyomu.ui
 
 import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -15,6 +16,8 @@ import app.miyomu.data.createMiyomuData
 import app.miyomu.local.FileLocalComicRepository
 import app.miyomu.local.FileLocalFileRef
 import app.miyomu.local.LocalLibraryRepository
+import app.miyomu.novel.LocalNovelRepository
+import app.miyomu.novel.NovelLibraryRepository
 import app.miyomu.source.repo.FileSourceInstallManager
 import app.miyomu.player.isVideoPlaybackAvailable
 import org.jetbrains.skia.EncodedImageFormat
@@ -30,6 +33,19 @@ class VideoDetailFlowTest {
     @TempDir
     lateinit var root: File
 
+    /**
+     * The app opens on the novel tab (`HomeScreen` puts `NovelLibraryTab` first), so the
+     * comic/video shelf lives one tab over.
+     */
+    private fun ComposeUiTest.openLibraryTab() {
+        val labels = listOf("书架", "Library")
+        waitUntil(timeoutMillis = 5_000) {
+            labels.any { label -> onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() }
+        }
+        onNodeWithText(labels.first { label -> onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() })
+            .performClick()
+    }
+
     @Test
     fun videoBookOpensAnimeDetailAndPlayer() = runComposeUiTest {
         File(root, "Episode 1.mkv").writeBytes(byteArrayOf(1, 2, 3))
@@ -43,6 +59,8 @@ class VideoDetailFlowTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -51,6 +69,8 @@ class VideoDetailFlowTest {
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
+
+            openLibraryTab()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("Episode 1").fetchSemanticsNodes().isNotEmpty()
@@ -107,6 +127,8 @@ class VideoDetailFlowTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -115,6 +137,8 @@ class VideoDetailFlowTest {
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
+
+            openLibraryTab()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("Show").fetchSemanticsNodes().isNotEmpty()
@@ -150,6 +174,8 @@ class VideoDetailFlowTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -158,6 +184,8 @@ class VideoDetailFlowTest {
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
+
+            openLibraryTab()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("Show").fetchSemanticsNodes().isNotEmpty()
@@ -192,6 +220,8 @@ class VideoDetailFlowTest {
                 MiyomuApp(
                     library = LocalLibraryRepository(),
                     comics = FileLocalComicRepository(),
+                    novels = LocalNovelRepository(),
+                    novelLibrary = NovelLibraryRepository(),
                     data = data,
                     root = FileLocalFileRef(root),
                     deviceId = "test",
@@ -200,6 +230,8 @@ class VideoDetailFlowTest {
                     sourceRuntime = FakeSourceRuntimeManager(),
                 )
             }
+
+            openLibraryTab()
 
             waitUntil(timeoutMillis = 5_000) {
                 onAllNodesWithText("Show").fetchSemanticsNodes().isNotEmpty()

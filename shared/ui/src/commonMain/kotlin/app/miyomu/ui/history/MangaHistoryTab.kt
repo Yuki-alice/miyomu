@@ -34,7 +34,7 @@ class MangaHistoryTab(
 ) : Tab {
 
     override val options: TabOptions
-        @Composable get() = TabOptions(index = 2u, title = "历史")
+        @Composable get() = TabOptions(index = 3u, title = "历史")
 
     @Composable
     override fun Content() {

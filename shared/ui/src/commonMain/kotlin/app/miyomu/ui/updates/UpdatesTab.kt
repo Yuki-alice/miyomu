@@ -32,7 +32,7 @@ class UpdatesTab(
 ) : Tab {
 
     override val options: TabOptions
-        @Composable get() = TabOptions(index = 1u, title = "更新")
+        @Composable get() = TabOptions(index = 2u, title = "更新")
 
     @Composable
     override fun Content() {

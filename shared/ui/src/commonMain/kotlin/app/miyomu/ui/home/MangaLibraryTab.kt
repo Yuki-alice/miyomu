@@ -18,7 +18,7 @@ class MangaLibraryTab(
 ) : Tab {
 
     override val options: TabOptions
-        @Composable get() = TabOptions(index = 0u, title = stringResource(MR.strings.label_library))
+        @Composable get() = TabOptions(index = 1u, title = stringResource(MR.strings.label_library))
 
     @Composable
     override fun Content() {

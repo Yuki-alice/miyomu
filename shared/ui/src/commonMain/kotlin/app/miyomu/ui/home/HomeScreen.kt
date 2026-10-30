@@ -6,9 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.ImportContacts
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Badge
@@ -29,15 +30,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import app.miyomu.local.LocalBook
-import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.model.MediaType
+import app.miyomu.source.manager.SourceRuntimeInfo
 import app.miyomu.ui.MiyomuGraph
-import app.miyomu.ui.history.MangaHistoryTab
-import app.miyomu.ui.updates.UpdatesTab
 import app.miyomu.ui.entries.MangaDetailScreen
 import app.miyomu.ui.entries.VideoDetailScreen
+import app.miyomu.ui.history.MangaHistoryTab
+import app.miyomu.ui.novel.NovelDetailScreen
 import app.miyomu.ui.sources.SourceRepositoryScreen
 import app.miyomu.ui.sources.SourceSearchScreen
+import app.miyomu.ui.updates.UpdatesTab
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -46,8 +48,10 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 
 /**
- * Port of Aniyomi's ui/home/HomeScreen.kt: a Voyager TabNavigator with the five bottom tabs,
+ * Port of Aniyomi's ui/home/HomeScreen.kt: a Voyager TabNavigator with the bottom tabs,
  * adaptive NavigationBar (narrow) / NavigationRail (>=720dp), adapted to constructor injection.
+ *
+ * Each medium owns its library tab: novels first, then the comic/video shelf.
  */
 class HomeScreen(private val graph: MiyomuGraph) : Screen {
 
@@ -55,14 +59,15 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val books by graph.library.books.collectAsState()
+        val novelBooks by graph.novelLibrary.books.collectAsState()
 
         val onOpenBook: (LocalBook) -> Unit = remember(navigator) {
             { book ->
-                // Video books open the anime-style detail screen; comics use the manga one.
-                if (book.mediaType == MediaType.VIDEO) {
-                    navigator.push(VideoDetailScreen(graph, book))
-                } else {
-                    navigator.push(MangaDetailScreen(graph, book))
+                // Novels and videos own their detail screens; comics use the ported manga one.
+                when (book.mediaType) {
+                    MediaType.NOVEL -> navigator.push(NovelDetailScreen(graph, book))
+                    MediaType.VIDEO -> navigator.push(VideoDetailScreen(graph, book))
+                    else -> navigator.push(MangaDetailScreen(graph, book))
                 }
             }
         }
@@ -147,12 +152,20 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
         }
         val tabs = remember(graph, onOpenBook, onOpenSources, onOpenSource) {
             listOf(
+                NovelLibraryTab(graph, onOpenBook),
                 MangaLibraryTab(graph, onOpenBook),
                 UpdatesTab(graph, onHistoryOpenDetails),
                 MangaHistoryTab(graph, onHistoryResume, onHistoryOpenDetails),
                 BrowseTab(graph, onOpenSource, onOpenSources, onOpenGlobalSearch),
                 MoreTab(graph, onOpenSources, onOpenDownloads, onOpenBackup, onOpenDanmaku, onOpenSettings),
             )
+        }
+        val badgeCount: (Tab) -> Int = { tab ->
+            when (tab) {
+                is NovelLibraryTab -> novelBooks.size
+                is MangaLibraryTab -> books.size
+                else -> 0
+            }
         }
 
         TabNavigator(tabs.first()) { tabNavigator ->
@@ -175,7 +188,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                                 NavigationRailItem(
                                     selected = tabNavigator.current == tab,
                                     onClick = { tabNavigator.current = tab },
-                                    icon = { TabIcon(tab, if (tab is MangaLibraryTab) books.size else 0) },
+                                    icon = { TabIcon(tab, badgeCount(tab)) },
                                     label = { Text(tab.options.title) },
                                     alwaysShowLabel = true,
                                 )
@@ -193,7 +206,7 @@ class HomeScreen(private val graph: MiyomuGraph) : Screen {
                                     NavigationBarItem(
                                         selected = tabNavigator.current == tab,
                                         onClick = { tabNavigator.current = tab },
-                                        icon = { TabIcon(tab, if (tab is MangaLibraryTab) books.size else 0) },
+                                        icon = { TabIcon(tab, badgeCount(tab)) },
                                         label = { Text(tab.options.title) },
                                         alwaysShowLabel = true,
                                     )
@@ -224,6 +237,7 @@ private fun TabIcon(tab: Tab, badgeCount: Int) {
 }
 
 private fun Tab.icon(): ImageVector? = when (this) {
+    is NovelLibraryTab -> Icons.Outlined.ImportContacts
     is MangaLibraryTab -> Icons.AutoMirrored.Outlined.MenuBook
     is UpdatesTab -> Icons.Outlined.Update
     is MangaHistoryTab -> Icons.Outlined.History

@@ -50,12 +50,14 @@
 
 ## 4. 本地小说阅读器
 
-- [ ] **N1** TXT 解析：UTF-8/BOM、GB18030 回退、章节正则/单章回退、文件大小上限
-- [ ] **N1** EPUB 解析：container.xml → OPF spine → XHTML 文本；章节/图片提取
-- [ ] **N2** 阅读 UI：分页（`TextMeasurer`）与滚动（`LazyColumn`）、章节导航
-- [ ] **N2** 排版：字号、行距、页边距、主题；进度按字符偏移/章节保存
-- [ ] **N3** 库 → 详情 → 阅读 → 续读闭环；Android + 桌面
-- [ ] 测试：自造 TXT/EPUB fixture 的章节数/文本/编码/偏移；不提交版权文本
+> 2026-10-30：小说端改在 `feature/novel` 分支并行开发（[docs/12](../12-novel-plan.md)），N1–N3 已完成。
+
+- [x] **N1** TXT 解析：UTF-8/BOM、GB18030 回退、章节正则/单章回退、文件大小上限（`shared/novel`，19 测试）
+- [x] **N1** EPUB 解析：container.xml → OPF spine → XHTML 文本；章节/封面提取（Ksoup）
+- [x] **N2** 阅读 UI：分页（段落级 TextMeasurer 度量 + 行切片）与滚动（`LazyColumn`）、章节导航（`shared/reader-novel` + `ui/novel`）
+- [x] **N2** 排版：字号、行距、页边距、段落间距、四档主题；进度按字符偏移/章节保存（`JsonPreferenceStore` + Room 进度表）
+- [x] **N3** 库 → 详情 → 阅读 → 续读闭环；小说 Tab + 合成 Manga 复用移植网格/详情；桌面验证（UI 测试 + 截图），Android 构建通过
+- [x] 测试：自造 TXT/EPUB fixture 的章节数/文本/编码/偏移；不提交版权文本（`NovelLayoutTest`/`NovelFlowTest`/`shared:novel` 19 测试/`shared:reader-novel` 9 测试）
 
 ## 5. M1 验收
 
