@@ -19,4 +19,6 @@ class FileLocalFileRef(
         file.listFiles()?.map(::FileLocalFileRef).orEmpty()
 
     override fun readBytes(): ByteArray = file.readBytes()
+
+    override fun delete(): Boolean = file.deleteRecursively()
 }

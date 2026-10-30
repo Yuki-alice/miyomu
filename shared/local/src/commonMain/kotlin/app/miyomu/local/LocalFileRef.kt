@@ -18,4 +18,7 @@ interface LocalFileRef {
     fun list(): List<LocalFileRef>
 
     fun readBytes(): ByteArray
+
+    /** Permanently removes this file or directory tree. Callers confirm in the UI first. */
+    fun delete(): Boolean
 }

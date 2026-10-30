@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -71,6 +72,7 @@ fun MangaLibraryScreen(
     }
     var currentPage by remember { mutableStateOf(0) }
     var showBulkCategoryDialog by remember { mutableStateOf(false) }
+    var showBulkDeleteConfirm by remember { mutableStateOf(false) }
 
     val displayModeState = remember(scope) { preferences.displayMode().asState(scope) }
     val portraitColumns = remember(scope) { preferences.mangaPortraitColumns().asState(scope) }
@@ -145,6 +147,9 @@ fun MangaLibraryScreen(
                 TextButton(onClick = { showBulkCategoryDialog = true }) {
                     Text("编辑分类")
                 }
+                TextButton(onClick = { showBulkDeleteConfirm = true }) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
             }
         }
 
@@ -188,6 +193,35 @@ fun MangaLibraryScreen(
                 if (isLandscape) landscapeColumns else portraitColumns
             },
             getLibraryForPage = { page -> itemsForCategory(page) },
+        )
+    }
+
+    if (showBulkDeleteConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showBulkDeleteConfirm = false },
+            title = { Text("删除所选") },
+            text = {
+                Text(
+                    "将从磁盘永久删除所选的 ${selection.size} 本书的文件，此操作不可恢复。",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBulkDeleteConfirm = false
+                    val targets = selection.mapNotNull { libraryManga ->
+                        books.firstOrNull { it.mangaId() == libraryManga.id }
+                    }
+                    selection.clear()
+                    scope.launch {
+                        targets.forEach { book -> runCatching { graph.comics.delete(book) } }
+                        graph.library.refresh(graph.root)
+                    }
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkDeleteConfirm = false }) { Text("取消") }
+            },
         )
     }
 

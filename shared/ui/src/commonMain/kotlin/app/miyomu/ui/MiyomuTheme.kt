@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import app.miyomu.ui.theme.darkColors
 import app.miyomu.ui.theme.defaultColorsDark
+import app.miyomu.ui.theme.defaultColorsLight
 import app.miyomu.ui.theme.lightColors
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.ThemeMode
@@ -44,7 +45,11 @@ fun MiyomuTheme(
     content: @Composable () -> Unit,
 ) {
     val dark = resolveDarkTheme(themeMode)
-    var colors = if (dark) appTheme.darkColors() else appTheme.lightColors()
+    var colors = if (appTheme == AppTheme.MONET) {
+        monetColorScheme(dark) ?: if (dark) defaultColorsDark else defaultColorsLight
+    } else {
+        if (dark) appTheme.darkColors() else appTheme.lightColors()
+    }
     if (dark && amoled) colors = colors.amoled()
     MaterialTheme(
         colorScheme = colors,

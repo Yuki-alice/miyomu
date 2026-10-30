@@ -56,6 +56,13 @@ class FileLocalComicRepository : LocalComicRepository {
         }
     }
 
+    override suspend fun delete(book: LocalBook) {
+        withContext(Dispatchers.IO) {
+            // Books are directories or single archive files under the library root.
+            File(book.location).deleteRecursively()
+        }
+    }
+
     override suspend fun cover(book: LocalBook): ByteArray? = withContext(Dispatchers.IO) {
         runCatching {
             if (book.format == LocalBookFormat.VIDEO) return@runCatching videoCover(book)
