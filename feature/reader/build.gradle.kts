@@ -11,6 +11,8 @@ kotlin {
             implementation(project(":core:design"))
             implementation(project(":core:reader"))
             implementation(project(":core:data"))
+            implementation(libs.lifecycle.viewmodel)
+            implementation(libs.koin.viewmodel)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.ui)

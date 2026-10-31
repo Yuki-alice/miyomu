@@ -15,14 +15,21 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(libs.material.icons.core)
+            implementation(libs.coil.compose)
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
+            implementation(libs.coil.network.okhttp)
+        }
+        val desktopMain by getting {
+            dependencies {
+                        }
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
     }
 }
+
 

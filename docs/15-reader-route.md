@@ -66,7 +66,7 @@ entry.arguments?.read { getString("contentId") }
 - `DetailsScreen` 的章节行可点击，跳转 Reader；
 - `ReaderScreen` 使用 `HorizontalPager`；
 - 顶部有返回和页码；
-- 页面是 fixture 占位（渐变 + 页码 + URL），不是真实图片；
+- 页面现在通过 Coil 加载 MangaDex at-home 图片，失败时回退渐变；
 - 阅读方向/缩放/预取/进度持久化尚未接。
 
 ## 5. 测试
@@ -107,7 +107,7 @@ Android / Desktop / iOS 全部通过。
 
 ## 7. 下一步
 
-1. 把 fixture 页面换成 Coil 图片（headers/Referer）。
+1. ~~把 fixture 页面换成 Coil 图片~~ 已完成（见 [17-real-source.md](17-real-source.md)）。
 2. 用 `reader-core` 的 `PagedReaderScene` 替代简单 pager。
 3. 保存阅读进度（Room）。
 4. 章节切换/跨章；

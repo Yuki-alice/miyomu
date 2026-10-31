@@ -2,76 +2,65 @@ package app.miyomu
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import app.miyomu.core.data.DefaultContentRepository
-import app.miyomu.core.data.DefaultLibraryRepository
 import app.miyomu.core.database.MiyomuDatabase
 import app.miyomu.core.design.MiyomuTheme
-import app.miyomu.core.source.SourceRegistry
 import app.miyomu.core.ui.AppDestination
 import app.miyomu.core.ui.MiyomuAppShell
 import app.miyomu.core.ui.navigation.MiyomuNavHost
 import app.miyomu.core.ui.navigation.MiyomuRoute
-import app.miyomu.core.ui.navigation.destinationRoute
-import app.miyomu.core.data.demo.DemoSourceRuntime
+import app.miyomu.di.appModule
 import app.miyomu.feature.discover.DetailsScreen
 import app.miyomu.feature.discover.DiscoverScreen
 import app.miyomu.feature.library.HomeScreen
 import app.miyomu.feature.library.LibraryScreen
 import app.miyomu.feature.reader.ReaderScreen
 import app.miyomu.feature.settings.SettingsScreen
+import org.koin.compose.KoinApplication
 
 @Composable
 fun MiyomuApp(database: MiyomuDatabase) {
-    MiyomuTheme {
-        val repository = remember {
-            DefaultContentRepository(SourceRegistry(listOf(DemoSourceRuntime())))
-        }
-        val libraryRepository = remember { DefaultLibraryRepository(database) }
-        val navController = rememberNavController()
-        val backStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = backStackEntry?.destination?.route
+    KoinApplication(application = { modules(appModule(database)) }) {
+        MiyomuTheme {
+            val navController = rememberNavController()
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = backStackEntry?.destination?.route
 
-        MiyomuAppShell(
-            selected = currentRoute.toDestination(),
-            onSelect = { navController.selectTopLevel(it) },
-        ) {
-            MiyomuNavHost(navController) { route ->
-                when (route) {
-                    MiyomuRoute.Home -> HomeScreen(
-                        onOpenDetails = { navController.openDetails(it) },
-                    )
-                    MiyomuRoute.Library -> LibraryScreen(
-                        onOpenDetails = { navController.openDetails(it) },
-                    )
-                    MiyomuRoute.Browse -> DiscoverScreen(
-                        repository = repository,
-                        onOpenDetails = { navController.openDetails(it.toString()) },
-                    )
-                    MiyomuRoute.Updates -> LibraryScreen(
-                        onOpenDetails = { navController.openDetails(it) },
-                    )
-                    MiyomuRoute.More -> SettingsScreen()
-                    is MiyomuRoute.Details -> DetailsScreen(
-                        repository = repository,
-                        libraryRepository = libraryRepository,
-                        contentId = route.contentId,
-                        onBack = { navController.popBackStack() },
-                        onOpenReader = { content, chapter ->
-                            navController.navigate(MiyomuRoute.Reader(content, chapter.toString()).key)
-                        },
-                    )
-                    is MiyomuRoute.Reader -> ReaderScreen(
-                        repository = repository,
-                        libraryRepository = libraryRepository,
-                        contentId = route.contentId,
-                        chapterId = route.chapterId,
-                        onBack = { navController.popBackStack() },
-                    )
+            MiyomuAppShell(
+                selected = currentRoute.toDestination(),
+                onSelect = { navController.selectTopLevel(it) },
+            ) {
+                MiyomuNavHost(navController) { route ->
+                    when (route) {
+                        MiyomuRoute.Home -> HomeScreen(
+                            onOpenDetails = { navController.openDetails(it) },
+                        )
+                        MiyomuRoute.Library -> LibraryScreen(
+                            onOpenDetails = { navController.openDetails(it) },
+                        )
+                        MiyomuRoute.Browse -> DiscoverScreen(
+                            onOpenDetails = { navController.openDetails(it.toString()) },
+                        )
+                        MiyomuRoute.Updates -> LibraryScreen(
+                            onOpenDetails = { navController.openDetails(it) },
+                        )
+                        MiyomuRoute.More -> SettingsScreen()
+                        is MiyomuRoute.Details -> DetailsScreen(
+                            contentId = route.contentId,
+                            onBack = { navController.popBackStack() },
+                            onOpenReader = { content, chapter ->
+                                navController.navigate(MiyomuRoute.Reader(content, chapter.toString()).key)
+                            },
+                        )
+                        is MiyomuRoute.Reader -> ReaderScreen(
+                            contentId = route.contentId,
+                            chapterId = route.chapterId,
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
                 }
             }
         }

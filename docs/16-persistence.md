@@ -136,14 +136,14 @@ Android / Desktop / iOS 全部通过。
 
 - Android 的 `MIGRATION_1_2` 只实现了 `SQLiteConnection` 版本；当前没有已发布的 v1 用户，后续需要补 `SupportSQLiteDatabase` 适配。
 - 还没有迁移测试。
-- 收藏页还没有消费 `observeFavourites()`；目前只在 Details 里体现。
-- Reader 只保存进度，尚未恢复进度。
-- 还没有把 Room 接到 Koin/ViewModel。
+- 收藏页/Home 已消费 `observeFavourites()`，但还没有移除/批量操作。
+- Reader 已恢复进度，但还没有“继续阅读”跳转。
+- Room 已接 Koin/ViewModel。
 
 ## 9. 下一步
 
-1. Reader 启动时读取 `observeProgress()` 并恢复页码。
-2. 收藏页/Home 消费 `observeFavourites()`。
+1. ~~Reader 启动时读取 `observeProgress()` 并恢复页码~~ 已完成。
+2. ~~收藏页/Home 消费 `observeFavourites()`~~ 已完成。
 3. Android 迁移适配 + Room 迁移测试。
-4. 用 ViewModel + Koin 替换页面里的 `remember/LaunchedEffect`。
-5. 真实 JSON 源 + Coil 图片。
+4. ~~用 ViewModel + Koin 替换页面里的 `remember/LaunchedEffect`~~ 已完成。
+5. ~~真实 JSON 源 + Coil 图片~~ 已完成，见 [17-real-source.md](17-real-source.md)。

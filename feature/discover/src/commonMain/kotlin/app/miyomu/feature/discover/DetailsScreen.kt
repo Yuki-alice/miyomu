@@ -2,15 +2,14 @@ package app.miyomu.feature.discover
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,60 +18,49 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.miyomu.core.data.ContentRepository
-import app.miyomu.core.data.LibraryRepository
-import app.miyomu.core.model.ContentDetails
-import app.miyomu.core.model.ContentId
-import app.miyomu.core.model.Outcome
-import kotlinx.coroutines.launch
+import app.miyomu.core.ui.MiyomuCover
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DetailsScreen(
-    repository: ContentRepository,
-    libraryRepository: LibraryRepository,
     contentId: String,
     onBack: () -> Unit,
     onOpenReader: (String, Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var details by remember { mutableStateOf<ContentDetails?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val favourites by libraryRepository.observeFavourites().collectAsState(initial = emptyList())
-    val isFavourite = favourites.any { it.id.value == contentId.toLongOrNull() }
+    val viewModel: DetailsViewModel = koinViewModel()
+    val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(contentId) {
-        when (val result = repository.details(ContentId(contentId.toLongOrNull() ?: -1L))) {
-            is Outcome.Success -> details = result.value
-            is Outcome.Failure -> failed = true
-        }
-    }
+    LaunchedEffect(contentId) { viewModel.load(contentId) }
 
     Column(modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         TextButton(onClick = onBack) { Text("← Back") }
-        val current = details
+        val current = state.details
         when {
-            failed -> Text("Content not found", style = MaterialTheme.typography.headlineSmall)
+            state.failed -> Text("Content not found", style = MaterialTheme.typography.headlineSmall)
             current == null -> Text("Loading details…", style = MaterialTheme.typography.bodyLarge)
             else -> {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(current.summary.title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                    TextButton(onClick = {
-                        scope.launch { libraryRepository.setFavourite(current.summary, !isFavourite) }
-                    }) { Text(if (isFavourite) "★ Saved" else "☆ Save") }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    MiyomuCover(
+                        url = current.summary.coverUrl,
+                        title = current.summary.title,
+                        modifier = Modifier.fillMaxWidth(.26f).padding(top = 4.dp),
+                    )
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(current.summary.title, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(
+                            current.summary.authors.joinToString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(onClick = viewModel::toggleFavourite) {
+                            Text(if (state.isFavourite) "★ Saved" else "☆ Save")
+                        }
+                    }
                 }
-                Text(
-                    current.summary.authors.joinToString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                     shape = MaterialTheme.shapes.large,

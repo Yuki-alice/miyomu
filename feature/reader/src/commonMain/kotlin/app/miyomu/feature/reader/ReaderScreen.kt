@@ -17,10 +17,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,50 +30,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.miyomu.core.data.ContentRepository
-import app.miyomu.core.data.LibraryRepository
-import app.miyomu.core.model.ContentId
-import app.miyomu.core.model.ChapterId
-import app.miyomu.core.model.Outcome
 import app.miyomu.core.model.PageSummary
+import app.miyomu.core.ui.MiyomuImage
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ReaderScreen(
-    repository: ContentRepository,
-    libraryRepository: LibraryRepository,
     contentId: String,
     chapterId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var pages by remember { mutableStateOf<List<PageSummary>>(emptyList()) }
-    var failed by remember { mutableStateOf(false) }
+    val viewModel: ReaderViewModel = koinViewModel()
+    val state by viewModel.state.collectAsState()
 
     LaunchedEffect(contentId, chapterId) {
-        when (
-            val result = repository.pages(
-                contentId = ContentId(contentId.toLongOrNull() ?: -1L),
-                chapterId = ChapterId(chapterId.toLongOrNull() ?: -1L),
-            )
-        ) {
-            is Outcome.Success -> pages = result.value
-            is Outcome.Failure -> failed = true
-        }
+        viewModel.load(contentId, chapterId)
     }
 
-    val pagerState = rememberPagerState(pageCount = { pages.size })
-
-    LaunchedEffect(pagerState.currentPage, pages.size) {
-        if (pages.isNotEmpty()) {
-            libraryRepository.saveProgress(
-                contentId = ContentId(contentId.toLongOrNull() ?: -1L),
-                chapterId = ChapterId(chapterId.toLongOrNull() ?: -1L),
-                chapterTitle = "Chapter",
-                page = pagerState.currentPage,
-                scroll = 0f,
-                percent = (pagerState.currentPage + 1).toFloat() / pages.size,
-            )
-        }
+    var currentPage by remember { mutableStateOf(state.initialPage) }
+    LaunchedEffect(state.initialPage) {
+        currentPage = state.initialPage
     }
 
     Column(modifier.fillMaxSize().background(Color(0xFF101014))) {
@@ -82,23 +61,41 @@ fun ReaderScreen(
         ) {
             TextButton(onClick = onBack) { Text("← Back", color = Color(0xFFE7E2EA)) }
             Text(
-                if (pages.isEmpty()) "Reader" else "Page ${pagerState.currentPage + 1} / ${pages.size}",
+                if (state.pages.isEmpty()) "Reader" else "Page ${currentPage + 1} / ${state.pages.size}",
                 color = Color(0xFFE7E2EA),
                 style = MaterialTheme.typography.labelLarge,
             )
         }
         when {
-            failed -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            state.failed -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Pages not found", color = Color(0xFFE7E2EA))
             }
-            pages.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Loading pages…", color = Color(0xFFE7E2EA))
             }
-            else -> HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-            ) { page ->
-                ReaderPage(page = pages[page])
+            state.pages.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No pages", color = Color(0xFFE7E2EA))
+            }
+            else -> key(state.initialPage, state.pages.size) {
+                val pagerState = rememberPagerState(
+                    initialPage = state.initialPage,
+                    pageCount = { state.pages.size },
+                )
+                LaunchedEffect(pagerState.currentPage) {
+                    currentPage = pagerState.currentPage
+                    viewModel.saveProgress(
+                        contentId = contentId,
+                        chapterId = chapterId,
+                        page = pagerState.currentPage,
+                        percent = (pagerState.currentPage + 1).toFloat() / state.pages.size,
+                    )
+                }
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                ) { page ->
+                    ReaderPage(page = state.pages[page])
+                }
             }
         }
     }
@@ -110,36 +107,10 @@ private fun ReaderPage(page: PageSummary) {
         modifier = Modifier.fillMaxSize().padding(bottom = 16.dp).clip(RoundedCornerShape(20.dp)),
         color = Color(0xFFF6F3EC),
     ) {
-        Box(
-            Modifier.fillMaxSize().padding(18.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFFF6F3EC), Color(0xFFE8E2D6)),
-                    ),
-                    RoundedCornerShape(14.dp),
-                ),
-        ) {
-            Column(
-                Modifier.fillMaxSize().padding(18.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    "DEMO PAGE",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFF8A8378),
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "Page ${page.index + 1}",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = Color(0xFF191816),
-                )
-                Text(
-                    page.url,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF5F5A52),
-                )
-            }
-        }
+        MiyomuImage(
+            url = page.url,
+            contentDescription = "Page ${page.index + 1}",
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+        )
     }
 }

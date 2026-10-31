@@ -13,10 +13,24 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.okio)
         }
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+        }
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.okhttp)
+            }
+        }
+        sourceSets.matching { it.name.startsWith("ios") }.forEach { sourceSet ->
+            sourceSet.dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
+        }
         val desktopTest by getting {
             dependencies {
                 implementation(libs.junit.jupiter)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.ktor.client.mock)
                 runtimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
             }
         }
