@@ -20,10 +20,14 @@ import app.miyomu.feature.library.LibraryScreen
 import app.miyomu.feature.reader.ReaderScreen
 import app.miyomu.feature.settings.SettingsScreen
 import org.koin.compose.KoinApplication
+import org.koin.core.logger.Level
+import org.koin.dsl.koinConfiguration
 
 @Composable
 fun MiyomuApp(database: MiyomuDatabase) {
-    KoinApplication(application = { modules(appModule(database)) }) {
+    KoinApplication(
+        configuration = koinConfiguration { modules(appModule(database)) },
+    ) {
         MiyomuTheme {
             val navController = rememberNavController()
             val backStackEntry by navController.currentBackStackEntryAsState()

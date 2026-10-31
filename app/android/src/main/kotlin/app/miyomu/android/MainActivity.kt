@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import app.miyomu.MiyomuApp
 import androidx.room.Room
-import app.miyomu.core.database.MIGRATION_1_2
+import app.miyomu.core.database.AndroidMigration1To2
 import app.miyomu.core.database.MiyomuDatabase
 
 class MainActivity : ComponentActivity() {
@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
             applicationContext,
             MiyomuDatabase::class.java,
             "miyomu.db",
-        ).addMigrations(MIGRATION_1_2).build()
+        ).addMigrations(AndroidMigration1To2).build()
         setContent { MiyomuApp(database) }
     }
 }

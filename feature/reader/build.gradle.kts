@@ -20,6 +20,17 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.junit.jupiter)
+                implementation(libs.kotlinx.coroutines.test)
+                runtimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
+            }
+        }
     }
 }
 
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}

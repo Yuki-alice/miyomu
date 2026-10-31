@@ -43,37 +43,37 @@ abstract class MiyomuDatabase : RoomDatabase() {
     abstract fun readingProgressDao(): ReadingProgressDao
 }
 
+val MIGRATION_1_2_SQL: List<String> = listOf(
+    """
+    CREATE TABLE IF NOT EXISTS `favourite` (
+        `contentId` INTEGER NOT NULL,
+        `sourceName` TEXT NOT NULL,
+        `title` TEXT NOT NULL,
+        `coverUrl` TEXT,
+        `authors` TEXT NOT NULL,
+        `contentType` TEXT NOT NULL,
+        `createdAt` INTEGER NOT NULL,
+        `updatedAt` INTEGER NOT NULL,
+        PRIMARY KEY(`contentId`)
+    )
+    """.trimIndent(),
+    """
+    CREATE TABLE IF NOT EXISTS `reading_progress` (
+        `contentId` INTEGER NOT NULL,
+        `chapterId` INTEGER NOT NULL,
+        `chapterTitle` TEXT,
+        `page` INTEGER NOT NULL,
+        `scroll` REAL NOT NULL,
+        `percent` REAL NOT NULL,
+        `updatedAt` INTEGER NOT NULL,
+        PRIMARY KEY(`contentId`)
+    )
+    """.trimIndent(),
+)
+
 val MIGRATION_1_2 = object : Migration(1, 2) {
     override fun migrate(connection: SQLiteConnection) {
-        connection.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `favourite` (
-                `contentId` INTEGER NOT NULL,
-                `sourceName` TEXT NOT NULL,
-                `title` TEXT NOT NULL,
-                `coverUrl` TEXT,
-                `authors` TEXT NOT NULL,
-                `contentType` TEXT NOT NULL,
-                `createdAt` INTEGER NOT NULL,
-                `updatedAt` INTEGER NOT NULL,
-                PRIMARY KEY(`contentId`)
-            )
-            """.trimIndent(),
-        )
-        connection.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS `reading_progress` (
-                `contentId` INTEGER NOT NULL,
-                `chapterId` INTEGER NOT NULL,
-                `chapterTitle` TEXT,
-                `page` INTEGER NOT NULL,
-                `scroll` REAL NOT NULL,
-                `percent` REAL NOT NULL,
-                `updatedAt` INTEGER NOT NULL,
-                PRIMARY KEY(`contentId`)
-            )
-            """.trimIndent(),
-        )
+        MIGRATION_1_2_SQL.forEach(connection::execSQL)
     }
 }
 

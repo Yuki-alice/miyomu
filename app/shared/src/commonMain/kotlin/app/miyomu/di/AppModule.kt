@@ -4,6 +4,7 @@ import app.miyomu.core.data.ContentRepository
 import app.miyomu.core.data.DefaultContentRepository
 import app.miyomu.core.data.DefaultLibraryRepository
 import app.miyomu.core.data.LibraryRepository
+import app.miyomu.core.data.demo.DemoSourceRuntime
 import app.miyomu.core.database.MiyomuDatabase
 import app.miyomu.core.source.MangaDexSourceRuntime
 import app.miyomu.core.source.SourceRegistry
@@ -20,7 +21,7 @@ fun appModule(database: MiyomuDatabase): Module = module {
     single<LibraryRepository> { DefaultLibraryRepository(database) }
     single<ContentRepository> {
         DefaultContentRepository(
-            SourceRegistry(listOf(MangaDexSourceRuntime())),
+            SourceRegistry(listOf(MangaDexSourceRuntime(), DemoSourceRuntime())),
         )
     }
 

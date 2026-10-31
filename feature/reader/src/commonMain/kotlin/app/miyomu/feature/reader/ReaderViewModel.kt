@@ -8,6 +8,12 @@ import app.miyomu.core.model.ChapterId
 import app.miyomu.core.model.ContentId
 import app.miyomu.core.model.Outcome
 import app.miyomu.core.model.PageSummary
+import org.skepsun.kototoro.reader.core.PageGeometryHint
+import org.skepsun.kototoro.reader.core.PageId
+import org.skepsun.kototoro.reader.core.PagedPageSpec
+import org.skepsun.kototoro.reader.core.PagedReaderScene
+import org.skepsun.kototoro.reader.core.PagedSpreadConfig
+import org.skepsun.kototoro.reader.core.SceneReadingDirection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +22,8 @@ import kotlinx.coroutines.launch
 
 data class ReaderUiState(
     val pages: List<PageSummary> = emptyList(),
-    val initialPage: Int = 0,
+    val scene: PagedReaderScene? = null,
+    val initialSlot: Int = 0,
     val loading: Boolean = true,
     val failed: Boolean = false,
 )
@@ -41,14 +48,34 @@ class ReaderViewModel(
             when (val result = contentRepository.pages(content, chapter)) {
                 is Outcome.Success -> {
                     val progress = libraryRepository.observeProgress(content).first()
-                    val start = progress
+                    val startPage = progress
                         ?.takeIf { it.chapterId == chapter }
                         ?.page
                         ?.coerceIn(0, (result.value.size - 1).coerceAtLeast(0))
                         ?: 0
+                    val scene = PagedReaderScene(
+                        viewportWidth = 1000,
+                        viewportHeight = 1600,
+                        config = PagedSpreadConfig(
+                            isDoublePage = false,
+                            readingDirection = SceneReadingDirection.LEFT_TO_RIGHT,
+                        ),
+                        initialSpecs = result.value.mapIndexed { index, page ->
+                            PagedPageSpec(
+                                pageId = PageId(page.id),
+                                geometryHint = PageGeometryHint.Estimated(0.7f),
+                                chapterId = chapter.value,
+                                chapterPageIndex = index,
+                            )
+                        },
+                    )
+                    val initialSlot = scene
+                        .slotIndexOf(PageId(result.value[startPage].id))
+                        .coerceAtLeast(0)
                     _state.value = ReaderUiState(
                         pages = result.value,
-                        initialPage = start,
+                        scene = scene,
+                        initialSlot = initialSlot,
                         loading = false,
                     )
                 }

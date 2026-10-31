@@ -96,12 +96,12 @@ xcodebuild -project iosApp/Miyomu.xcodeproj -scheme Miyomu \
 
 ## 6. 限制
 
-- 目前只接 MangaDex 一个真实源；
+- 目前真实源只有 MangaDex，另有 Demo fixture 源；Browse 支持源切换与搜索。
 - 没有 MangaDex 的标签/年份/状态筛选 UI；
 - 没有 related、外链章节、scanlation group 选择；
 - ID 映射是 runtime 内存缓存，进程重启后需要重新拉列表；
 - API 可能有速率限制/地区限制；
-- 页面请求头尚未传入 Coil（MangaDex 图片通常不需要 Referer）；
+- ~~页面请求头尚未传入 Coil~~ 已通过 `MiyomuImage(headers=...)` 传入。
 - 还没有失败重试/诊断面板。
 
 ## 7. 下一步

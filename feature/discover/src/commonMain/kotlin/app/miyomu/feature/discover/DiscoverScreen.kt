@@ -10,15 +10,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +46,29 @@ fun DiscoverScreen(
     Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Text("Browse", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Text(
-            "Demo source · SourceRuntime → Repository → UI",
+            "SourceRuntime → Repository → UI · ${state.selectedSource ?: "loading"}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        OutlinedTextField(
+            value = state.query,
+            onValueChange = viewModel::search,
+            singleLine = true,
+            placeholder = { Text("Search titles…") },
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            items(state.sources, key = { it.id.value }) { source ->
+                FilterChip(
+                    selected = source.name == state.selectedSource,
+                    onClick = { viewModel.selectSource(source.name) },
+                    label = { Text(source.name) },
+                )
+            }
+        }
         when {
             state.loading -> Text("Loading fixture source…", Modifier.padding(24.dp))
             state.error != null -> Text("Failed: ${state.error!!::class.simpleName}", Modifier.padding(24.dp))

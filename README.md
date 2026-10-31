@@ -8,7 +8,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 2. **功能先照搬**：数据、源协议、阅读器几何、数据库、备份、扩展运行时直接复用，先保 parity，不主动裁剪。
 3. **UI 全新 MD3E**：不复用旧页面，按 Material 3 Expressive 重新设计；原型与架构迁移并行。
 
-当前处于 **P1 进行中**：三端可构建/启动；核心模块与 **378 个测试**通过；MangaDex 真实源、Coil 封面/页面、Room 收藏/进度、ViewModel + Koin 已接入。
+当前处于 **P1 收尾**：三端可构建/启动；核心模块与 **382 个测试**通过；MangaDex 真实源、Coil、Room、ViewModel + Koin、reader-core 场景与迁移测试已接入。
 
 ## 文档
 
@@ -28,6 +28,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 | [Room 持久化](docs/16-persistence.md) | 收藏/阅读进度落库与平台数据库位置 | ✅ |
 | [真实 JSON 源](docs/17-real-source.md) | MangaDex + Coil 封面/页面 | ✅ |
 | [ViewModel + Koin](docs/18-viewmodel-koin.md) | 四个主 ViewModel 与依赖装配 | ✅ |
+| [限制清理](docs/19-runtime-hardening.md) | Reader 场景、源切换、Coil header、迁移测试 | ✅ |
 | [参考项目分析](docs/00-reference-analysis.md) | Kototoro 的规模、机制、可借鉴点与风险 | 分析材料 |
 | [技术栈初稿](docs/01-tech-stack.md) | KMP + CMP 选型；DB/ID 部分已被 07 修正 | 初稿 |
 | [架构初稿](docs/02-architecture.md) | 模块/SourceRuntime/DB；部分结论已被 07 修正 | 初稿 |

@@ -14,16 +14,17 @@
 10. [Room 持久化](16-persistence.md) — 收藏/阅读进度落库与平台数据库位置。
 11. [真实 JSON 源](17-real-source.md) — MangaDex + Coil 封面/页面。
 12. [ViewModel + Koin](18-viewmodel-koin.md) — 四个主 ViewModel 与依赖装配。
+13. [限制清理](19-runtime-hardening.md) — Reader 场景、源切换、Coil header、迁移测试。
 
 ## 分析材料（初稿）
 
-13. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
-14. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
-15. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
-16. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
-17. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
-18. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
-19. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
+14. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
+15. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
+16. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
+17. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
+18. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
+19. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
+20. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
 
 ## 决策记录
 
@@ -36,7 +37,7 @@
 
 ## 当前状态
 
-- 阶段：P1 进行中（核心模块 + Navigation + Room + MangaDex + Coil + Koin）
+- 阶段：P1 收尾（核心模块 + 持久化 + 真实源 + ViewModel + 迁移/测试）
 - 代码：三端壳 + MD3E + reader-core 已落地
 - 原型：并行设计（MD3E）
-- 下一步：源管理/筛选、迁移测试、ViewModel 单测
+- 下一步：筛选树、SavedStateHandle、真机验证

@@ -16,6 +16,7 @@ kotlin {
             implementation(compose.components.resources)
             implementation(libs.material.icons.core)
             implementation(libs.coil.compose)
+            implementation(libs.coil.network.core)
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)

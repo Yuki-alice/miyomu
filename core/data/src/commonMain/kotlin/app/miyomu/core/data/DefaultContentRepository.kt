@@ -12,6 +12,7 @@ import app.miyomu.core.model.ContentType
 import app.miyomu.core.model.Outcome
 import app.miyomu.core.model.PageSummary
 import app.miyomu.core.model.SourceId
+import app.miyomu.core.model.SourceOption
 import app.miyomu.core.source.SourceRegistry
 import kotlinx.coroutines.CancellationException
 import org.skepsun.kototoro.core.source.SourceChapter
@@ -23,12 +24,41 @@ class DefaultContentRepository(
 ) : ContentRepository {
     private val cache = mutableMapOf<Long, SourceContent>()
     private val chapterCache = mutableMapOf<Long, SourceChapter>()
+    private var selectedSource: String? = null
 
-    override suspend fun browse(offset: Int, limit: Int): Outcome<List<ContentSummary>> {
+    override suspend fun sources(): List<SourceOption> = registry.sources().map { ref ->
+        SourceOption(
+            id = SourceId(ref.name),
+            name = ref.name,
+            contentType = when (ref.contentType) {
+                "NOVEL" -> ContentType.NOVEL
+                "VIDEO" -> ContentType.VIDEO
+                else -> ContentType.MANGA
+            },
+        )
+    }
+
+    override suspend fun selectSource(sourceName: String) {
+        registry.runtime(sourceName)
+        selectedSource = sourceName
+        cache.clear()
+        chapterCache.clear()
+    }
+
+    private suspend fun runtime() = if (selectedSource == null) registry.primary() else registry.runtime(selectedSource!!)
+
+    override suspend fun browse(offset: Int, limit: Int, query: String?): Outcome<List<ContentSummary>> {
         return try {
-            val runtime = registry.primary()
+            val runtime = runtime()
             val source = runtime.getSources().first()
-            val page = runtime.getList(source.name, offset, null, null)
+            val page = runtime.getList(
+                sourceName = source.name,
+                offset = offset,
+                order = null,
+                filter = query?.takeIf { it.isNotBlank() }?.let {
+                    org.skepsun.kototoro.core.source.SourceFilter(query = it)
+                },
+            )
             page.forEach { cache[it.id] = it }
             Outcome.Success(page.map { it.toSummary() })
         } catch (e: CancellationException) {
@@ -40,7 +70,7 @@ class DefaultContentRepository(
 
     override suspend fun details(contentId: ContentId): Outcome<ContentDetails> {
         return try {
-            val runtime = registry.primary()
+            val runtime = runtime()
             val source = runtime.getSources().first()
             val content = cache[contentId.value] ?: loadById(runtime, source.name, contentId.value)
                 ?: return Outcome.Failure(AppError.NotFound("content ${contentId.value}"))
@@ -69,7 +99,7 @@ class DefaultContentRepository(
 
     override suspend fun pages(contentId: ContentId, chapterId: ChapterId): Outcome<List<PageSummary>> {
         return try {
-            val runtime = registry.primary()
+            val runtime = runtime()
             val source = runtime.getSources().first()
             var chapter = chapterCache[chapterId.value]
             if (chapter == null) {

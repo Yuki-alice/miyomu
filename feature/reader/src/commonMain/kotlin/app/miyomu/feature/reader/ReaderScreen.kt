@@ -48,10 +48,7 @@ fun ReaderScreen(
         viewModel.load(contentId, chapterId)
     }
 
-    var currentPage by remember { mutableStateOf(state.initialPage) }
-    LaunchedEffect(state.initialPage) {
-        currentPage = state.initialPage
-    }
+    var currentPage by remember { mutableStateOf(state.initialSlot) }
 
     Column(modifier.fillMaxSize().background(Color(0xFF101014))) {
         Row(
@@ -76,25 +73,43 @@ fun ReaderScreen(
             state.pages.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No pages", color = Color(0xFFE7E2EA))
             }
-            else -> key(state.initialPage, state.pages.size) {
-                val pagerState = rememberPagerState(
-                    initialPage = state.initialPage,
-                    pageCount = { state.pages.size },
-                )
-                LaunchedEffect(pagerState.currentPage) {
-                    currentPage = pagerState.currentPage
-                    viewModel.saveProgress(
-                        contentId = contentId,
-                        chapterId = chapterId,
-                        page = pagerState.currentPage,
-                        percent = (pagerState.currentPage + 1).toFloat() / state.pages.size,
+            else -> {
+                val scene = state.scene ?: return@Column
+                val slots = scene.allSlots
+                key(state.initialSlot, slots.size) {
+                    val pagerState = rememberPagerState(
+                        initialPage = state.initialSlot,
+                        pageCount = { slots.size },
                     )
-                }
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-                ) { page ->
-                    ReaderPage(page = state.pages[page])
+                    LaunchedEffect(pagerState.currentPage) {
+                        val slot = slots[pagerState.currentPage]
+                        val pageIndex = state.pages.indexOfFirst { it.id == slot.progressAnchorPageId.value }
+                            .coerceAtLeast(0)
+                        currentPage = pageIndex
+                        viewModel.saveProgress(
+                            contentId = contentId,
+                            chapterId = chapterId,
+                            page = pageIndex,
+                            percent = (pageIndex + 1).toFloat() / state.pages.size,
+                        )
+                    }
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                    ) { slotIndex ->
+                        val slot = slots[slotIndex]
+                        Row(Modifier.fillMaxSize()) {
+                            slot.pageIds.forEach { pageId ->
+                                val page = state.pages.firstOrNull { it.id == pageId.value } ?: return@forEach
+                                MiyomuImage(
+                                    url = page.url,
+                                    contentDescription = "Page ${page.index + 1}",
+                                    modifier = Modifier.weight(1f).fillMaxSize().padding(4.dp),
+                                    headers = page.headers,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -111,6 +126,7 @@ private fun ReaderPage(page: PageSummary) {
             url = page.url,
             contentDescription = "Page ${page.index + 1}",
             modifier = Modifier.fillMaxSize().padding(8.dp),
+            headers = page.headers,
         )
     }
 }

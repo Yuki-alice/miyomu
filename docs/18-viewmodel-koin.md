@@ -41,8 +41,7 @@ fun MiyomuApp(database: MiyomuDatabase) {
 }
 ```
 
-> 当前 `KoinApplication` 仍是旧声明式 API，会有 deprecation warning；新 API 需要
-> `KoinConfiguration`，等 Koin 版本/文档确认后再迁移。
+> 已迁移到 `KoinApplication(configuration = koinConfiguration { ... }, logLevel = Level.INFO)`。
 
 ## 3. ViewModels
 
@@ -114,7 +113,7 @@ implementation(libs.koin.viewmodel)
 ## 7. 限制
 
 - ViewModel 通过 `load(contentId)` 接收参数，而不是 `SavedStateHandle`；
-- 没有 UI 测试覆盖 ViewModel；
+- 已有 Reader/Library ViewModel 单测，但 Details/Discover 还没有。
 - `LibraryViewModel` 只用 `WhileSubscribed`，切页会重订阅；
 - Koin 旧 API 的 deprecation warning；
 - 页面还有少量 `LaunchedEffect`（加载/保存副作用），但状态在 ViewModel。

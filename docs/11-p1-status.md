@@ -11,7 +11,7 @@
 | `:core:source` | 36 主源码 + 15 测试 | **75** | ✅ |
 | `:core:network` | 25 主源码 + 10 测试 | **105** | ✅ |
 | `:core:data` | 5 主源码 + 2 测试 | **5** | ✅ |
-| **合计** | **95 + 63 文件** | **378** | ✅ |
+| **合计** | **96 + 65 文件** | **382** | ✅ |
 
 三端编译：
 
@@ -38,7 +38,7 @@
 :core:source:desktopTest     74 passed
 :core:network:desktopTest   105 passed
 ----------------------------------------
-total                       378 passed
+total                       382 passed
 ```
 
 验证命令：
