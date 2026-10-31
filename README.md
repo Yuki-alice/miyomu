@@ -8,7 +8,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 2. **功能先照搬**：数据、源协议、阅读器几何、数据库、备份、扩展运行时直接复用，先保 parity，不主动裁剪。
 3. **UI 全新 MD3E**：不复用旧页面，按 Material 3 Expressive 重新设计；原型与架构迁移并行。
 
-当前处于 **P1 进行中**：三端可构建/启动；`reader-core` 已复制并通过 193 个测试；`core-source`/`core-net` 因 Maven Central 访问限制暂缓。
+当前处于 **P1 进行中**：三端可构建/启动；`reader-core`、`core-source`、`core-net` 已复制，合计 **372 个测试通过**。下一步是 `core:data` / Repository 编排。
 
 ## 文档
 
@@ -20,7 +20,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 | [MD3E 设计系统](docs/08-md3e-design.md) | **当前权威 UI 方向**：色彩/字体/形状/动效/组件 | ✅ |
 | [初始化方案](docs/09-initialization.md) | **当前权威初始化**：20 模块 + build-logic、Room、MD3E、迁移顺序 | ✅ |
 | [P0 状态](docs/10-p0-status.md) | 三端构建结果、截图、已知问题与 P1 下一步 | ✅ |
-| [P1 状态](docs/11-p1-status.md) | reader-core 复制、193 测试、source/net 阻塞 | ✅ |
+| [P1 状态](docs/11-p1-status.md) | reader-core/source/net 复制、372 测试 | ✅ |
 | [build-logic](docs/12-build-logic.md) | 约定插件、模块写法与验证 | ✅ |
 | [Navigation](docs/13-navigation.md) | Navigation Compose KMP、路由与返回栈 | ✅ |
 | [参考项目分析](docs/00-reference-analysis.md) | Kototoro 的规模、机制、可借鉴点与风险 | 分析材料 |

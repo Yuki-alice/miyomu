@@ -1,98 +1,97 @@
-# 11 · P1 状态：reader-core 已复制
+# 11 · P1 状态：reader-core / core-source / core-net 已复制
 
 日期：2026-10-31
 阶段：P1（Core extraction）
 
 ## 1. 已完成
 
-| 项 | 状态 | 证据 |
-| --- | --- | --- |
-| 复制 `reader-core` 主源码 | ✅ | 54 个 Kotlin 文件，包名暂保留 `org.skepsun.kototoro.reader.core` |
-| 复制 `reader-core` 测试 | ✅ | 34 个测试文件，共 193 个测试通过 |
-| 隔离守卫测试适配新目录 | ✅ | `ReaderCoreIsolationGuardTest` 路径改为 `core/reader/...` |
-| `:core:reader` 接入 App | ✅ | `feature:reader → core:reader`，Android/Desktop/iOS 构建通过 |
-| 三端离线构建 | ✅ | Android APK / Desktop 测试 / iOS framework 全部通过 |
-| 版本恢复 | ✅ | Kotlin 2.4.21、Compose 1.12.2、Ktor 3.6.1 保持计划值 |
+| 模块 | 文件 | 测试 | 状态 |
+| --- | ---: | ---: | --- |
+| `:core:reader` | 54 主源码 + 34 测试 | **193** | ✅ |
+| `:core:source` | 35 主源码 + 14 测试 | **74** | ✅ |
+| `:core:network` | 25 主源码 + 10 测试 | **105** | ✅ |
+| **合计** | **88 + 60 文件** | **372** | ✅ |
 
-## 2. reader-core 统计
+三端编译：
+
+- Android：`:core:source` / `:core:network` 编译通过。
+- Desktop：`desktopTest` 全部通过。
+- iOS：`:core:source:compileKotlinIosSimulatorArm64`、`:core:network:compileKotlinIosSimulatorArm64` 通过。
+
+## 2. 复制策略
+
+- 包名暂保留 `org.skepsun.kototoro.*`，先保证行为与测试一致；稳定后统一重命名。
+- 测试源集从 `jvmTest` 改为 `desktopTest`（模块目标名为 `desktop`）。
+- `reader-core` 只改隔离守卫测试的两处路径常量。
+- `core-source` / `core-net` 不做算法修改，只补依赖：
+  - serialization JSON + protobuf
+  - okio
+  - Ktor core / ktor-client-mock
+  - coroutines-test
+- 依赖版本回到计划值：Kotlin 2.4.21、Compose 1.12.2、Ktor 3.6.1、serialization 1.12.0、okio 3.18.2。
+
+## 3. 测试结果
 
 ```text
-commonMain: 54 files
-desktopTest: 34 files
-total: 88 Kotlin files / 9,307 lines
-tests: 193 passed
+:core:reader:desktopTest    193 passed
+:core:source:desktopTest     74 passed
+:core:network:desktopTest   105 passed
+----------------------------------------
+total                       372 passed
 ```
 
-复制策略：
-
-- 包名暂保留 `org.skepsun.kototoro.reader.core`，减少一次性改名风险；P1 结束后统一重命名。
-- 测试源集从 `jvmTest` 改为 `desktopTest`（目标名为 `desktop`）。
-- 只改了两处路径常量（隔离守卫测试的 fixture / source 目录）。
-- 没有改任何几何/场景/进度算法。
-
-## 3. 构建验证
+验证命令：
 
 ```bash
-./gradlew :core:reader:desktopTest --offline --no-configuration-cache
-# 193 tests passed
+./gradlew :core:reader:desktopTest \
+          :core:source:desktopTest \
+          :core:network:desktopTest
 
-./gradlew :app:android:assembleDebug \
-          :app:desktop:test \
-          :app:shared:linkDebugFrameworkIosSimulatorArm64 \
-          --offline --no-configuration-cache
-# BUILD SUCCESSFUL
+./gradlew :core:source:compileKotlinIosSimulatorArm64 \
+          :core:network:compileKotlinIosSimulatorArm64
 ```
 
-## 4. 阻塞项：core-source / core-net
+## 4. Maven 访问说明
 
-尝试复制 `core-source` 与 `core-net` 时，Maven Central 对本机 IP 返回 **403**：
-
-```text
-This IP has been blocked for excessive or automated consumption of Maven Central...
-```
-
-这是本轮自动化查询触发的外部访问限制，不是代码问题。为避免继续请求或规避限制，已：
-
-- 停止对 Maven Central 的批量查询；
-- 暂不把 `core-source` / `core-net` 的真实源码接入构建；
-- 两个模块保持空壳，避免 `./gradlew build` 因缺失依赖失败；
-- `feature:*` 暂时不依赖 `core:data`，直到数据层可构建。
-
-恢复网络访问后，P1 的下一批是：
-
-1. `core-source`：SourceRuntime / 协议 DTO / SourceEndpoint / 动态筛选。
-2. `core-net`：WebDAV / Drive / MAL 共享 HTTP 协议。
-3. `core-backup` / `core-domain`。
-4. 接 fixture 源，跑通“浏览 → 详情 → 章节 → 页面”。
+本轮中途，Maven Central 曾对本机 IP 返回 403（自动化请求过多触发）。
+已停止批量查询，未绕过限制；访问恢复后重新拉取依赖，完成 source/network 的构建与测试。
 
 ## 5. 当前构建边界
 
 ```text
 app:shared
-  ├─ core:ui
-  ├─ core:design
-  ├─ feature:library   (UI only)
-  ├─ feature:discover  (UI only)
-  ├─ feature:reader    (UI only; depends core:reader)
-  ├─ feature:settings  (UI only)
-  └─ feature:video/downloads/sync/extensions (UI placeholders)
+  ├─ core:ui / core:design
+  ├─ feature:library / discover / reader / settings
+  └─ feature:video / downloads / sync / extensions (UI placeholders)
 
-core:reader   ← 真实 Kototoro 算法
-core:database ← Room 占位
-core:source   ← 空壳（等待网络）
-core:network  ← 空壳（等待网络）
-core:data     ← 空壳（等待 source/network）
+core:reader    ← 真实 Kototoro 阅读器几何
+core:source    ← 真实 SourceRuntime / 协议 DTO
+core:network   ← 真实 WebDAV / Drive / MAL HTTP 协议
+core:database  ← Room 占位
+core:data      ← 空壳（下一步）
 ```
+
+说明：
+
+- 三个 core 模块已能独立构建/测试，但 **还没有被 feature 消费**；
+- `feature:*` 暂未依赖 `core:data`，避免在 Repository 接口未定时形成临时耦合；
+- 下一步是 `core:data` 把 source/network/reader 串成可用的 Repository。
 
 ## 6. 下一步
 
-- ~~补 `build-logic` 约定插件~~ 已完成，见 [12-build-logic.md](12-build-logic.md)。
-- ~~用 Navigation Compose 替掉 `remember` 切 tab~~ 已接入 Navigation Compose KMP，见 [13-navigation.md](13-navigation.md)。
-- 网络恢复后继续 `core-source` / `core-net`。
-- 在 `feature:reader` 里用 `reader-core` 做最小几何演示（不接真实图片）。
+1. 复制 `core-backup` → `:core:data` / `:core:backup`。
+2. 复制 `core-domain` 的更新/进度/书库规则。
+3. 建最小 `LibraryRepository` / `ContentRepository` 接口。
+4. 用 fixture 源跑通“浏览 → 详情 → 章节 → 页面”数据链路。
+5. 再把 `feature:discover` 接回 `core:source`，用真实数据替换占位页。
+6. 迁移 Navigation 的 Reader 路由。
 
 ## 7. 结论
 
-P1 的第一步已经落地：**Kototoro 的阅读器几何真正进入了新架构，并通过原测试**。
+P1 的核心模块复制已完成一半以上：
 
-这一步的价值不在 UI，而在于验证了“复制核心代码 + 适配目录/测试 + 三端编译”的迁移路径可行。后续的 source/network 复制可以沿用同一流程。
+- 阅读器几何：193 测试；
+- 源协议：74 测试；
+- 网络协议：105 测试。
+
+这证明“复制 Kototoro 核心代码 + 新模块边界 + 新三方版本”可以稳定工作。剩下的是数据层与 Repository 编排，而不是重写算法。

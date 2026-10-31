@@ -6,7 +6,7 @@
 2. [MD3E 设计系统](08-md3e-design.md) — 色彩、字体、形状、动效、组件、页面方向。
 3. [初始化方案](09-initialization.md) — 20 模块 + build-logic、Room、MD3E、迁移顺序、CI。
 4. [P0 状态](10-p0-status.md) — 三端构建结果、截图、已知问题与 P1。
-5. [P1 状态](11-p1-status.md) — reader-core 复制、193 测试、source/net 阻塞。
+5. [P1 状态](11-p1-status.md) — reader-core/source/net 复制、372 测试。
 6. [build-logic](12-build-logic.md) — 约定插件、模块写法与验证。
 7. [Navigation](13-navigation.md) — 路由、返回栈、返回处理与迁移计划。
 
@@ -31,7 +31,7 @@
 
 ## 当前状态
 
-- 阶段：P1 进行中（reader-core + build-logic + Navigation 已完成）
+- 阶段：P1 进行中（reader/source/net + build-logic + Navigation 已完成）
 - 代码：三端壳 + MD3E + reader-core 已落地
 - 原型：并行设计（MD3E）
-- 下一步：source/net 复制（等待网络）
+- 下一步：core:data / Repository 编排
