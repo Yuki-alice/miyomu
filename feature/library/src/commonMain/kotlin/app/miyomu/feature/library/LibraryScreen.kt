@@ -42,7 +42,7 @@ private val demos = listOf(
 )
 
 @Composable
-fun LibraryScreen(modifier: Modifier = Modifier) {
+fun LibraryScreen(modifier: Modifier = Modifier, onOpenDetails: (String) -> Unit = {}) {
     Column(
         modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -79,7 +79,7 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
                     )
                 }
                 Button(
-                    onClick = {},
+                    onClick = { onOpenDetails("sky-archive") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.onPrimary,
@@ -129,4 +129,4 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) = LibraryScreen(modifier)
+fun HomeScreen(modifier: Modifier = Modifier, onOpenDetails: (String) -> Unit = {}) = LibraryScreen(modifier, onOpenDetails)

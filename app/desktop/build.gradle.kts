@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":app:shared"))
     implementation(compose.desktop.currentOs)
+    testImplementation(project(":core:ui"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
 }

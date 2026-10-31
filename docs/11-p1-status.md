@@ -87,7 +87,7 @@ core:data     ← 空壳（等待 source/network）
 ## 6. 下一步
 
 - ~~补 `build-logic` 约定插件~~ 已完成，见 [12-build-logic.md](12-build-logic.md)。
-- 再用 Navigation Compose 替掉 `remember` 切 tab（依赖已缓存）。
+- ~~用 Navigation Compose 替掉 `remember` 切 tab~~ 已用内部导航器完成，见 [13-navigation.md](13-navigation.md)。
 - 网络恢复后继续 `core-source` / `core-net`。
 - 在 `feature:reader` 里用 `reader-core` 做最小几何演示（不接真实图片）。
 

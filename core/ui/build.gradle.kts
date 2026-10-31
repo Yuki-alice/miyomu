@@ -15,6 +15,10 @@ kotlin {
             implementation(compose.components.resources)
             implementation(libs.material.icons.core)
         }
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.core.ktx)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
