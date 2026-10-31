@@ -40,26 +40,28 @@ fun MiyomuApp(database: MiyomuDatabase) {
                 MiyomuNavHost(navController) { route ->
                     when (route) {
                         MiyomuRoute.Home -> HomeScreen(
-                            onOpenDetails = { navController.openDetails(it) },
+                            onOpenDetails = { source, id -> navController.openDetails(source, id.toString()) },
                         )
                         MiyomuRoute.Library -> LibraryScreen(
-                            onOpenDetails = { navController.openDetails(it) },
+                            onOpenDetails = { source, id -> navController.openDetails(source, id.toString()) },
                         )
                         MiyomuRoute.Browse -> DiscoverScreen(
-                            onOpenDetails = { navController.openDetails(it.toString()) },
+                            onOpenDetails = { source, id -> navController.openDetails(source, id.toString()) },
                         )
                         MiyomuRoute.Updates -> LibraryScreen(
-                            onOpenDetails = { navController.openDetails(it) },
+                            onOpenDetails = { source, id -> navController.openDetails(source, id.toString()) },
                         )
                         MiyomuRoute.More -> SettingsScreen()
                         is MiyomuRoute.Details -> DetailsScreen(
+                            sourceName = route.sourceName,
                             contentId = route.contentId,
                             onBack = { navController.popBackStack() },
-                            onOpenReader = { content, chapter ->
-                                navController.navigate(MiyomuRoute.Reader(content, chapter.toString()).key)
+                            onOpenReader = { source, content, chapter ->
+                                navController.navigate(MiyomuRoute.Reader(source, content, chapter.toString()).key)
                             },
                         )
                         is MiyomuRoute.Reader -> ReaderScreen(
+                            sourceName = route.sourceName,
                             contentId = route.contentId,
                             chapterId = route.chapterId,
                             onBack = { navController.popBackStack() },
@@ -71,8 +73,8 @@ fun MiyomuApp(database: MiyomuDatabase) {
     }
 }
 
-private fun NavHostController.openDetails(contentId: String) {
-    navigate(MiyomuRoute.Details(contentId).key)
+private fun NavHostController.openDetails(sourceName: String, contentId: String) {
+    navigate(MiyomuRoute.Details(sourceName, contentId).key)
 }
 
 private fun NavHostController.selectTopLevel(destination: AppDestination) {

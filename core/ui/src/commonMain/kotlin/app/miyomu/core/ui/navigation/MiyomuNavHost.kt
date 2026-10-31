@@ -9,8 +9,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.savedstate.read
 
-private const val DETAILS_PATTERN = "details/{contentId}"
-private const val READER_PATTERN = "reader/{contentId}/{chapterId}"
+private const val DETAILS_PATTERN = "details/{sourceName}/{contentId}"
+private const val READER_PATTERN = "reader/{sourceName}/{contentId}/{chapterId}"
 
 @Composable
 fun MiyomuNavHost(
@@ -30,19 +30,29 @@ fun MiyomuNavHost(
         composable(MiyomuRoute.More.key) { content(MiyomuRoute.More) }
         composable(
             route = DETAILS_PATTERN,
-            arguments = listOf(navArgument("contentId") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("sourceName") { type = NavType.StringType },
+                navArgument("contentId") { type = NavType.StringType },
+            ),
         ) { entry ->
-            content(MiyomuRoute.Details(entry.arguments?.read { getString("contentId") }.orEmpty()))
+            content(
+                MiyomuRoute.Details(
+                    sourceName = entry.arguments?.read { getString("sourceName") }.orEmpty(),
+                    contentId = entry.arguments?.read { getString("contentId") }.orEmpty(),
+                ),
+            )
         }
         composable(
             route = READER_PATTERN,
             arguments = listOf(
+                navArgument("sourceName") { type = NavType.StringType },
                 navArgument("contentId") { type = NavType.StringType },
                 navArgument("chapterId") { type = NavType.StringType },
             ),
         ) { entry ->
             content(
                 MiyomuRoute.Reader(
+                    sourceName = entry.arguments?.read { getString("sourceName") }.orEmpty(),
                     contentId = entry.arguments?.read { getString("contentId") }.orEmpty(),
                     chapterId = entry.arguments?.read { getString("chapterId") }.orEmpty(),
                 ),

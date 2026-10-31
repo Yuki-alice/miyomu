@@ -24,11 +24,15 @@ sealed interface MiyomuRoute {
         override val key: String = "more"
     }
 
-    data class Details(val contentId: String) : MiyomuRoute {
-        override val key: String = "details/$contentId"
+    data class Details(val sourceName: String, val contentId: String) : MiyomuRoute {
+        override val key: String = "details/$sourceName/$contentId"
     }
 
-    data class Reader(val contentId: String, val chapterId: String) : MiyomuRoute {
-        override val key: String = "reader/$contentId/$chapterId"
+    data class Reader(
+        val sourceName: String,
+        val contentId: String,
+        val chapterId: String,
+    ) : MiyomuRoute {
+        override val key: String = "reader/$sourceName/$contentId/$chapterId"
     }
 }

@@ -29,6 +29,7 @@ class DetailsViewModel(
     val state: StateFlow<DetailsUiState> = _state.asStateFlow()
 
     private var contentId: ContentId? = null
+    private var sourceName: String? = null
 
     init {
         viewModelScope.launch {
@@ -39,13 +40,14 @@ class DetailsViewModel(
         }
     }
 
-    fun load(contentId: String) {
+    fun load(sourceName: String, contentId: String) {
         val id = ContentId(contentId.toLongOrNull() ?: -1L)
-        if (this.contentId == id && _state.value.details != null) return
+        if (this.sourceName == sourceName && this.contentId == id && _state.value.details != null) return
+        this.sourceName = sourceName
         this.contentId = id
         _state.value = _state.value.copy(loading = true, failed = false)
         viewModelScope.launch {
-            when (val result = contentRepository.details(id)) {
+            when (val result = contentRepository.details(sourceName, id)) {
                 is Outcome.Success -> {
                     val favourite = libraryRepository.observeFavourites().first()
                         .any { row -> row.id == id }

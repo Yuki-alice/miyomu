@@ -5,8 +5,10 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -41,7 +43,6 @@ class MangaDexSourceRuntime(
 ) : SourceRuntime {
     private val source = SourceRef(name = "mangadex", locale = "en", contentType = "MANGA")
     private val json = Json { ignoreUnknownKeys = true }
-    private val mangaIds = mutableMapOf<Long, String>()
     private val chapterIds = mutableMapOf<Long, String>()
 
     override suspend fun getSources(): List<SourceRef> = listOf(source)
@@ -65,15 +66,26 @@ class MangaDexSourceRuntime(
         homepage = "https://mangadex.org",
     )
 
-    override suspend fun getFilterOptions(sourceName: String): SourceFilterOptions = SourceFilterOptions(
-        availableTags = emptySet(),
-        tagGroups = emptyList(),
-        availableStates = emptySet(),
-        availableContentRating = emptySet(),
-        availableContentTypes = emptySet(),
-        availableDemographics = emptySet(),
-        availableLocales = emptySet(),
-    )
+    override suspend fun getFilterOptions(sourceName: String): SourceFilterOptions {
+        val root = getJson("$API/manga/tag")
+        val tags = root["data"]?.jsonArray
+            ?.mapNotNull { element ->
+                val obj = element.jsonObject
+                val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                val title = obj["attributes"]?.jsonObject?.get("name")?.jsonObject
+                    ?.get("en")?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                SourceTag(title = title, key = id, source = source)
+            }?.toSet() ?: emptySet()
+        return SourceFilterOptions(
+            availableTags = tags,
+            tagGroups = emptyList(),
+            availableStates = setOf("ongoing", "completed", "hiatus", "cancelled"),
+            availableContentRating = setOf("safe", "suggestive"),
+            availableContentTypes = emptySet(),
+            availableDemographics = emptySet(),
+            availableLocales = setOf("en"),
+        )
+    }
 
     override suspend fun getList(
         sourceName: String,
@@ -82,7 +94,7 @@ class MangaDexSourceRuntime(
         filter: SourceFilter?,
     ): List<SourceContent> {
         val query = filter?.query?.trim().orEmpty()
-        val response = client.get("$API/manga") {
+        val root = getJson("$API/manga") {
             parameter("limit", 20)
             parameter("offset", offset)
             parameter("includes[]", "cover_art")
@@ -90,33 +102,35 @@ class MangaDexSourceRuntime(
             parameter("contentRating[]", "safe")
             parameter("contentRating[]", "suggestive")
             if (query.isNotBlank()) parameter("title", query)
+            filter?.tags?.forEach { parameter("includedTags[]", it.key) }
+            filter?.tagsExclude?.forEach { parameter("excludedTags[]", it.key) }
+            filter?.states?.forEach { parameter("status[]", it) }
+            if ((filter?.year ?: 0) > 0) parameter("year", filter?.year)
             when (order) {
                 "LATEST" -> parameter("order[latestUploadedChapter]", "desc")
                 "RELEVANCE" -> parameter("order[relevance]", "desc")
                 else -> parameter("order[followedCount]", "desc")
             }
         }
-        val data = json.parseToJsonElement(response.bodyAsText()).jsonObject["data"]?.jsonArray
+        val data = root["data"]?.jsonArray
             ?: return emptyList()
         return data.mapNotNull { it.toContent() }
     }
 
     override suspend fun getDetails(content: SourceContent, fetchMode: SourceDetailsFetchMode): SourceContent {
-        val uuid = mangaIds[content.id] ?: return content
-        val response = client.get("$API/manga/$uuid") {
+        val uuid = content.url.substringAfterLast('/')
+        val root = getJson("$API/manga/$uuid") {
             parameter("includes[]", "cover_art")
             parameter("includes[]", "author")
         }
-        val detailed = json.parseToJsonElement(response.bodyAsText())
-            .jsonObject["data"]?.toContent() ?: content
+        val detailed = root["data"]?.toContent() ?: content
         val chapters = loadChapters(uuid)
         return detailed.copy(chapters = chapters)
     }
 
     override suspend fun getPages(chapter: SourceChapter, nextChapterUrl: String?): List<SourcePage> {
         val uuid = chapterIds[chapter.id] ?: chapter.url
-        val response = client.get("$API/at-home/server/$uuid")
-        val root = json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val root = getJson("$API/at-home/server/$uuid")
         val baseUrl = root["baseUrl"]?.jsonPrimitive?.contentOrNull ?: return emptyList()
         val chapterNode = root["chapter"]?.jsonObject ?: return emptyList()
         val hash = chapterNode["hash"]?.jsonPrimitive?.contentOrNull ?: return emptyList()
@@ -138,18 +152,20 @@ class MangaDexSourceRuntime(
     override suspend fun getRelated(content: SourceContent): List<SourceContent> = emptyList()
 
     private suspend fun loadChapters(uuid: String): List<SourceChapter> {
-        val response = client.get("$API/manga/$uuid/feed") {
+        val root = getJson("$API/manga/$uuid/feed") {
             parameter("translatedLanguage[]", "en")
             parameter("order[chapter]", "desc")
             parameter("limit", 100)
             parameter("includes[]", "scanlation_group")
         }
-        val data = json.parseToJsonElement(response.bodyAsText()).jsonObject["data"]?.jsonArray
+        val data = root["data"]?.jsonArray
             ?: return emptyList()
-        return data.mapNotNull { element ->
+        val readable = data.mapNotNull { element ->
             val obj = element.jsonObject
             val chapterUuid = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
             val attrs = obj["attributes"]?.jsonObject ?: return@mapNotNull null
+            // External chapters have no MangaDex page images.
+            if (attrs["externalUrl"]?.jsonPrimitive?.contentOrNull != null) return@mapNotNull null
             val number = attrs["chapter"]?.jsonPrimitive?.contentOrNull?.toFloatOrNull() ?: 0f
             val chapter = SourceChapter(
                 id = stableId(chapterUuid),
@@ -167,6 +183,26 @@ class MangaDexSourceRuntime(
             )
             chapterIds[chapter.id] = chapterUuid
             chapter
+        }
+        // If every chapter is external, show them instead of an empty chapter list.
+        if (readable.isNotEmpty()) return readable
+        return data.mapNotNull { element ->
+            val obj = element.jsonObject
+            val chapterUuid = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val attrs = obj["attributes"]?.jsonObject ?: return@mapNotNull null
+            val number = attrs["chapter"]?.jsonPrimitive?.contentOrNull?.toFloatOrNull() ?: 0f
+            SourceChapter(
+                id = stableId(chapterUuid),
+                title = attrs["title"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                    ?: "Chapter $number",
+                number = number,
+                volume = attrs["volume"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
+                url = attrs["externalUrl"]?.jsonPrimitive?.contentOrNull ?: chapterUuid,
+                scanlator = "External",
+                uploadDate = 0L,
+                branch = attrs["translatedLanguage"]?.jsonPrimitive?.contentOrNull,
+                source = source,
+            )
         }
     }
 
@@ -193,7 +229,6 @@ class MangaDexSourceRuntime(
             SourceTag(title = name, key = tagObj["id"]?.jsonPrimitive?.contentOrNull ?: name, source = source)
         }?.toSet() ?: emptySet()
         val id = stableId(uuid)
-        mangaIds[id] = uuid
         return SourceContent(
             id = id,
             title = title,
@@ -211,6 +246,28 @@ class MangaDexSourceRuntime(
             source = source,
             description = attrs["description"]?.jsonObject?.get("en")?.jsonPrimitive?.contentOrNull,
         )
+    }
+
+    private suspend fun getJson(
+        url: String,
+        block: HttpRequestBuilder.() -> Unit = {},
+    ): JsonObject {
+        var attempt = 0
+        while (true) {
+            val response = client.get(url) {
+                block()
+            }
+            val body = response.bodyAsText()
+            if (response.status.value in 200..299) {
+                return json.parseToJsonElement(body).jsonObject
+            }
+            if ((response.status.value == 429 || response.status.value >= 500) && attempt < 2) {
+                delay(400L * (attempt + 1))
+                attempt++
+                continue
+            }
+            throw IllegalStateException("MangaDex HTTP ${response.status.value}: ${body.take(200)}")
+        }
     }
 
     private fun stableId(value: String): Long {

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,6 +37,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ReaderScreen(
+    sourceName: String,
     contentId: String,
     chapterId: String,
     onBack: () -> Unit,
@@ -45,7 +47,7 @@ fun ReaderScreen(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(contentId, chapterId) {
-        viewModel.load(contentId, chapterId)
+        viewModel.load(sourceName, contentId, chapterId)
     }
 
     var currentPage by remember { mutableStateOf(state.initialSlot) }
@@ -57,6 +59,15 @@ fun ReaderScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(onClick = onBack) { Text("← Back", color = Color(0xFFE7E2EA)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                ReaderMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = state.mode == mode,
+                        onClick = { viewModel.setMode(mode) },
+                        label = { Text(mode.label, color = Color(0xFFE7E2EA)) },
+                    )
+                }
+            }
             Text(
                 if (state.pages.isEmpty()) "Reader" else "Page ${currentPage + 1} / ${state.pages.size}",
                 color = Color(0xFFE7E2EA),
@@ -65,7 +76,12 @@ fun ReaderScreen(
         }
         when {
             state.failed -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Pages not found", color = Color(0xFFE7E2EA))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Pages not found", color = Color(0xFFE7E2EA))
+                    TextButton(onClick = { viewModel.load(sourceName, contentId, chapterId) }) {
+                        Text("Retry")
+                    }
+                }
             }
             state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Loading pages…", color = Color(0xFFE7E2EA))
@@ -76,7 +92,7 @@ fun ReaderScreen(
             else -> {
                 val scene = state.scene ?: return@Column
                 val slots = scene.allSlots
-                key(state.initialSlot, slots.size) {
+                key(state.initialSlot, slots.size, state.mode) {
                     val pagerState = rememberPagerState(
                         initialPage = state.initialSlot,
                         pageCount = { slots.size },

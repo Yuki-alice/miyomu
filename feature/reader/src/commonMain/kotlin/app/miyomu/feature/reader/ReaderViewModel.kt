@@ -17,6 +17,7 @@ import org.skepsun.kototoro.reader.core.SceneReadingDirection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -24,6 +25,9 @@ data class ReaderUiState(
     val pages: List<PageSummary> = emptyList(),
     val scene: PagedReaderScene? = null,
     val initialSlot: Int = 0,
+    val currentPage: Int = 0,
+    val mode: ReaderMode = ReaderMode.SINGLE,
+    val chapterId: Long = 0L,
     val loading: Boolean = true,
     val failed: Boolean = false,
 )
@@ -37,15 +41,40 @@ class ReaderViewModel(
 
     private var loadedKey: String? = null
 
-    fun load(contentId: String, chapterId: String) {
-        val key = "$contentId/$chapterId"
+    private fun buildScene(
+        pages: List<PageSummary>,
+        chapterId: Long,
+        mode: ReaderMode,
+    ): PagedReaderScene = PagedReaderScene(
+        viewportWidth = 1000,
+        viewportHeight = 1600,
+        config = PagedSpreadConfig(
+            isDoublePage = mode != ReaderMode.SINGLE,
+            readingDirection = if (mode == ReaderMode.RTL) {
+                SceneReadingDirection.RIGHT_TO_LEFT
+            } else {
+                SceneReadingDirection.LEFT_TO_RIGHT
+            },
+        ),
+        initialSpecs = pages.mapIndexed { index, page ->
+            PagedPageSpec(
+                pageId = PageId(page.id),
+                geometryHint = PageGeometryHint.Estimated(0.7f),
+                chapterId = chapterId,
+                chapterPageIndex = index,
+            )
+        },
+    )
+
+    fun load(sourceName: String, contentId: String, chapterId: String) {
+        val key = "$sourceName/$contentId/$chapterId"
         if (loadedKey == key) return
         loadedKey = key
         _state.value = ReaderUiState(loading = true)
         viewModelScope.launch {
             val content = ContentId(contentId.toLongOrNull() ?: -1L)
             val chapter = ChapterId(chapterId.toLongOrNull() ?: -1L)
-            when (val result = contentRepository.pages(content, chapter)) {
+            when (val result = contentRepository.pages(sourceName, content, chapter)) {
                 is Outcome.Success -> {
                     val progress = libraryRepository.observeProgress(content).first()
                     val startPage = progress
@@ -53,21 +82,10 @@ class ReaderViewModel(
                         ?.page
                         ?.coerceIn(0, (result.value.size - 1).coerceAtLeast(0))
                         ?: 0
-                    val scene = PagedReaderScene(
-                        viewportWidth = 1000,
-                        viewportHeight = 1600,
-                        config = PagedSpreadConfig(
-                            isDoublePage = false,
-                            readingDirection = SceneReadingDirection.LEFT_TO_RIGHT,
-                        ),
-                        initialSpecs = result.value.mapIndexed { index, page ->
-                            PagedPageSpec(
-                                pageId = PageId(page.id),
-                                geometryHint = PageGeometryHint.Estimated(0.7f),
-                                chapterId = chapter.value,
-                                chapterPageIndex = index,
-                            )
-                        },
+                    val scene = buildScene(
+                        pages = result.value,
+                        chapterId = chapter.value,
+                        mode = ReaderMode.SINGLE,
                     )
                     val initialSlot = scene
                         .slotIndexOf(PageId(result.value[startPage].id))
@@ -76,6 +94,8 @@ class ReaderViewModel(
                         pages = result.value,
                         scene = scene,
                         initialSlot = initialSlot,
+                        currentPage = startPage,
+                        chapterId = chapter.value,
                         loading = false,
                     )
                 }
@@ -84,7 +104,21 @@ class ReaderViewModel(
         }
     }
 
+    fun setMode(mode: ReaderMode) {
+        val state = _state.value
+        if (state.pages.isEmpty() || state.mode == mode) return
+        val scene = buildScene(state.pages, state.chapterId, mode)
+        val page = state.pages.getOrNull(state.currentPage) ?: state.pages.first()
+        val slot = scene.slotIndexOf(PageId(page.id)).coerceAtLeast(0)
+        _state.value = state.copy(
+            scene = scene,
+            mode = mode,
+            initialSlot = slot,
+        )
+    }
+
     fun saveProgress(contentId: String, chapterId: String, page: Int, percent: Float) {
+        _state.update { it.copy(currentPage = page) }
         viewModelScope.launch {
             libraryRepository.saveProgress(
                 contentId = ContentId(contentId.toLongOrNull() ?: -1L),

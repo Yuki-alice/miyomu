@@ -94,14 +94,14 @@ LibraryViewModelTest.exposesFavouritesFromRepository
 
 ```text
 reader     193
-source      75
+source      76
 network    105
 data         5
 database     1
-feature:reader   2
+feature:reader   3
 feature:library  1
 ------------------
-total      382
+total      384
 ```
 
 三端：
@@ -113,12 +113,12 @@ total      382
 ## 9. 剩余限制
 
 - MangaDex 只有搜索/源切换，没有完整筛选树（标签/年份/状态/排序 UI）；
-- 源选择是全局的，没有按路由保存 source；
+- ~~源选择是全局的，没有按路由保存 source~~ 已改为路由携带 sourceName。
 - MangaDex UUID → Long 映射只在 runtime 内存中，进程重启后需要重新拉列表；
 - 没有 SavedStateHandle，ViewModel 的参数仍通过 `load(...)` 传入；
 - 没有 Android/iOS 真机运行验证（仅构建/模拟器）；
-- Reader 仍是单页 LTR 配置，双页/RTL 只具备 reader-core 能力，UI 尚未暴露；
-- 没有错误重试/诊断面板。
+- ~~Reader 仍是单页 LTR~~ 已暴露 Single/Double/RTL。
+- ~~没有错误重试~~ 已加 Retry；诊断面板仍未做。
 
 ## 10. 结论
 

@@ -51,11 +51,26 @@ class ReaderViewModelTest {
             contentRepository = FakeContentRepository(),
             libraryRepository = FakeLibraryRepository(progress),
         )
-        viewModel.load("1", "1001")
+        viewModel.load("mangadex", "1", "1001")
         advanceUntilIdle()
         assertEquals(3, viewModel.state.value.pages.size)
         assertEquals(1, viewModel.state.value.initialSlot)
         assertFalse(viewModel.state.value.loading)
+    }
+
+    @Test
+    fun switchesToDoubleAndRtlModes() = runTest(dispatcher.scheduler) {
+        val viewModel = ReaderViewModel(
+            contentRepository = FakeContentRepository(),
+            libraryRepository = FakeLibraryRepository(null),
+        )
+        viewModel.load("mangadex", "1", "1001")
+        advanceUntilIdle()
+        viewModel.setMode(ReaderMode.DOUBLE)
+        assertEquals(ReaderMode.DOUBLE, viewModel.state.value.mode)
+        assertEquals(true, viewModel.state.value.scene?.config?.isDoublePage)
+        viewModel.setMode(ReaderMode.RTL)
+        assertEquals(org.skepsun.kototoro.reader.core.SceneReadingDirection.RIGHT_TO_LEFT, viewModel.state.value.scene?.readingDirection)
     }
 
     @Test
@@ -73,21 +88,22 @@ class ReaderViewModelTest {
             contentRepository = FakeContentRepository(),
             libraryRepository = FakeLibraryRepository(progress),
         )
-        viewModel.load("1", "1001")
+        viewModel.load("mangadex", "1", "1001")
         advanceUntilIdle()
         assertEquals(0, viewModel.state.value.initialSlot)
     }
 
     private class FakeContentRepository : ContentRepository {
         override suspend fun sources(): List<SourceOption> = emptyList()
-        override suspend fun selectSource(sourceName: String) = Unit
-        override suspend fun browse(offset: Int, limit: Int, query: String?): Outcome<List<ContentSummary>> =
+        override suspend fun filterOptions(sourceName: String): Outcome<app.miyomu.core.model.ContentFilterOptions> =
+            Outcome.Success(app.miyomu.core.model.ContentFilterOptions())
+        override suspend fun browse(sourceName: String, offset: Int, limit: Int, query: String?, filter: app.miyomu.core.model.ContentFilter): Outcome<List<ContentSummary>> =
             Outcome.Success(emptyList())
 
-        override suspend fun details(contentId: ContentId): Outcome<ContentDetails> =
+        override suspend fun details(sourceName: String, contentId: ContentId): Outcome<ContentDetails> =
             Outcome.Failure(app.miyomu.core.model.AppError.NotFound("not used"))
 
-        override suspend fun pages(contentId: ContentId, chapterId: ChapterId): Outcome<List<PageSummary>> =
+        override suspend fun pages(sourceName: String, contentId: ContentId, chapterId: ChapterId): Outcome<List<PageSummary>> =
             Outcome.Success(
                 (1..3).map { index ->
                     PageSummary(id = index.toLong(), index = index - 1, url = "https://example.com/$index.jpg")

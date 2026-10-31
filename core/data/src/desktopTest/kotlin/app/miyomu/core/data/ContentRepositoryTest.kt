@@ -16,7 +16,7 @@ class ContentRepositoryTest {
 
     @Test
     fun browseReturnsFixtureContent() = runTest {
-        val result = repository().browse()
+        val result = repository().browse("demo")
         assertTrue(result is Outcome.Success)
         val items = (result as Outcome.Success).value
         assertEquals(8, items.size)
@@ -27,8 +27,8 @@ class ContentRepositoryTest {
     @Test
     fun detailsReturnsChapters() = runTest {
         val repo = repository()
-        val items = (repo.browse() as Outcome.Success).value
-        val details = repo.details(items.first().id)
+        val items = (repo.browse("demo") as Outcome.Success).value
+        val details = repo.details("demo", items.first().id)
         assertTrue(details is Outcome.Success)
         val value = (details as Outcome.Success).value
         assertNotNull(value.description)
@@ -39,9 +39,9 @@ class ContentRepositoryTest {
     @Test
     fun pagesReturnsFixturePages() = runTest {
         val repo = repository()
-        val items = (repo.browse() as Outcome.Success).value
-        val details = (repo.details(items.first().id) as Outcome.Success).value
-        val pages = repo.pages(items.first().id, details.chapters.first().id)
+        val items = (repo.browse("demo") as Outcome.Success).value
+        val details = (repo.details("demo", items.first().id) as Outcome.Success).value
+        val pages = repo.pages("demo", items.first().id, details.chapters.first().id)
         assertTrue(pages is Outcome.Success)
         val value = (pages as Outcome.Success).value
         assertEquals(3, value.size)

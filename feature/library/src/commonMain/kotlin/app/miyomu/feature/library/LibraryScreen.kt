@@ -33,7 +33,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun LibraryScreen(
-    onOpenDetails: (String) -> Unit = {},
+    onOpenDetails: (String, Long) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val viewModel: LibraryViewModel = koinViewModel()
@@ -47,7 +47,7 @@ fun LibraryScreen(
             Column {
                 Text("Good evening", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                 Text(
-                    "${favourites.size} saved · demo source",
+                    "${favourites.size} saved · MangaDex + Demo",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -70,7 +70,7 @@ fun LibraryScreen(
                 Text("Sky Archive", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text("Chapter 80 · The library that drifts", style = MaterialTheme.typography.bodyMedium)
                 Button(
-                    onClick = { onOpenDetails("1") },
+                    onClick = { onOpenDetails("mangadex", 1L) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.onPrimary,
@@ -96,7 +96,7 @@ fun LibraryScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(favourites, key = { it.id.value }) { item ->
-                    FavouriteCard(item = item, onClick = { onOpenDetails(item.id.value.toString()) })
+                    FavouriteCard(item = item, onClick = { onOpenDetails(item.source.value, item.id.value) })
                 }
             }
         }
@@ -126,6 +126,6 @@ private fun FavouriteCard(item: ContentSummary, onClick: () -> Unit) {
 
 @Composable
 fun HomeScreen(
-    onOpenDetails: (String) -> Unit = {},
+    onOpenDetails: (String, Long) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) = LibraryScreen(onOpenDetails, modifier)

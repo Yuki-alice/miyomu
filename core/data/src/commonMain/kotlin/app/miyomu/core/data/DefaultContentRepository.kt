@@ -4,11 +4,13 @@ import app.miyomu.core.model.AppError
 import app.miyomu.core.model.ChapterId
 import app.miyomu.core.model.ChapterSummary
 import app.miyomu.core.model.ContentDetails
+import app.miyomu.core.model.ContentFilter
+import app.miyomu.core.model.ContentFilterOptions
 import app.miyomu.core.model.ContentId
-import app.miyomu.core.model.ContentRating
 import app.miyomu.core.model.ContentState
 import app.miyomu.core.model.ContentSummary
 import app.miyomu.core.model.ContentType
+import app.miyomu.core.model.FilterTag
 import app.miyomu.core.model.Outcome
 import app.miyomu.core.model.PageSummary
 import app.miyomu.core.model.SourceId
@@ -18,13 +20,15 @@ import kotlinx.coroutines.CancellationException
 import org.skepsun.kototoro.core.source.SourceChapter
 import org.skepsun.kototoro.core.source.SourceContent
 import org.skepsun.kototoro.core.source.SourceDetailsFetchMode
+import org.skepsun.kototoro.core.source.SourceFilter
+import org.skepsun.kototoro.core.source.SourceRuntime
+import org.skepsun.kototoro.core.source.SourceTag
 
 class DefaultContentRepository(
     private val registry: SourceRegistry,
 ) : ContentRepository {
-    private val cache = mutableMapOf<Long, SourceContent>()
-    private val chapterCache = mutableMapOf<Long, SourceChapter>()
-    private var selectedSource: String? = null
+    private val contentCache = mutableMapOf<String, MutableMap<Long, SourceContent>>()
+    private val chapterCache = mutableMapOf<String, MutableMap<Long, SourceChapter>>()
 
     override suspend fun sources(): List<SourceOption> = registry.sources().map { ref ->
         SourceOption(
@@ -38,27 +42,45 @@ class DefaultContentRepository(
         )
     }
 
-    override suspend fun selectSource(sourceName: String) {
-        registry.runtime(sourceName)
-        selectedSource = sourceName
-        cache.clear()
-        chapterCache.clear()
+    override suspend fun filterOptions(sourceName: String): Outcome<ContentFilterOptions> {
+        return try {
+            val runtime = runtime(sourceName)
+            val options = runtime.getFilterOptions(sourceName)
+            val descriptor = runtime.describe(sourceName)
+            Outcome.Success(
+                ContentFilterOptions(
+                    tags = options.availableTags.map { FilterTag(id = it.key, title = it.title) }
+                        .distinctBy { it.id }
+                        .sortedBy { it.title },
+                    states = options.availableStates,
+                    sortOrders = descriptor.sortOrders,
+                ),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Outcome.Failure(AppError.Network(e))
+        }
     }
 
-    private suspend fun runtime() = if (selectedSource == null) registry.primary() else registry.runtime(selectedSource!!)
-
-    override suspend fun browse(offset: Int, limit: Int, query: String?): Outcome<List<ContentSummary>> {
+    override suspend fun browse(
+        sourceName: String,
+        offset: Int,
+        limit: Int,
+        query: String?,
+        filter: ContentFilter,
+    ): Outcome<List<ContentSummary>> {
         return try {
-            val runtime = runtime()
+            val runtime = runtime(sourceName)
             val source = runtime.getSources().first()
-            val page = runtime.getList(
-                sourceName = source.name,
-                offset = offset,
-                order = null,
-                filter = query?.takeIf { it.isNotBlank() }?.let {
-                    org.skepsun.kototoro.core.source.SourceFilter(query = it)
-                },
+            val sourceFilter = SourceFilter(
+                query = query?.takeIf { it.isNotBlank() },
+                tags = filter.tags.mapTo(mutableSetOf()) { SourceTag(it.title, it.id, source) },
+                states = filter.states,
+                year = filter.year ?: 0,
             )
+            val page = runtime.getList(source.name, offset, filter.order, sourceFilter)
+            val cache = contentCache.getOrPut(source.name) { mutableMapOf() }
             page.forEach { cache[it.id] = it }
             Outcome.Success(page.map { it.toSummary() })
         } catch (e: CancellationException) {
@@ -68,10 +90,11 @@ class DefaultContentRepository(
         }
     }
 
-    override suspend fun details(contentId: ContentId): Outcome<ContentDetails> {
+    override suspend fun details(sourceName: String, contentId: ContentId): Outcome<ContentDetails> {
         return try {
-            val runtime = runtime()
+            val runtime = runtime(sourceName)
             val source = runtime.getSources().first()
+            val cache = contentCache.getOrPut(source.name) { mutableMapOf() }
             val content = cache[contentId.value] ?: loadById(runtime, source.name, contentId.value)
                 ?: return Outcome.Failure(AppError.NotFound("content ${contentId.value}"))
             val detailed = runtime.getDetails(content, SourceDetailsFetchMode.ALLOW_CACHE)
@@ -97,13 +120,19 @@ class DefaultContentRepository(
         }
     }
 
-    override suspend fun pages(contentId: ContentId, chapterId: ChapterId): Outcome<List<PageSummary>> {
+    override suspend fun pages(
+        sourceName: String,
+        contentId: ContentId,
+        chapterId: ChapterId,
+    ): Outcome<List<PageSummary>> {
         return try {
-            val runtime = runtime()
+            val runtime = runtime(sourceName)
             val source = runtime.getSources().first()
+            val chapterCache = chapterCache.getOrPut(source.name) { mutableMapOf() }
             var chapter = chapterCache[chapterId.value]
             if (chapter == null) {
-                val content = cache[contentId.value] ?: loadById(runtime, source.name, contentId.value)
+                val contentCache = contentCache.getOrPut(source.name) { mutableMapOf() }
+                val content = contentCache[contentId.value] ?: loadById(runtime, source.name, contentId.value)
                     ?: return Outcome.Failure(AppError.NotFound("content ${contentId.value}"))
                 val detailed = runtime.getDetails(content, SourceDetailsFetchMode.ALLOW_CACHE)
                 detailed.chapters.orEmpty().forEach { chapterCache[it.id] = it }
@@ -126,14 +155,13 @@ class DefaultContentRepository(
         }
     }
 
-    private suspend fun loadById(
-        runtime: org.skepsun.kototoro.core.source.SourceRuntime,
-        sourceName: String,
-        id: Long,
-    ): SourceContent? {
+    private suspend fun runtime(sourceName: String): SourceRuntime = registry.runtime(sourceName)
+
+    private suspend fun loadById(runtime: SourceRuntime, sourceName: String, id: Long): SourceContent? {
         var offset = 0
         while (true) {
             val page = runtime.getList(sourceName, offset, null, null)
+            val cache = contentCache.getOrPut(sourceName) { mutableMapOf() }
             page.forEach { cache[it.id] = it }
             page.firstOrNull { it.id == id }?.let { return it }
             if (page.isEmpty()) return null
