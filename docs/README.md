@@ -16,16 +16,17 @@
 12. [ViewModel + Koin](18-viewmodel-koin.md) — 四个主 ViewModel 与依赖装配。
 13. [限制清理](19-runtime-hardening.md) — Reader 场景、源切换、Coil header、迁移测试。
 14. [P1 验收](20-p1-acceptance.md) — 三端启动/主链路/截图/测试矩阵。
+15. [Big MVP 计划](21-big-mvp-plan.md) — 漫画+小说、Mihon+Legado、下载、双端范围。
 
 ## 分析材料（初稿）
 
-15. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
-16. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
-17. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
-18. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
-19. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
-20. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
-21. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
+16. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
+17. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
+18. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
+19. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
+20. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
+21. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
+22. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
 
 ## 决策记录
 
@@ -41,4 +42,4 @@
 - 阶段：**P1 完成**，进入 P2
 - 代码：三端壳 + MD3E + reader-core 已落地
 - 原型：并行设计（MD3E）
-- 下一步：源管理、SavedStateHandle/进程恢复、下载/备份/同步
+- 下一步：按 [Big MVP 计划](21-big-mvp-plan.md) 进入 G1 源兼容
