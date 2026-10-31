@@ -15,13 +15,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api(libs.ktor.client.core)
             implementation(project(":core:model"))
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.ktor.client.core)
-        }
-        commonTest.dependencies {
-            implementation(kotlin("test"))
+            implementation(libs.kotlinx.serialization.json)
         }
     }
 }
-

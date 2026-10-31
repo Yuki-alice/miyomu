@@ -6,16 +6,17 @@
 2. [MD3E 设计系统](08-md3e-design.md) — 色彩、字体、形状、动效、组件、页面方向。
 3. [初始化方案](09-initialization.md) — 20 模块 + build-logic、Room、MD3E、迁移顺序、CI。
 4. [P0 状态](10-p0-status.md) — 三端构建结果、截图、已知问题与 P1。
+5. [P1 状态](11-p1-status.md) — reader-core 复制、193 测试、source/net 阻塞。
 
 ## 分析材料（初稿）
 
-5. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
-6. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
-7. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
-8. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
-9. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
-10. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
-11. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
+6. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
+7. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
+8. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
+9. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
+10. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
+11. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
+12. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
 
 ## 决策记录
 
@@ -28,7 +29,7 @@
 
 ## 当前状态
 
-- 阶段：P0 骨架完成
-- 代码：三端壳 + MD3E 主题已落地
+- 阶段：P1 进行中（reader-core 已复制）
+- 代码：三端壳 + MD3E + reader-core 已落地
 - 原型：并行设计（MD3E）
-- 下一步：P1 复制 reader-core/source/net，补 build-logic 与 Navigation
+- 下一步：source/net 复制（等待网络）、build-logic、Navigation
