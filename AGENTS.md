@@ -198,6 +198,7 @@ PR 描述同样包含该段落。若未加载 skill，写明原因（未命中�
 - `.qoder/skills/README.md` — 安装来源、版本、许可与更新流程
 - `docs/product-goals.md` — 产品定位、P0/P1/P2 功能范围与决策记录
 - `docs/target-architecture.md` — 目标模块/架构设计（设计参考，未批准执行）
+- `docs/architecture-refactor-2026-10-31.md` — 第一轮架构重构实施记录与剩余债务
 - `docs/architecture-review-2026-10-30.md` — 当前架构债务与修复路线图
 - `gradle/libs.versions.toml` — 工具链与依赖版本
 - `build-logic/src/main/kotlin/` — 约定插件与构建常量

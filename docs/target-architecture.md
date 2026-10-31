@@ -1,17 +1,17 @@
-# Miyomu 目标模块与架构设计（Draft v0.3）
+# Miyomu 目标模块与架构设计（Draft v0.4）
 
-> **状态**：设计参考；已确认“只出文档”，本轮不执行迁移、不改代码/模块。
+> **状态**：设计参考；2026-10-31 第一轮架构重构（非模块级迁移）已实施并验证；Phase 0–4 目标模块迁移仍未批准。
 > **2026-10-31 更新**：用户已批准第一轮架构重构优化（审阅报告的“立刻 + 本迭代”档：导航恢复、
 > 服务容器、domain 去 Compose、Voyager 移除、主题去重、api 边界、CI 门禁），已实施并验证，
 > 见 `docs/architecture-refactor-2026-10-31.md`。本文的 Phase 0–4 目标模块迁移**仍未批准执行**，
 > 其中的 AR-01/02/05 止血项与 CI lint 已提前完成。
-> **日期**：2026-10-30
+> **日期**：2026-10-30（2026-10-31 状态同步）
 > **已确认约束**：
 > - 定位：Mihon-like 漫画库 + 强本地能力 + 视频/小说一等公民。
 > - 平台：Android/Desktop 同等优先。
 > - 来源：本地 + 可安装源；源为可选插件。
-> - 改造力度：只出文档；下文 Phase 0–4 是未来实施参考，未批准执行。
-> **输入**：`docs/product-goals.md`、`docs/architecture-review-2026-10-30.md`、当前 33 个模块的实际依赖图。
+> - 改造力度：2026-10-31 批准“立刻 + 本迭代”档重构；Phase 0–4 模块级迁移仍未批准。
+> **输入**：`docs/product-goals.md`、`docs/architecture-review-2026-10-30.md`、当前 34 个模块（新增 `shared:track`）的实际依赖图。
 
 ---
 
@@ -66,7 +66,8 @@ app:android          app:desktop
 | `core:download` | 下载队列、断点续传、存储布局 | `core:source-manager`、`core:network` |
 | `core:player` | mediamp 抽象、播放后端选择、音轨/字幕/倍速 | `core:model` |
 | `core:danmaku` | 弹弹play 客户端、弹幕模型 | `core:network` |
-| `core:sync` | 备份、恢复、WebDAV、冲突策略 | `core:data`、`core:network` |
+| `core:sync` | 备份、恢复、WebDAV 双向同步、冲突策略 | `core:data`、`core:network` |
+| `core:track` | 追踪客户端（AniList/Bangumi）与逐书绑定存储 | `core:model`、`core:network` |
 | `core:i18n` | Moko resources/字符串目录 | 无 |
 | `core:ui` | Design system、主题、通用组件、图标、导航原语 | `core:model`、`core:i18n` |
 
@@ -83,7 +84,7 @@ app:android          app:desktop
 | `feature:player` | 视频播放页、控制栏、弹幕开关、下一集 | `core:player`、`core:danmaku`、`core:ui` |
 | `feature:sources` | Mihon 式扩展管理、源仓库、浏览、全局搜索、源错误诊断 | `core:source-manager`、`core:source-runtime`、`core:ui` |
 | `feature:downloads` | 下载队列、存储管理、批量操作 | `core:download`、`core:ui` |
-| `feature:settings` | 外观、阅读、下载、数据、备份、弹幕、关于 | `core:preferences`、`core:sync`、`core:ui` |
+| `feature:settings` | 外观、阅读、下载、数据、备份、弹幕、追踪、关于 | `core:preferences`、`core:sync`、`core:ui` |
 
 ### 2.3 app 模块
 
@@ -100,14 +101,14 @@ app:android          app:desktop
 |---|---|---|---|
 | 书架与分类 | 有 | 保留并扩展到小说/视频 | 基本可用 |
 | 源/扩展管理 | 有 | 保留，增加源健康与错误诊断 | 基本可用 |
-| 下载 | 漫画章节 | 漫画 + 小说 + 视频 | 仅漫画 |
-| 备份/恢复 | 有 | 保留，增加增量/冲突/偏好 | 基本可用（WebDAV） |
+| 下载 | 漫画章节 | 漫画 + 小说 + 视频 | 漫画/小说/在线视频可用 |
+| 备份/恢复 | 有 | 保留，增加增量/冲突/偏好 | 可用（WebDAV 双向） |
 | 阅读设置 | 有 | 保留并统一漫画/小说 | 基本可用 |
 | 历史/更新 | 有 | 保留，覆盖三类媒体 | 基本可用 |
-| 追踪 | 有（可选） | AniList + Bangumi，默认关闭；不做 MAL | 未实现 |
-| 本地库深度 | 一般 | 格式、元数据、封面、健康检查 | 部分（7z/PDF 未实现） |
-| 视频 | 无 | 本地/在线播放、下载、弹幕、进度 | 播放可用；下载未实现 |
-| 小说 | 无 | 本地/在线阅读、下载、书签、进度 | 阅读可用；下载未实现 |
+| 追踪 | 有（可选） | AniList + Bangumi，默认关闭；不做 MAL | 已实现（AniList + Bangumi） |
+| 本地库深度 | 一般 | 格式、元数据、封面、健康检查 | 7z/PDF/MOBI 已实现；元数据/封面可扩展 |
+| 视频 | 无 | 本地/在线播放、下载、弹幕、进度 | 播放与在线按集下载可用 |
+| 小说 | 无 | 本地/在线阅读、下载、书签、进度 | 阅读与章节缓存可用 |
 
 结论：架构必须让 **漫画是基线、视频/小说是一等公民、本地能力是差异化**，而不是把视频/小说塞进漫画的 `ComicSummary` 模型里。
 
@@ -120,8 +121,8 @@ app:android          app:desktop
 | 漫画/小说阅读 | 支持 | 支持 | 同一 core:reader |
 | 视频播放 | ExoPlayer | MPV（macOS/Windows；Linux 不支持） | 已确认维持现状；UI 明确提示 |
 | 弹幕 | 支持 | 支持（依赖播放后端） | 不支持时明确提示 |
-| 下载 | 前台/后台策略待定 | 前台下载 | 目标统一下载中心 |
-| 分享/打开方式 | Android Share/VIEW | 命令行/文件关联 | P1 |
+| 下载 | 前台/后台策略待定 | 前台下载 | 漫画/小说/在线视频可用；后台策略待定 |
+| 分享/打开方式 | Android Share/VIEW | 命令行/文件关联 | 已实现最小切片；deep link 待立项 |
 | 发布 | APK/AAB | 原生分发包 | 当前 CI 只编译，未打包 |
 | 测试 | jvmTest + 仪器测试（待补） | Compose Desktop 测试 | 双端都要进 CI |
 
@@ -154,7 +155,7 @@ app:desktop ─┼─> app:shell ─> feature:* ─> core:*
 
 ## 4. 当前模块 → 目标模块映射
 
-> 这是迁移示意，不是 1:1 重命名；目标是收敛到约 20–22 个模块，避免把 33 个模块原样改名为 33 个新名字。
+> 这是迁移示意，不是 1:1 重命名；目标是收敛到约 20–22 个模块，避免把当前 34 个模块原样改名为 34 个新名字。
 
 | 当前模块 | 目标归属 | 说明 |
 |---|---|---|
@@ -173,6 +174,7 @@ app:desktop ─┼─> app:shell ─> feature:* ─> core:*
 | `shared:source-manager` / `source-repo` / `source-novel` | `core:source-manager` + `feature:sources` | 安装/仓库/规则 |
 | `shared:download` | `core:download` + `feature:downloads` | |
 | `shared:danmaku` | `core:danmaku` | |
+| `shared:track` | `core:track` | AniList/Bangumi 客户端与绑定存储 |
 | `shared:player` | `core:player` + `feature:player` | |
 | `shared:i18n*` | `core:i18n` | 合并或保留双模块 |
 | `shared:ui-core` | `core:ui` + `app:application` + `app:shell` | graph/nav/theme 三分 |
@@ -222,7 +224,7 @@ app:desktop ─┼─> app:shell ─> feature:* ─> core:*
 ### 5.4 数据与同步
 
 - `core:data` 定义端口，`core:database` 提供 Room 实现；`feature:*` 只依赖端口。
-- `core:sync` 负责备份/恢复/WebDAV/冲突；`feature:settings` 只做 UI。
+- `core:sync` 负责备份/恢复/WebDAV 双向/冲突（Q7 已确认）；`feature:settings` 只做 UI。
 - 备份格式版本化；增加可选加密；偏好纳入同步（当前 v1 未包含）。
 - 本地库是 source of truth；在线源数据只缓存必要字段。
 
@@ -255,7 +257,7 @@ app:desktop ─┼─> app:shell ─> feature:* ─> core:*
 
 | 方案 | 内容 | 成本 | 风险 | 本轮结论 |
 |---|---|---|---|---|
-| **A. 渐进式收口** | 保留 33 个模块，只修 `api`/`implementation`、domain Compose、`ui-core` 再导出、导航/生命周期 | 1–2 周 | 低 | 未选择；可作为未来止血备选 |
+| **A. 渐进式收口** | 保留当前 34 个模块，只修 `api`/`implementation`、domain Compose、`ui-core` 再导出、导航/生命周期 | 1–2 周 | 低 | 未选择；可作为未来止血备选 |
 | **B. 目标态 + 分阶段迁移** | 定义 20–22 个目标模块，按 vertical slice 迁移，每阶段可发布 | 2–3 个月 | 中 | **设计参考；本轮不执行** |
 | **C. 全面重写/重命名** | 按目标架构重建工程，直接迁移代码 | 3–6 个月 | 高 | 未选择 |
 
@@ -269,7 +271,7 @@ app:desktop ─┼─> app:shell ─> feature:* ─> core:*
 
 ### Phase 0：决策与止血（3–5 天）
 
-- 确认 `product-goals.md` Q7（同步范围）等剩余决策，冻结 P0 范围。
+- 产品级决策已确认；Phase 0 执行 ADR 与剩余验收（不等待产品决策）。
 - 写 ADR：目标模块图、依赖规则、包名策略、移植代码边界。
 - 修复 AR-01（导航保存/服务生命周期）、AR-02（主线程 `runBlocking`）、AR-05（graph 泄漏）。
 - 加架构规则测试雏形（Konsist/ArchUnit）与 CI lint。
@@ -341,31 +343,33 @@ app:desktop ─┼─> app:shell ─> feature:* ─> core:*
 - [ ] Android + Desktop 构建通过；平台差异有文档。
 - [ ] 新代码包名统一为 `app.miyomu.*`；移植代码使用 `app.miyomu.ported.*` 并有明确边界与来源说明。
 - [ ] CI 包含 `jvmTest`、`lintDebug`、静态分析、架构规则测试。
-- [ ] 现有 55 个测试全部通过，新增关键路径测试。
+- [ ] 现有 72 个测试全部通过，新增关键路径测试。
 
 ---
 
 ## 10. 决策状态与待决问题
 
-### 10.1 已确认（2026-10-30）
+### 10.1 已确认（2026-10-30 / 10-31）
 
 - 产品定位：Mihon-like 漫画库 + 强本地能力 + 视频/小说一等公民。
 - 平台：Android/Desktop 同等优先。
 - 来源：本地 + 可安装源；源为可选插件。
-- 改造力度：只出文档；Phase 0–4 不执行。
+- 改造力度：2026-10-31 批准“立刻 + 本迭代”档重构；Phase 0–4 模块级迁移仍未批准。
 - 分发范围：暂不规划。
 - 外部迁移导入：不做 Mihon/Aniyomi/Legado 备份兼容。
+- 同步：WebDAV 双向（P1-5 已实现）。
 - 追踪：AniList + Bangumi，默认关闭；不做 MAL。
 - Desktop 视频：维持 macOS/Windows MPV；Linux 不做。
 - 包名：统一 `app.miyomu.*`；移植代码用 `app.miyomu.ported.*` 过渡。
 
-### 10.2 仍待确认（影响未来实施，不阻塞本轮文档）
+### 10.2 仍待确认（目标架构实施细节）
 
 1. `presentation` 是保留为 `core:ui-ported` 过渡，还是在 Phase 2 就按 screen 拆完？
 2. `core:source-manager` 是否独立，还是并入 `core:source-runtime`？
-3. `core:sync` 是否只支持 WebDAV（对应 product-goals 的 Q7 同步范围）？
-4. 目标模块数量是否控制在 20–22 个，还是允许更多细粒度模块？
-5. 追踪的 OAuth/隐私边界与默认关闭策略（AniList + Bangumi）。
+3. 目标模块数量是否控制在 20–22 个，还是允许更多细粒度模块？
+4. 包名迁移的落地顺序与 `ported/` 边界。
+5. 追踪令牌存储/隐私边界与默认关闭策略（AniList + Bangumi）。
 6. 外部源仓库/扩展签名与安全模型。
+7. P2 项（视频混流/字幕、词典/翻译、生态项）的立项顺序。
 
-> 这些问题的答案会改变未来 Phase 的边界；在确认前，本文件保持 Draft 状态，且不执行迁移。
+> 产品级决策已确认；这些问题会改变未来 Phase 的边界，但不阻塞当前代码。

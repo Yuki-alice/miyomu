@@ -422,6 +422,7 @@ grep -rn 'coroutines.test' shared/*/build.gradle.kts
 | Agent 规范 | `AGENTS.md` |
 | 产品目标 | `docs/product-goals.md` |
 | 目标架构 | `docs/target-architecture.md` |
+| 架构重构记录 | `docs/architecture-refactor-2026-10-31.md` |
 
 ### C. 待确认项
 
