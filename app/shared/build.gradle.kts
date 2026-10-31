@@ -15,6 +15,9 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:design"))
             implementation(project(":core:ui"))
+            implementation(project(":core:source"))
+            implementation(project(":core:model"))
+            implementation(project(":core:data"))
             implementation(project(":feature:library"))
             implementation(project(":feature:discover"))
             implementation(project(":feature:reader"))

@@ -15,6 +15,10 @@ sealed interface AppError {
         override val retryable: Boolean = false
     }
 
+    data class NotFound(val what: String) : AppError {
+        override val retryable: Boolean = false
+    }
+
     data class Storage(val cause: Throwable? = null) : AppError {
         override val retryable: Boolean = false
     }

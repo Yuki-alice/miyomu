@@ -10,7 +10,8 @@
 | `:core:reader` | 54 主源码 + 34 测试 | **193** | ✅ |
 | `:core:source` | 35 主源码 + 14 测试 | **74** | ✅ |
 | `:core:network` | 25 主源码 + 10 测试 | **105** | ✅ |
-| **合计** | **88 + 60 文件** | **372** | ✅ |
+| `:core:data` | 3 主源码 + 1 测试 | **2** | ✅ |
+| **合计** | **91 + 61 文件** | **374** | ✅ |
 
 三端编译：
 
@@ -37,7 +38,7 @@
 :core:source:desktopTest     74 passed
 :core:network:desktopTest   105 passed
 ----------------------------------------
-total                       372 passed
+total                       374 passed
 ```
 
 验证命令：
@@ -68,7 +69,7 @@ core:reader    ← 真实 Kototoro 阅读器几何
 core:source    ← 真实 SourceRuntime / 协议 DTO
 core:network   ← 真实 WebDAV / Drive / MAL HTTP 协议
 core:database  ← Room 占位
-core:data      ← 空壳（下一步）
+core:data      ← ContentRepository + DemoSourceRuntime（第一条真实数据流）
 ```
 
 说明：
@@ -79,12 +80,14 @@ core:data      ← 空壳（下一步）
 
 ## 6. 下一步
 
-1. 复制 `core-backup` → `:core:data` / `:core:backup`。
-2. 复制 `core-domain` 的更新/进度/书库规则。
-3. 建最小 `LibraryRepository` / `ContentRepository` 接口。
-4. 用 fixture 源跑通“浏览 → 详情 → 章节 → 页面”数据链路。
-5. 再把 `feature:discover` 接回 `core:source`，用真实数据替换占位页。
-6. 迁移 Navigation 的 Reader 路由。
+1. 复制 `core-backup` / `core-domain`。
+2. `core:data` 接 Room：收藏/历史/进度。
+3. 用真实 JSON 源替换 DemoSourceRuntime。
+4. 页面迁到 ViewModel + Koin。
+5. 增加 `Details → Reader(chapterId)`。
+6. 接图片管线。
+
+数据流细节见 [14-data-flow.md](14-data-flow.md)。
 
 ## 7. 结论
 

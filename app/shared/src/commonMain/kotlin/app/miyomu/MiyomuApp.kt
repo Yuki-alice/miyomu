@@ -2,18 +2,22 @@ package app.miyomu
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import app.miyomu.core.data.DefaultContentRepository
 import app.miyomu.core.design.MiyomuTheme
+import app.miyomu.core.source.SourceRegistry
 import app.miyomu.core.ui.AppDestination
 import app.miyomu.core.ui.MiyomuAppShell
 import app.miyomu.core.ui.navigation.MiyomuNavHost
 import app.miyomu.core.ui.navigation.MiyomuRoute
 import app.miyomu.core.ui.navigation.destinationRoute
+import app.miyomu.core.data.demo.DemoSourceRuntime
+import app.miyomu.feature.discover.DetailsScreen
 import app.miyomu.feature.discover.DiscoverScreen
-import app.miyomu.feature.library.DetailsScreen
 import app.miyomu.feature.library.HomeScreen
 import app.miyomu.feature.library.LibraryScreen
 import app.miyomu.feature.settings.SettingsScreen
@@ -21,6 +25,9 @@ import app.miyomu.feature.settings.SettingsScreen
 @Composable
 fun MiyomuApp() {
     MiyomuTheme {
+        val repository = remember {
+            DefaultContentRepository(SourceRegistry(listOf(DemoSourceRuntime())))
+        }
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
@@ -37,12 +44,16 @@ fun MiyomuApp() {
                     MiyomuRoute.Library -> LibraryScreen(
                         onOpenDetails = { navController.openDetails(it) },
                     )
-                    MiyomuRoute.Browse -> DiscoverScreen()
+                    MiyomuRoute.Browse -> DiscoverScreen(
+                        repository = repository,
+                        onOpenDetails = { navController.openDetails(it.toString()) },
+                    )
                     MiyomuRoute.Updates -> LibraryScreen(
                         onOpenDetails = { navController.openDetails(it) },
                     )
                     MiyomuRoute.More -> SettingsScreen()
                     is MiyomuRoute.Details -> DetailsScreen(
+                        repository = repository,
                         contentId = route.contentId,
                         onBack = { navController.popBackStack() },
                     )
