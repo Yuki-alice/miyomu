@@ -70,7 +70,7 @@ source/host       JVM 壳
 
 1. ~~`androidLibrary {}` 弃用警告~~：已迁移到 AGP 9.3 的 `android {}` DSL。
 2. **iOS 顶部安全区重复**：SwiftUI 已避让一次，`Scaffold` 又加了一次，出现较大空白；P5 统一 insets。
-3. **导航是 `remember` 状态**：尚未接 Navigation Compose；P1 接路由/深链。
+3. ~~导航是 `remember` 状态~~：已接 Navigation Compose KMP（[13-navigation.md](13-navigation.md)）。
 4. **Room 只是占位**：真实 `core-db`（35 表/86 迁移）在 P2 复制。
 5. **UI 只是骨架**：没有真实数据、图片加载、阅读器；P1/P5 逐步替换。
 6. **build-logic 未落地**：当前 20 个模块直接写配置；约定插件下一步做。
@@ -92,7 +92,7 @@ source/host       JVM 壳
 
 - 先决定 `build-logic`：是继续直接写模块配置，还是抽 2 个 convention plugin（建议抽）。
 - 先修 iOS insets，否则后续页面会重复踩。
-- 先加 Navigation Compose，否则 feature 路由会返工。
+- ~~先加 Navigation Compose~~ 已完成。
 
 ## 7. 结论
 

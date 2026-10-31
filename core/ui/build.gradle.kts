@@ -8,6 +8,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":core:design"))
+            api(libs.navigation.compose)
             implementation(project(":core:model"))
             implementation(compose.runtime)
             implementation(compose.foundation)

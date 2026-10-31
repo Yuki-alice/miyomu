@@ -22,7 +22,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 | [P0 状态](docs/10-p0-status.md) | 三端构建结果、截图、已知问题与 P1 下一步 | ✅ |
 | [P1 状态](docs/11-p1-status.md) | reader-core 复制、193 测试、source/net 阻塞 | ✅ |
 | [build-logic](docs/12-build-logic.md) | 约定插件、模块写法与验证 | ✅ |
-| [Navigation](docs/13-navigation.md) | 路由、返回栈、返回处理与迁移计划 | ✅ |
+| [Navigation](docs/13-navigation.md) | Navigation Compose KMP、路由与返回栈 | ✅ |
 | [参考项目分析](docs/00-reference-analysis.md) | Kototoro 的规模、机制、可借鉴点与风险 | 分析材料 |
 | [技术栈初稿](docs/01-tech-stack.md) | KMP + CMP 选型；DB/ID 部分已被 07 修正 | 初稿 |
 | [架构初稿](docs/02-architecture.md) | 模块/SourceRuntime/DB；部分结论已被 07 修正 | 初稿 |
