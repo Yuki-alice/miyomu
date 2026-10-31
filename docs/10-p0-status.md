@@ -17,6 +17,7 @@
 | Room KMP 占位库 | ✅ | `app_meta` 表；Android/Desktop/iOS KSP 生成并通过 |
 | 自适应壳（底栏/rail） | ✅ | `core:ui` 的 `MiyomuAppShell` |
 | 代码检查/CI | ⏳ | `.github/workflows/ci.yml` 已写，未在 GitHub 实跑 |
+| Git 基线 | ✅ | `b468d7e` P0 骨架；`c170708` android DSL 迁移 |
 | build-logic 约定插件 | ⏳ | 尚未落地；当前模块直接写 build 配置 |
 | 真实业务迁移 | ⏳ | P1 开始 |
 
@@ -75,6 +76,7 @@ source/host       JVM 壳
 6. **build-logic 未落地**：当前 20 个模块直接写配置；约定插件下一步做。
 7. **没有真实 CI 运行**：workflow 已写，需推到 GitHub 验证。
 8. **iOS 最低 18.0**：Xcode 链接时警告 framework 的 ICU 目标为 18.5；后续统一 deployment target。
+9. **iOS Info.plist**：已加入 `CADisableMinimumFrameDurationOnPhone`，否则 Compose 会崩溃；后续新增 iOS 配置时注意。
 
 ## 6. 下一步 P1
 
