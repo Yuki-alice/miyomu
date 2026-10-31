@@ -158,7 +158,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary { namespace = "app.miyomu.core.database"; compileSdk = 37; minSdk = 26 }
+    android { namespace = "app.miyomu.core.database"; compileSdk = 37; minSdk = 26 }
     jvm("desktop")
     iosArm64(); iosSimulatorArm64()
 
@@ -225,7 +225,7 @@ fun MiyomuTheme(content: @Composable () -> Unit) {
 
 ```kotlin
 kotlin {
-    androidLibrary {
+    android {
         namespace = "app.miyomu.shared"
         compileSdk = 37
         minSdk = 26

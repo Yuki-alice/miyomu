@@ -4,7 +4,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "app.miyomu.core.network"
         compileSdk = 37
         minSdk = 26

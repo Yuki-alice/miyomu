@@ -6,7 +6,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "app.miyomu.feature.extensions"
         compileSdk = 37
         minSdk = 26

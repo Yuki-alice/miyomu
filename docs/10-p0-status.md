@@ -67,7 +67,7 @@ source/host       JVM 壳
 
 ## 5. 已知问题
 
-1. **`androidLibrary {}` 弃用警告**：AGP 9.3 提示改用 `android {}`；当前可构建，P0.5 迁移。
+1. ~~`androidLibrary {}` 弃用警告~~：已迁移到 AGP 9.3 的 `android {}` DSL。
 2. **iOS 顶部安全区重复**：SwiftUI 已避让一次，`Scaffold` 又加了一次，出现较大空白；P5 统一 insets。
 3. **导航是 `remember` 状态**：尚未接 Navigation Compose；P1 接路由/深链。
 4. **Room 只是占位**：真实 `core-db`（35 表/86 迁移）在 P2 复制。
