@@ -16,6 +16,7 @@ kotlin {
             dependencies {
                 implementation(libs.junit.jupiter)
                 implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.androidx.sqlite.bundled)
                 runtimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
             }
         }

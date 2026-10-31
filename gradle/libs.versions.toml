@@ -8,6 +8,7 @@ activity = "1.11.0"
 coreKtx = "1.17.0"
 koin = "4.2.2"
 room = "2.8.5"
+sqlite = "2.7.0"
 ksp = "2.3.11"
 coroutines = "1.11.0"
 serialization = "1.12.0"
@@ -37,6 +38,7 @@ navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-co
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }

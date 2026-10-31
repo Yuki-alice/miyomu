@@ -8,6 +8,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.miyomu.core.data.DefaultContentRepository
+import app.miyomu.core.data.DefaultLibraryRepository
+import app.miyomu.core.database.MiyomuDatabase
 import app.miyomu.core.design.MiyomuTheme
 import app.miyomu.core.source.SourceRegistry
 import app.miyomu.core.ui.AppDestination
@@ -24,11 +26,12 @@ import app.miyomu.feature.reader.ReaderScreen
 import app.miyomu.feature.settings.SettingsScreen
 
 @Composable
-fun MiyomuApp() {
+fun MiyomuApp(database: MiyomuDatabase) {
     MiyomuTheme {
         val repository = remember {
             DefaultContentRepository(SourceRegistry(listOf(DemoSourceRuntime())))
         }
+        val libraryRepository = remember { DefaultLibraryRepository(database) }
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
@@ -55,6 +58,7 @@ fun MiyomuApp() {
                     MiyomuRoute.More -> SettingsScreen()
                     is MiyomuRoute.Details -> DetailsScreen(
                         repository = repository,
+                        libraryRepository = libraryRepository,
                         contentId = route.contentId,
                         onBack = { navController.popBackStack() },
                         onOpenReader = { content, chapter ->
@@ -63,6 +67,7 @@ fun MiyomuApp() {
                     )
                     is MiyomuRoute.Reader -> ReaderScreen(
                         repository = repository,
+                        libraryRepository = libraryRepository,
                         contentId = route.contentId,
                         chapterId = route.chapterId,
                         onBack = { navController.popBackStack() },

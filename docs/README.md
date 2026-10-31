@@ -11,16 +11,17 @@
 7. [Navigation](13-navigation.md) — 路由、返回栈、返回处理与迁移计划。
 8. [数据流](14-data-flow.md) — Fixture → Repository → UI 的第一条真实链路。
 9. [Reader 路由](15-reader-route.md) — Details → Reader 与分页演示。
+10. [Room 持久化](16-persistence.md) — 收藏/阅读进度落库与平台数据库位置。
 
 ## 分析材料（初稿）
 
-10. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
-11. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
-12. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
-13. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
-14. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
-15. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
-16. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
+11. [参考项目分析](00-reference-analysis.md) — Kototoro 的规模、机制与风险。
+12. [技术栈初稿](01-tech-stack.md) — KMP + CMP 选型；DB/ID 部分已被 07 修正。
+13. [架构初稿](02-architecture.md) — 模块/SourceRuntime/DB；部分结论已被 07 修正。
+14. [功能矩阵](03-feature-matrix.md) — parity 矩阵与迁移映射。
+15. [UI 初稿](04-ui-ux-design.md) — Sumi 方向已作废；保留布局/阅读器思路。
+16. [初始化初稿](05-initialization-plan.md) — Gradle/CI 细节可参考；迁移顺序已被 07 修正。
+17. [路线图初稿](06-roadmap.md) — 里程碑可参考；阶段已被 07 调整。
 
 ## 决策记录
 
@@ -33,7 +34,7 @@
 
 ## 当前状态
 
-- 阶段：P1 进行中（核心模块 + build-logic + Navigation + Browse/Details/Reader）
+- 阶段：P1 进行中（核心模块 + build-logic + Navigation + Browse/Details/Reader + Room）
 - 代码：三端壳 + MD3E + reader-core 已落地
 - 原型：并行设计（MD3E）
-- 下一步：Room 持久化、真实 JSON 源、图片管线
+- 下一步：进度恢复、收藏页、真实 JSON 源、图片管线

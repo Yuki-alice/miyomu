@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.miyomu.core.data.ContentRepository
+import app.miyomu.core.data.LibraryRepository
 import app.miyomu.core.model.ContentId
 import app.miyomu.core.model.ChapterId
 import app.miyomu.core.model.Outcome
@@ -37,6 +38,7 @@ import app.miyomu.core.model.PageSummary
 @Composable
 fun ReaderScreen(
     repository: ContentRepository,
+    libraryRepository: LibraryRepository,
     contentId: String,
     chapterId: String,
     onBack: () -> Unit,
@@ -58,6 +60,19 @@ fun ReaderScreen(
     }
 
     val pagerState = rememberPagerState(pageCount = { pages.size })
+
+    LaunchedEffect(pagerState.currentPage, pages.size) {
+        if (pages.isNotEmpty()) {
+            libraryRepository.saveProgress(
+                contentId = ContentId(contentId.toLongOrNull() ?: -1L),
+                chapterId = ChapterId(chapterId.toLongOrNull() ?: -1L),
+                chapterTitle = "Chapter",
+                page = pagerState.currentPage,
+                scroll = 0f,
+                percent = (pagerState.currentPage + 1).toFloat() / pages.size,
+            )
+        }
+    }
 
     Column(modifier.fillMaxSize().background(Color(0xFF101014))) {
         Row(

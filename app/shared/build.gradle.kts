@@ -18,6 +18,7 @@ kotlin {
             implementation(project(":core:source"))
             implementation(project(":core:model"))
             implementation(project(":core:data"))
+            implementation(project(":core:database"))
             implementation(project(":feature:library"))
             implementation(project(":feature:discover"))
             implementation(project(":feature:reader"))

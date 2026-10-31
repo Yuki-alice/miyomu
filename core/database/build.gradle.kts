@@ -9,6 +9,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
             implementation(project(":core:model"))
             implementation(libs.kotlinx.coroutines.core)
         }

@@ -144,7 +144,7 @@ xcodebuild -project iosApp/Miyomu.xcodeproj -scheme Miyomu \
 ## 7. 下一步
 
 1. `core:backup` / `core:domain` 复制。
-2. `core:data` 接 Room：收藏/历史/进度。
+2. ~~`core:data` 接 Room：收藏/历史/进度~~ 已完成，见 [16-persistence.md](16-persistence.md)。
 3. 用真实 JSON 源替换 DemoSourceRuntime。
 4. 页面迁到 ViewModel + Koin。
 5. ~~增加 `Details → Reader(chapterId)`~~ 已完成，见 [15-reader-route.md](15-reader-route.md)。

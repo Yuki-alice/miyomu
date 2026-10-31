@@ -28,6 +28,7 @@ android {
 
 dependencies {
     implementation(project(":app:shared"))
+    implementation(project(":core:database"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
 }
