@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miyomu · MD3E Prototype</title>
+<style>
+  :root{
+    --primary:#4b4bd6; --on-primary:#fff; --primary-container:#e1e0ff; --on-primary-container:#0f0b52;
+    --secondary:#b23b54; --on-secondary:#fff; --secondary-container:#ffd9df; --on-secondary-container:#3f0016;
+    --tertiary:#006b4f; --on-tertiary:#fff; --tertiary-container:#8ef8c9; --on-tertiary-container:#002117;
+    --surface:#fbf8ff; --surface-dim:#dbd9e0; --surface-bright:#fbf8ff;
+    --surface-lowest:#fff; --surface-low:#f5f2fa; --surface-container:#efecf4; --surface-high:#e9e5ef; --surface-highest:#e3dfea;
+    --on-surface:#1b1b21; --on-surface-variant:#46464f; --outline:#777680; --outline-variant:#c7c5d0;
+    --error:#ba1a1a; --inverse-surface:#303036; --inverse-on-surface:#f2eff7;
+    --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:20px; --r-xl:28px; --r-2xl:32px;
+    --font:"PingFang SC","SF Pro Display","Segoe UI Variable","Segoe UI",Roboto,"Noto Sans SC",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#111114;font-family:var(--font);color:var(--on-surface);display:flex;flex-wrap:wrap;gap:36px;padding:36px;
+    -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  a{color:inherit;text-decoration:none}
+  .artboard{display:none;overflow:hidden;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+  .artboard:target{display:flex}
+  body:has(.artboard:target){padding:0;gap:0;background:#0d0d12}
+  body:not(:has(.artboard:target)) .artboard{display:flex}
+  .phone{width:390px;height:844px;border-radius:40px;background:var(--surface);flex-direction:column}
+  .desktop{width:1440px;height:900px;border-radius:20px;background:var(--surface)}
+  .reader{width:390px;height:844px;border-radius:40px;background:#0d0d12;color:#e7e2ea;flex-direction:column}
+  .icon{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .icon.sm{width:18px;height:18px}
+  .icon.xs{width:15px;height:15px}
+  .icon.fill{fill:currentColor;stroke:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .status{height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;font-weight:600;letter-spacing:.02em}
+  .status .right{display:flex;align-items:center;gap:5px;opacity:.75}
+  .scroll{flex:1;overflow:hidden;padding:0 20px 112px}
+  .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--on-surface-variant);font-weight:700}
+  h1,h2,h3,p{margin:0}
+  .muted{color:var(--on-surface-variant)}
+  .tiny{font-size:11px;color:var(--on-surface-variant)}
+  .cover{position:relative;border-radius:var(--r-md);overflow:hidden;background:#222;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+  .cover .art{position:absolute;inset:0}
+  .cover .veil{position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.7))}
+  .cover .ct{position:absolute;left:10px;right:10px;top:10px;color:#fff;font-weight:800;font-size:13px;line-height:1.1;text-shadow:0 1px 5px rgba(0,0,0,.4)}
+  .cover .ca{position:absolute;left:10px;right:10px;top:33px;color:rgba(255,255,255,.7);font-size:8px}
+  .cover .badge{position:absolute;right:8px;bottom:8px;background:#fff;color:#1b1b21;font-size:7px;font-weight:800;letter-spacing:.06em;border-radius:99px;padding:2px 6px}
+  .art.c1{background:radial-gradient(circle at 72% 28%,#ffd166 0 9%,transparent 9.5%),linear-gradient(155deg,#264653,#2a9d8f 55%,#17343b)}
+  .art.c2{background:radial-gradient(circle at 28% 26%,#f1faee 0 12%,transparent 12.5%),linear-gradient(155deg,#1d3557,#457b9d 55%,#0b1622)}
+  .art.c3{background:linear-gradient(155deg,#5f0f40,#9a031e 55%,#1d0a12)}
+  .art.c4{background:radial-gradient(circle at 70% 30%,#ffd166 0 10%,transparent 10.5%),linear-gradient(155deg,#3a0ca3,#4361ee 55%,#10002b)}
+  .art.c5{background:linear-gradient(155deg,#1b4332,#2d6a4f 55%,#081c15)}
+  .art.c6{background:radial-gradient(circle at 50% 35%,#f72585 0 12%,transparent 12.5%),linear-gradient(155deg,#240046,#5a189a 55%,#10002b)}
+
+  /* phone home */
+  .home-head{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0 20px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:18px}
+  .brand .mark{width:32px;height:32px;border-radius:11px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:16px}
+  .home-head h1{font-size:34px;line-height:1.05;letter-spacing:-.04em;font-weight:800;margin-top:10px}
+  .home-head .sub{margin-top:6px;font-size:12px;color:var(--on-surface-variant)}
+  .head-actions{display:flex;gap:8px}
+  .iconbtn{width:44px;height:44px;border-radius:16px;background:var(--surface-container);display:grid;place-items:center;color:var(--on-surface)}
+  .hero{position:relative;border-radius:var(--r-2xl);padding:18px;color:#fff;overflow:hidden;
+    background:linear-gradient(135deg,#4b4bd6 0%,#7a5cff 60%,#9b5cff 100%);
+    box-shadow:0 18px 40px rgba(75,75,214,.3)}
+  .hero:before{content:"";position:absolute;right:-40px;top:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.14)}
+  .hero:after{content:"";position:absolute;right:20px;bottom:-60px;width:120px;height:120px;border-radius:38% 62% 55% 45%;background:rgba(255,255,255,.1)}
+  .hero-top{position:relative;display:flex;gap:14px;align-items:center;z-index:1}
+  .hero .cover{width:74px;height:108px;flex:0 0 74px;border-radius:14px}
+  .hero .cover .ca{display:none}
+  .hero h2{font-size:22px;line-height:1.1;font-weight:800;letter-spacing:-.03em}
+  .hero .ch{margin-top:6px;font-size:11px;color:rgba(255,255,255,.78)}
+  .hero .progress{height:4px;border-radius:99px;background:rgba(255,255,255,.22);margin-top:12px;overflow:hidden}
+  .hero .progress i{display:block;height:100%;width:62%;background:#fff;border-radius:99px}
+  .hero .pct{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.72);margin-top:6px}
+  .split{position:relative;z-index:1;display:flex;align-items:center;margin-top:16px;border-radius:18px;background:#fff;color:var(--on-primary-container);overflow:hidden}
+  .split .main{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:46px;font-size:13px;font-weight:800}
+  .split .div{width:1px;height:24px;background:var(--outline-variant)}
+  .split .more{width:48px;height:46px;display:grid;place-items:center;color:var(--primary)}
+  .section{display:flex;align-items:center;justify-content:space-between;margin:26px 0 12px}
+  .section h2{font-size:20px;font-weight:800;letter-spacing:-.03em}
+  .section a{font-size:12px;font-weight:700;color:var(--primary)}
+  .rail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .card{min-width:0}
+  .card .cover{width:100%;aspect-ratio:3/4}
+  .card h3{font-size:12.5px;line-height:1.25;font-weight:700;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .meta{font-size:10px;color:var(--on-surface-variant);margin-top:3px;display:flex;justify-content:space-between}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 12px}
+  .nav{position:absolute;left:16px;right:16px;bottom:16px;height:72px;border-radius:26px;background:var(--surface-container);
+    display:flex;align-items:center;justify-content:space-around;padding:0 6px;box-shadow:0 10px 30px rgba(27,27,33,.12)}
+  .nav .item{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-weight:700;color:var(--on-surface-variant);width:58px;height:56px;justify-content:center;border-radius:20px}
+  .nav .item.on{background:var(--primary-container);color:var(--on-primary-container)}
+  .nav .item .icon{width:22px;height:22px}
+  .fab-wrap{position:absolute;right:20px;bottom:104px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  .fab-menu{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .fab-mini{height:40px;padding:0 14px;border-radius:14px;background:var(--surface-highest);color:var(--on-surface);font-size:11px;font-weight:700;display:flex;align-items:center;gap:7px;box-shadow:0 6px 18px rgba(27,27,33,.12)}
+  .fab{width:64px;height:64px;border-radius:22px;background:var(--primary);color:#fff;display:grid;place-items:center;box-shadow:0 14px 30px rgba(75,75,214,.4)}
+  .fab .icon{width:28px;height:28px}
+
+  /* mobile library */
+  .lib-head{padding:8px 0 12px;display:flex;align-items:flex-start;justify-content:space-between}
+  .lib-head h1{font-size:32px;font-weight:800;letter-spacing:-.04em}
+  .lib-head .sub{font-size:12px;color:var(--on-surface-variant);margin-top:4px}
+  .seg{display:flex;gap:8px;overflow:hidden;padding:4px 0 14px}
+  .seg .s{height:38px;padding:0 16px;border-radius:99px;background:var(--surface-container);font-size:12px;font-weight:700;color:var(--on-surface-variant);display:flex;align-items:center}
+  .seg .s.on{background:var(--primary);color:#fff}
+  .lib-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 12px}
+  .lib-card .cover{aspect-ratio:2/3;border-radius:18px}
+  .lib-card h3{font-size:12px;font-weight:700;margin-top:8px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lib-card .meta{font-size:10px;color:var(--on-surface-variant);margin-top:3px;display:flex;justify-content:space-between}
+  .bar{height:3px;border-radius:99px;background:var(--surface-highest);margin-top:7px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--primary);border-radius:99px}
+
+  /* desktop */
+  .desktop .rail{width:96px;flex:0 0 96px;background:var(--surface-low);display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:8px;border-right:1px solid var(--outline-variant)}
+  .desktop .rail .logo{width:44px;height:44px;border-radius:16px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px;margin-bottom:18px}
+  .desktop .rail .r{width:60px;height:56px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;color:var(--on-surface-variant)}
+  .desktop .rail .r.on{background:var(--primary-container);color:var(--on-primary-container)}
+  .desktop .rail .r .icon{width:22px;height:22px}
+  .desktop .rail .spacer{flex:1}
+  .desktop .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .desktop .top{height:72px;display:flex;align-items:center;gap:16px;padding:0 28px;border-bottom:1px solid var(--outline-variant)}
+  .desktop .top .crumb{font-size:13px;font-weight:700;color:var(--on-surface-variant);min-width:80px}
+  .search{flex:1;max-width:520px;height:48px;border-radius:99px;background:var(--surface-container);display:flex;align-items:center;gap:10px;padding:0 18px;color:var(--on-surface-variant);font-size:13px}
+  .search kbd{margin-left:auto;font:inherit;font-size:10px;background:var(--surface-lowest);border:1px solid var(--outline-variant);border-radius:7px;padding:3px 7px}
+  .desktop .top .actions{margin-left:auto;display:flex;gap:8px}
+  .desktop .content{flex:1;overflow:hidden;padding:26px 28px}
+  .desktop .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .desktop .head h1{font-size:38px;line-height:1;letter-spacing:-.045em;font-weight:800}
+  .desktop .head p{font-size:12px;color:var(--on-surface-variant);margin-top:6px}
+  .desktop .head .btns{display:flex;gap:8px}
+  .btn{height:44px;padding:0 18px;border-radius:99px;background:var(--surface-container);font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .btn.primary{background:var(--primary);color:#fff}
+  .desktop .seg{display:flex;gap:8px;margin-bottom:18px}
+  .desktop .seg .s{height:38px;padding:0 18px;border-radius:99px;background:var(--surface-container);font-size:12px;font-weight:700;color:var(--on-surface-variant);display:flex;align-items:center}
+  .desktop .seg .s.on{background:var(--primary);color:#fff}
+  .desktop .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:20px 16px}
+  .desktop .card .cover{aspect-ratio:2/3;border-radius:18px}
+  .desktop .card h3{font-size:13px;font-weight:700;margin-top:8px}
+  .desktop .card .meta{font-size:10.5px;color:var(--on-surface-variant);margin-top:3px;display:flex;justify-content:space-between}
+  .support{width:360px;flex:0 0 360px;background:var(--surface-low);border-left:1px solid var(--outline-variant);padding:24px;display:flex;flex-direction:column;gap:18px}
+  .support .topline{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--on-surface-variant)}
+  .support .hero{display:flex;gap:16px;align-items:flex-start;background:none;box-shadow:none;padding:0;color:var(--on-surface)}
+  .support .hero .cover{width:96px;height:140px;flex:0 0 96px;border-radius:16px}
+  .support h2{font-size:24px;line-height:1.1;font-weight:800;letter-spacing:-.03em}
+  .support .by{font-size:12px;color:var(--on-surface-variant);margin-top:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{height:28px;padding:0 10px;border-radius:99px;background:var(--surface-container);font-size:10px;font-weight:600;color:var(--on-surface-variant);display:flex;align-items:center}
+  .support .cta{height:48px;border-radius:16px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:800}
+  .support .actions{display:flex;gap:8px}
+  .support .actions .btn{flex:1;height:42px;justify-content:center}
+  .chapter{display:flex;align-items:center;gap:10px;height:42px;font-size:12px;color:var(--on-surface-variant)}
+  .chapter .n{width:24px;font-size:10px;color:var(--on-surface-variant)}
+  .chapter .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chapter.on{color:var(--primary);font-weight:700}
+  .chapter .dot{width:6px;height:6px;border-radius:99px;background:var(--outline-variant)}
+  .chapter.on .dot{background:var(--primary)}
+
+  /* reader */
+  .reader .rtop{position:absolute;top:0;left:12px;right:12px;padding-top:44px;z-index:3}
+  .reader .toolbar{height:56px;border-radius:22px;background:rgba(35,35,42,.86);display:flex;align-items:center;gap:10px;padding:0 8px;backdrop-filter:blur(18px)}
+  .reader .toolbar .ib{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;color:#e7e2ea}
+  .reader .toolbar .tt{flex:1;min-width:0;text-align:center}
+  .reader .toolbar .tt b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .reader .toolbar .tt span{display:block;font-size:9px;color:rgba(231,226,234,.55);margin-top:2px}
+  .reader .page{flex:1;position:relative;background:#121218;overflow:hidden}
+  .reader .paper{position:absolute;inset:0;background:#f6f3ec;display:flex;flex-direction:column;padding:14px;gap:8px}
+  .reader .p{background:#17171c;position:relative;overflow:hidden}
+  .reader .p.a{flex:1.1}
+  .reader .p.b{flex:.9;display:flex;gap:8px;background:transparent}
+  .reader .p.b .s{flex:1;background:#17171c;position:relative}
+  .reader .bubble{position:absolute;background:#fff;border:2px solid #111;border-radius:50%;display:grid;place-items:center;color:#111;font-size:8px;font-weight:800;line-height:1.15;text-align:center}
+  .reader .figure{position:absolute;left:24%;top:26%;width:52%;height:48%;border-radius:48% 48% 44% 44%;background:#2b2b36}
+  .reader .figure:after{content:"";position:absolute;left:22%;top:18%;width:56%;height:46%;border-radius:50%;background:#484858}
+  .reader .rbot{position:absolute;left:12px;right:12px;bottom:16px;z-index:3}
+  .reader .progressbar{height:52px;border-radius:20px;background:rgba(35,35,42,.86);display:flex;align-items:center;gap:12px;padding:0 16px;backdrop-filter:blur(18px)}
+  .reader .progressbar .track{flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden}
+  .reader .progressbar .track i{display:block;height:100%;width:37%;background:var(--secondary);border-radius:99px}
+  .reader .progressbar b{font-size:10px;color:rgba(231,226,234,.7)}
+  .reader .sheet{position:absolute;left:12px;right:12px;bottom:80px;border-radius:28px;background:rgba(35,35,42,.94);padding:18px;z-index:4;backdrop-filter:blur(20px)}
+  .reader .sheet .grab{width:36px;height:4px;border-radius:99px;background:rgba(255,255,255,.18);margin:0 auto 14px}
+  .reader .sheet h3{font-size:13px;font-weight:800;margin-bottom:12px}
+  .reader .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .reader .opt{height:60px;border-radius:16px;background:rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:9px;color:rgba(231,226,234,.65)}
+  .reader .opt.on{background:rgba(178,59,84,.2);color:#ffb1c1;box-shadow:inset 0 0 0 1px rgba(255,177,193,.4)}
+  .reader .opt .icon{width:20px;height:20px}
+</style>
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24"><path d="M5 4h4v16H5zM11 4h4v16h-4zM17 5l3-1 3 15-3 1z"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2.1 5-5 2.1 2.1-5z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 5 2 5 2 6.5H4.5c0-1.5 2-1.5 2-6.5zM10 19.5a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v17H6.5A2.5 2.5 0 0 0 4 22zM20 5.5A2.5 2.5 0 0 0 17.5 3H12v17h5.5A2.5 2.5 0 0 1 20 22z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-4v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
+  <symbol id="i-chapters" viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></symbol>
+</svg>
+
+<!-- HOME -->
+<section class="artboard phone" id="home">
+  <div class="status"><span>9:41</span><span class="right">5G ▮▮▮ ▰</span></div>
+  <div class="scroll">
+    <div class="home-head">
+      <div>
+        <div class="brand"><span class="mark">M</span> Miyomu</div>
+        <h1>Good evening</h1>
+        <div class="sub">Friday, Oct 31 · 12 new chapters</div>
+      </div>
+      <div class="head-actions"><button class="iconbtn"><svg class="icon"><use href="#i-search"/></svg></button></div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-top">
+        <div class="cover"><div class="art c1"></div><div class="veil"></div><div class="ct">SKY ARCHIVE</div><div class="ca">MIRA OKONKWO</div></div>
+        <div style="min-width:0;flex:1">
+          <h2>Sky Archive</h2>
+          <div class="ch">Chapter 80 · The library that drifts</div>
+          <div class="progress"><i></i></div>
+          <div class="pct"><span>62%</span><span>18 min left</span></div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="main"><svg class="icon sm"><use href="#i-play"/></svg> Continue reading</div>
+        <div class="div"></div>
+        <div class="more"><svg class="icon sm"><use href="#i-chapters"/></svg></div>
+      </div>
+    </div>
+
+    <div class="section"><h2>New chapters</h2><a>See all</a></div>
+    <div class="rail">
+      <article class="card"><div class="cover"><div class="art c4"></div><div class="veil"></div><div class="ct">MOTH &amp; METEOR</div><div class="ca">JUNO ADEYEMI</div><div class="badge">+3</div></div><h3>Moth &amp; Meteor</h3><div class="meta"><span>2h</span><span>+3</span></div></article>
+      <article class="card"><div class="cover"><div class="art c5"></div><div class="veil"></div><div class="ct">CLOUD KITCHEN</div><div class="ca">PRIYA SANDOVAL</div><div class="badge">+1</div></div><h3>Cloud Kitchen</h3><div class="meta"><span>5h</span><span>+1</span></div></article>
+      <article class="card"><div class="cover"><div class="art c6"></div><div class="veil"></div><div class="ct">NEON MONKS</div><div class="ca">ASHA VARGA</div><div class="badge">+2</div></div><h3>Neon Monks</h3><div class="meta"><span>1d</span><span>+2</span></div></article>
+    </div>
+
+    <div class="section"><h2>Jump back in</h2><a>See all</a></div>
+    <div class="grid">
+      <article class="card lib-card"><div class="cover"><div class="art c2"></div><div class="veil"></div><div class="ct">NORTHBOUND OWL</div><div class="ca">SIGNE AALTO</div></div><h3>Northbound Owl</h3><div class="meta"><span>48%</span><span>Ch. 32</span></div><div class="bar"><i style="width:48%"></i></div></article>
+      <article class="card lib-card"><div class="cover"><div class="art c3"></div><div class="veil"></div><div class="ct">STATIC BLOOM</div><div class="ca">KIRA MOREAU</div></div><h3>Static Bloom</h3><div class="meta"><span>81%</span><span>Ch. 64</span></div><div class="bar"><i style="width:81%"></i></div></article>
+      <article class="card lib-card"><div class="cover"><div class="art c1"></div><div class="veil"></div><div class="ct">HARBOR OF BELLS</div><div class="ca">LUKAS BRANDT</div></div><h3>Harbor of Bells</h3><div class="meta"><span>12%</span><span>Ch. 8</span></div><div class="bar"><i style="width:12%"></i></div></article>
+    </div>
+  </div>
+
+  <div class="fab-wrap">
+    <button class="fab"><svg class="icon"><use href="#i-plus"/></svg></button>
+  </div>
+
+  <nav class="nav">
+    <a class="item on"><svg class="icon fill"><use href="#i-home"/></svg>Home</a>
+    <a class="item"><svg class="icon"><use href="#i-lib"/></svg>Library</a>
+    <a class="item"><svg class="icon"><use href="#i-compass"/></svg>Browse</a>
+    <a class="item"><svg class="icon"><use href="#i-bell"/></svg>Updates</a>
+    <a class="item"><svg class="icon"><use href="#i-settings"/></svg>More</a>
+  </nav>
+</section>
+
+<!-- LIBRARY -->
+<section class="artboard phone" id="library">
+  <div class="status"><span>9:41</span><span class="right">5G ▮▮▮ ▰</span></div>
+  <div class="scroll">
+    <div class="lib-head">
+      <div><h1>Library</h1><div class="sub">128 titles · 6 reading</div></div>
+      <div class="head-actions"><button class="iconbtn"><svg class="icon"><use href="#i-search"/></svg></button><button class="iconbtn"><svg class="icon"><use href="#i-filter"/></svg></button></div>
+    </div>
+    <div class="seg"><div class="s on">All 128</div><div class="s">Reading</div><div class="s">Unread</div><div class="s">Done</div></div>
+    <div class="lib-grid">
+      <article class="lib-card"><div class="cover"><div class="art c1"></div><div class="veil"></div><div class="ct">SKY ARCHIVE</div><div class="ca">MIRA OKONKWO</div><div class="badge">+3</div></div><h3>Sky Archive</h3><div class="meta"><span>62%</span><span>Ch. 80</span></div><div class="bar"><i style="width:62%"></i></div></article>
+      <article class="lib-card"><div class="cover"><div class="art c2"></div><div class="veil"></div><div class="ct">NORTHBOUND OWL</div><div class="ca">SIGNE AALTO</div></div><h3>Northbound Owl</h3><div class="meta"><span>48%</span><span>Ch. 32</span></div><div class="bar"><i style="width:48%"></i></div></article>
+      <article class="lib-card"><div class="cover"><div class="art c3"></div><div class="veil"></div><div class="ct">STATIC BLOOM</div><div class="ca">KIRA MOREAU</div></div><h3>Static Bloom</h3><div class="meta"><span>81%</span><span>Ch. 64</span></div><div class="bar"><i style="width:81%"></i></div></article>
+      <article class="lib-card"><div class="cover"><div class="art c4"></div><div class="veil"></div><div class="ct">MOTH &amp; METEOR</div><div class="ca">JUNO ADEYEMI</div></div><h3>Moth &amp; Meteor</h3><div class="meta"><span>New</span><span>Ch. 1</span></div><div class="bar"><i style="width:0%"></i></div></article>
+      <article class="lib-card"><div class="cover"><div class="art c5"></div><div class="veil"></div><div class="ct">CLOUD KITCHEN</div><div class="ca">PRIYA SANDOVAL</div></div><h3>Cloud Kitchen</h3><div class="meta"><span>34%</span><span>Ch. 12</span></div><div class="bar"><i style="width:34%"></i></div></article>
+      <article class="lib-card"><div class="cover"><div class="art c6"></div><div class="veil"></div><div class="ct">NEON MONKS</div><div class="ca">ASHA VARGA</div></div><h3>Neon Monks</h3><div class="meta"><span>New</span><span>Ch. 1</span></div><div class="bar"><i style="width:0%"></i></div></article>
+    </div>
+  </div>
+  <nav class="nav">
+    <a class="item"><svg class="icon"><use href="#i-home"/></svg>Home</a>
+    <a class="item on"><svg class="icon fill"><use href="#i-lib"/></svg>Library</a>
+    <a class="item"><svg class="icon"><use href="#i-compass"/></svg>Browse</a>
+    <a class="item"><svg class="icon"><use href="#i-bell"/></svg>Updates</a>
+    <a class="item"><svg class="icon"><use href="#i-settings"/></svg>More</a>
+  </nav>
+</section>
+
+<!-- DESKTOP -->
+<section class="artboard desktop" id="desktop">
+  <aside class="rail">
+    <div class="logo">M</div>
+    <div class="r on"><svg class="icon"><use href="#i-lib"/></svg>Library</div>
+    <div class="r"><svg class="icon"><use href="#i-home"/></svg>Home</div>
+    <div class="r"><svg class="icon"><use href="#i-compass"/></svg>Browse</div>
+    <div class="r"><svg class="icon"><use href="#i-bell"/></svg>Updates</div>
+    <div class="r"><svg class="icon"><use href="#i-bookmark"/></svg>Saved</div>
+    <div class="spacer"></div>
+    <div class="r"><svg class="icon"><use href="#i-settings"/></svg>More</div>
+  </aside>
+  <div class="main">
+    <div class="top">
+      <div class="crumb">Library</div>
+      <div class="search"><svg class="icon sm"><use href="#i-search"/></svg> Search titles, authors, tags… <kbd>⌘K</kbd></div>
+      <div class="actions"><button class="iconbtn"><svg class="icon"><use href="#i-more"/></svg></button></div>
+    </div>
+    <div class="content">
+      <div class="head">
+        <div><h1>Library</h1><p>128 titles · 6 reading · 12 new chapters</p></div>
+        <div class="btns"><button class="btn"><svg class="icon sm"><use href="#i-sort"/></svg> Recent</button><button class="btn"><svg class="icon sm"><use href="#i-filter"/></svg> Filter</button><button class="btn primary"><svg class="icon sm"><use href="#i-plus"/></svg> Add</button></div>
+      </div>
+      <div class="seg"><div class="s on">All 128</div><div class="s">Reading 6</div><div class="s">Unread 41</div><div class="s">Completed 81</div><div class="s">Downloaded 23</div></div>
+      <div class="grid">
+        <article class="card"><div class="cover"><div class="art c1"></div><div class="veil"></div><div class="ct">SKY ARCHIVE</div><div class="ca">MIRA OKONKWO</div><div class="badge">+3</div></div><h3>Sky Archive</h3><div class="meta"><span>Mira Okonkwo</span><span>62%</span></div><div class="bar"><i style="width:62%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c2"></div><div class="veil"></div><div class="ct">NORTHBOUND OWL</div><div class="ca">SIGNE AALTO</div></div><h3>Northbound Owl</h3><div class="meta"><span>Signe Aalto</span><span>48%</span></div><div class="bar"><i style="width:48%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c3"></div><div class="veil"></div><div class="ct">STATIC BLOOM</div><div class="ca">KIRA MOREAU</div></div><h3>Static Bloom</h3><div class="meta"><span>Kira Moreau</span><span>81%</span></div><div class="bar"><i style="width:81%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c4"></div><div class="veil"></div><div class="ct">MOTH &amp; METEOR</div><div class="ca">JUNO ADEYEMI</div></div><h3>Moth &amp; Meteor</h3><div class="meta"><span>Juno Adeyemi</span><span>New</span></div><div class="bar"><i style="width:0%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c5"></div><div class="veil"></div><div class="ct">CLOUD KITCHEN</div><div class="ca">PRIYA SANDOVAL</div></div><h3>Cloud Kitchen</h3><div class="meta"><span>Priya Sandoval</span><span>34%</span></div><div class="bar"><i style="width:34%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c6"></div><div class="veil"></div><div class="ct">NEON MONKS</div><div class="ca">ASHA VARGA</div></div><h3>Neon Monks</h3><div class="meta"><span>Asha Varga</span><span>New</span></div><div class="bar"><i style="width:0%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c2"></div><div class="veil"></div><div class="ct">HARBOR OF BELLS</div><div class="ca">LUKAS BRANDT</div></div><h3>Harbor of Bells</h3><div class="meta"><span>Lukas Brandt</span><span>12%</span></div><div class="bar"><i style="width:12%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c1"></div><div class="veil"></div><div class="ct">HOLLOW STAR</div><div class="ca">TEO LINDQVIST</div></div><h3>Hollow Star</h3><div class="meta"><span>Teo Lindqvist</span><span>97%</span></div><div class="bar"><i style="width:97%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c3"></div><div class="veil"></div><div class="ct">PAPER MOON</div><div class="ca">IRIS TAKEDA</div></div><h3>Paper Moon</h3><div class="meta"><span>Iris Takeda</span><span>5%</span></div><div class="bar"><i style="width:5%"></i></div></article>
+        <article class="card"><div class="cover"><div class="art c6"></div><div class="veil"></div><div class="ct">GLASS GARDEN</div><div class="ca">REN HALVORSEN</div></div><h3>Glass Garden</h3><div class="meta"><span>Ren Halvorsen</span><span>100%</span></div><div class="bar"><i style="width:100%"></i></div></article>
+      </div>
+    </div>
+  </div>
+  <aside class="support">
+    <div class="topline"><span>Selected</span><button class="iconbtn" style="width:32px;height:32px;border-radius:10px"><svg class="icon sm"><use href="#i-more"/></svg></button></div>
+    <div class="hero">
+      <div class="cover"><div class="art c1"></div><div class="veil"></div><div class="ct">SKY ARCHIVE</div><div class="ca">MIRA OKONKWO</div></div>
+      <div style="min-width:0;padding-top:4px"><h2>Sky Archive</h2><div class="by">Mira Okonkwo</div><div class="chips" style="margin-top:10px"><span class="chip">Fantasy</span><span class="chip">Mystery</span></div></div>
+    </div>
+    <div class="cta"><svg class="icon sm"><use href="#i-play"/></svg> Continue reading</div>
+    <div class="actions"><button class="btn"><svg class="icon sm"><use href="#i-heart"/></svg> Favorite</button><button class="btn"><svg class="icon sm"><use href="#i-dl"/></svg> Save</button></div>
+    <div><div class="tiny" style="display:flex;justify-content:space-between"><span>62% · Chapter 80</span><span>18 min left</span></div><div class="bar" style="margin-top:8px;height:5px"><i style="width:62%"></i></div></div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div class="chapter on"><span class="n">80</span><span class="t">The library that drifts</span><span class="dot"></span></div>
+      <div class="chapter"><span class="n">79</span><span class="t">A map of falling books</span><span class="dot"></span></div>
+      <div class="chapter"><span class="n">78</span><span class="t">The keeper's bell</span><span class="dot"></span></div>
+      <div class="chapter"><span class="n">77</span><span class="t">Paper moon</span><span class="dot"></span></div>
+      <div class="chapter"><span class="n">76</span><span class="t">At the edge of dawn</span><span class="dot"></span></div>
+    </div>
+    <div class="tiny" style="margin-top:auto;line-height:1.5">Updated 2 hours ago<br>Local library · 128 chapters</div>
+  </aside>
+</section>
+
+<!-- READER -->
+<section class="artboard reader" id="reader">
+  <div class="rtop">
+    <div class="toolbar">
+      <div class="ib"><svg class="icon"><use href="#i-back"/></svg></div>
+      <div class="tt"><b>Sky Archive</b><span>Chapter 80 · The library that drifts</span></div>
+      <div class="ib"><svg class="icon"><use href="#i-more"/></svg></div>
+    </div>
+  </div>
+  <div class="page">
+    <div class="paper">
+      <div class="p a"><div class="figure"></div><div class="bubble" style="left:12%;top:12%;width:68px;height:48px">Where does<br>the sky end?</div><div class="bubble" style="right:10%;bottom:18%;width:56px;height:42px">Every book<br>fell once.</div></div>
+      <div class="p b"><div class="s"><div class="bubble" style="left:18%;top:24%;width:58px;height:44px">The archive<br>moves at dawn.</div></div><div class="s"><div class="bubble" style="right:12%;bottom:16%;width:60px;height:44px">Then we<br>follow it.</div></div></div>
+    </div>
+  </div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Reading options</h3>
+    <div class="opts">
+      <div class="opt on"><svg class="icon"><use href="#i-fit"/></svg>Fit width</div>
+      <div class="opt"><svg class="icon"><use href="#i-chapters"/></svg>Chapters</div>
+      <div class="opt"><svg class="icon"><use href="#i-moon"/></svg>Dark</div>
+      <div class="opt"><svg class="icon"><use href="#i-bookmark"/></svg>Bookmark</div>
+    </div>
+  </div>
+  <div class="rbot">
+    <div class="progressbar"><b>12</b><div class="track"><i></i></div><b>32</b><span style="font-size:10px;color:rgba(231,226,234,.55)">37%</span></div>
+  </div>
+</section>
+</body>
+</html>

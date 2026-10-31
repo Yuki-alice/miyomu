@@ -1,0 +1,47 @@
+name: Miyomu
+options:
+  bundleIdPrefix: app.miyomu
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGNING_ALLOWED: "NO"
+targets:
+  Miyomu:
+    type: application
+    platform: iOS
+    sources:
+      - path: Miyomu
+    info:
+      path: Miyomu/Info.plist
+      properties:
+        CFBundleDisplayName: Miyomu
+        UILaunchScreen: {}
+        CADisableMinimumFrameDurationOnPhone: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.miyomu
+        PRODUCT_NAME: Miyomu
+        INFOPLIST_KEY_CFBundleDisplayName: Miyomu
+        TARGETED_DEVICE_FAMILY: "1,2"
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(SRCROOT)/../app/shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS:
+          - "-framework"
+          - "MiyomuShared"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/Frameworks"
+    preBuildScripts:
+      - name: Build Kotlin Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+          cd "$SRCROOT/.."
+          ./gradlew :app:shared:embedAndSignAppleFrameworkForXcode

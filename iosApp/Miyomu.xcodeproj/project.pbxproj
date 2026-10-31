@@ -1,0 +1,218 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0400122FCBBD0709265F09B7 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5440A80998F9FA44BAEF4D /* iOSApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A8C87601F5527AD0D8A882D4 /* Miyomu.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Miyomu.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED5440A80998F9FA44BAEF4D /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
+		FA153CE4CF618FB1122B2789 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2283CFDA876EAB17C7A50BB2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A8C87601F5527AD0D8A882D4 /* Miyomu.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		81FACD4BB8D2FF267B34E289 /* Miyomu */ = {
+			isa = PBXGroup;
+			children = (
+				FA153CE4CF618FB1122B2789 /* Info.plist */,
+				ED5440A80998F9FA44BAEF4D /* iOSApp.swift */,
+			);
+			path = Miyomu;
+			sourceTree = "<group>";
+		};
+		A14123833681EFE9B2340BD8 = {
+			isa = PBXGroup;
+			children = (
+				81FACD4BB8D2FF267B34E289 /* Miyomu */,
+				2283CFDA876EAB17C7A50BB2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		60982E1293457DFB570996B1 /* Miyomu */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A793EF7E3742701676AEB16 /* Build configuration list for PBXNativeTarget "Miyomu" */;
+			buildPhases = (
+				F6CEF4DA07FBC851DD96D9FB /* Build Kotlin Framework */,
+				C99B602C5A0EAB6D0E29DDCE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Miyomu;
+			packageProductDependencies = (
+			);
+			productName = Miyomu;
+			productReference = A8C87601F5527AD0D8A882D4 /* Miyomu.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		522F079064DFBB976E73B0DD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 6192A202D0D5853E0A23AB94 /* Build configuration list for PBXProject "Miyomu" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A14123833681EFE9B2340BD8;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2283CFDA876EAB17C7A50BB2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				60982E1293457DFB570996B1 /* Miyomu */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		F6CEF4DA07FBC851DD96D9FB /* Build Kotlin Framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Kotlin Framework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export JAVA_HOME=$(/usr/libexec/java_home -v 21)\ncd \"$SRCROOT/..\"\n./gradlew :app:shared:embedAndSignAppleFrameworkForXcode\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C99B602C5A0EAB6D0E29DDCE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0400122FCBBD0709265F09B7 /* iOSApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		55886D4F118F527ABD75727D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/../app/shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
+				INFOPLIST_FILE = Miyomu/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Miyomu;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					MiyomuShared,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.miyomu;
+				PRODUCT_NAME = Miyomu;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		57A169A2D32714E53F5937B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		9BB0E6EFD027264F33C6E96D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		9FEEE97D8E8B105951147162 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/../app/shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
+				INFOPLIST_FILE = Miyomu/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Miyomu;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					MiyomuShared,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.miyomu;
+				PRODUCT_NAME = Miyomu;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3A793EF7E3742701676AEB16 /* Build configuration list for PBXNativeTarget "Miyomu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9FEEE97D8E8B105951147162 /* Debug */,
+				55886D4F118F527ABD75727D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6192A202D0D5853E0A23AB94 /* Build configuration list for PBXProject "Miyomu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9BB0E6EFD027264F33C6E96D /* Debug */,
+				57A169A2D32714E53F5937B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 522F079064DFBB976E73B0DD /* Project object */;
+}
