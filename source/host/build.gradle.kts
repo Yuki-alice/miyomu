@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    id("miyomu.jvm.library")
 }
 
 dependencies {
@@ -8,6 +8,3 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 }
 
-kotlin {
-    jvmToolchain(21)
-}

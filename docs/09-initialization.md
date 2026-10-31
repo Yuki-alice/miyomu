@@ -68,7 +68,7 @@ miyomu/
 └── gradle/
 ```
 
-模块数：当前 20 个 Gradle 模块；`build-logic` 约定插件为下一步（目标 21）。
+模块数：当前 20 个 Gradle 模块 + `build-logic`（已完成约定插件）。
 
 ## 4. Gradle 配置
 
@@ -429,7 +429,7 @@ cd "$SRCROOT/.."
 ## 11. M0 完成定义
 
 - [ ] 三端显示 MD3E 主题壳。
-- [ ] 20 个 Gradle 模块可配置，依赖方向正确；build-logic 为下一步。
+- [x] 20 个 Gradle 模块可配置，依赖方向正确；build-logic 已完成。
 - [ ] Room 空库/基线库可打开。
 - [ ] reader-core 复制并通过原测试。
 - [ ] CI 三端绿。

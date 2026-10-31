@@ -18,6 +18,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "miyomu"
 
+includeBuild("build-logic")
+
 include(
     ":app:shared",
     ":app:android",

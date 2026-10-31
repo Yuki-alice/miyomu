@@ -1,12 +1,7 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.compose.compiler)
+    id("miyomu.jvm.compose")
 }
 
-kotlin {
-    jvmToolchain(21)
-}
 
 dependencies {
     implementation(project(":app:shared"))
