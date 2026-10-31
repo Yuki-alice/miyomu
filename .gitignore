@@ -46,7 +46,10 @@ experiments/spikes/s1-player/fixtures/hls/
 reference/
 
 # Local agent tooling and skills
-.qoder/
+.qoder/*
+!.qoder/skills/
+!.qoder/skills/**
+.qoder/skills/**/.DS_Store
 .zcode/
 .workbuddy-ai/
 .workbuddy/

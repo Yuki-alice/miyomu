@@ -61,4 +61,16 @@ settings screens in `shared/ui`. The player chrome follows Animeko
 (https://github.com/open-ani/animeko, AGPL-3.0) for behavior only — no Animeko
 code is used.
 
+This repository also vendors the following agent skill collections under
+`.qoder/skills/` for development-time agent instructions. Each collection
+retains its upstream LICENSE file; see `.qoder/skills/README.md` for commits
+and details. These files are not part of the shipped application binary.
+
+- compose-skill (https://github.com/aldefy/compose-skill), MIT.
+- material-3-skill (https://github.com/hamen/material-3-skill), MIT.
+- md3e-skill (https://github.com/mfskys/md3e-skill), Apache-2.0.
+- chrisbanes-skills (https://github.com/chrisbanes/skills), Apache-2.0.
+- compose-performance-skills (https://github.com/skydoves/compose-performance-skills), Apache-2.0.
+- kotlin-agent-skills (https://github.com/Kotlin/kotlin-agent-skills), Apache-2.0.
+
 The full Apache License 2.0 text is available in LICENSE.
