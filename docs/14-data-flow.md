@@ -147,7 +147,7 @@ xcodebuild -project iosApp/Miyomu.xcodeproj -scheme Miyomu \
 2. `core:data` 接 Room：收藏/历史/进度。
 3. 用真实 JSON 源替换 DemoSourceRuntime。
 4. 页面迁到 ViewModel + Koin。
-5. 增加 `Details → Reader(chapterId)`。
+5. ~~增加 `Details → Reader(chapterId)`~~ 已完成，见 [15-reader-route.md](15-reader-route.md)。
 6. 图片管线：Coil + 请求头/Referer。
 
 ## 8. 结论

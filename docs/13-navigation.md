@@ -137,7 +137,7 @@ navController.navigate(route) {
 ## 7. 后续
 
 1. 详情页接真实 `core:data` 数据。
-2. 增加 `Details → Reader(chapterId)` 路由。
+2. ~~增加 `Details → Reader(chapterId)` 路由~~ 已完成，见 [15-reader-route.md](15-reader-route.md)。
 3. 深链：`miyomu://details?source=...&id=...`。
 4. 迁移到类型安全路由（`@Serializable` route）。
 5. Desktop 返回快捷键；iOS 边缘返回手势。

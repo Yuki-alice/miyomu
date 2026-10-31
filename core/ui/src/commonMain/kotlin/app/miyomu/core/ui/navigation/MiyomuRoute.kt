@@ -27,4 +27,8 @@ sealed interface MiyomuRoute {
     data class Details(val contentId: String) : MiyomuRoute {
         override val key: String = "details/$contentId"
     }
+
+    data class Reader(val contentId: String, val chapterId: String) : MiyomuRoute {
+        override val key: String = "reader/$contentId/$chapterId"
+    }
 }

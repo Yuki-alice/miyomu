@@ -35,4 +35,17 @@ class ContentRepositoryTest {
         assertEquals(5, value.chapters.size)
         assertEquals("Chapter 1", value.chapters.first().title)
     }
+
+    @Test
+    fun pagesReturnsFixturePages() = runTest {
+        val repo = repository()
+        val items = (repo.browse() as Outcome.Success).value
+        val details = (repo.details(items.first().id) as Outcome.Success).value
+        val pages = repo.pages(items.first().id, details.chapters.first().id)
+        assertTrue(pages is Outcome.Success)
+        val value = (pages as Outcome.Success).value
+        assertEquals(3, value.size)
+        assertEquals(0, value.first().index)
+        assertTrue(value.first().url.contains("example.com/page"))
+    }
 }

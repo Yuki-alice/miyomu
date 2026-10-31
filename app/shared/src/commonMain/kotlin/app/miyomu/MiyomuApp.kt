@@ -20,6 +20,7 @@ import app.miyomu.feature.discover.DetailsScreen
 import app.miyomu.feature.discover.DiscoverScreen
 import app.miyomu.feature.library.HomeScreen
 import app.miyomu.feature.library.LibraryScreen
+import app.miyomu.feature.reader.ReaderScreen
 import app.miyomu.feature.settings.SettingsScreen
 
 @Composable
@@ -56,6 +57,15 @@ fun MiyomuApp() {
                         repository = repository,
                         contentId = route.contentId,
                         onBack = { navController.popBackStack() },
+                        onOpenReader = { content, chapter ->
+                            navController.navigate(MiyomuRoute.Reader(content, chapter.toString()).key)
+                        },
+                    )
+                    is MiyomuRoute.Reader -> ReaderScreen(
+                        repository = repository,
+                        contentId = route.contentId,
+                        chapterId = route.chapterId,
+                        onBack = { navController.popBackStack() },
                     )
                 }
             }
@@ -79,6 +89,7 @@ private fun NavHostController.selectTopLevel(destination: AppDestination) {
 private fun String?.toDestination(): AppDestination = when {
     this == null -> AppDestination.HOME
     startsWith("details/") -> AppDestination.LIBRARY
+    startsWith("reader/") -> AppDestination.LIBRARY
     this == MiyomuRoute.Library.key -> AppDestination.LIBRARY
     this == MiyomuRoute.Browse.key -> AppDestination.BROWSE
     this == MiyomuRoute.Updates.key -> AppDestination.UPDATES

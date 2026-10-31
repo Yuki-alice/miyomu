@@ -10,8 +10,8 @@
 | `:core:reader` | 54 主源码 + 34 测试 | **193** | ✅ |
 | `:core:source` | 35 主源码 + 14 测试 | **74** | ✅ |
 | `:core:network` | 25 主源码 + 10 测试 | **105** | ✅ |
-| `:core:data` | 3 主源码 + 1 测试 | **2** | ✅ |
-| **合计** | **91 + 61 文件** | **374** | ✅ |
+| `:core:data` | 3 主源码 + 1 测试 | **3** | ✅ |
+| **合计** | **91 + 61 文件** | **375** | ✅ |
 
 三端编译：
 
@@ -38,7 +38,7 @@
 :core:source:desktopTest     74 passed
 :core:network:desktopTest   105 passed
 ----------------------------------------
-total                       374 passed
+total                       375 passed
 ```
 
 验证命令：
@@ -69,7 +69,7 @@ core:reader    ← 真实 Kototoro 阅读器几何
 core:source    ← 真实 SourceRuntime / 协议 DTO
 core:network   ← 真实 WebDAV / Drive / MAL HTTP 协议
 core:database  ← Room 占位
-core:data      ← ContentRepository + DemoSourceRuntime（第一条真实数据流）
+core:data      ← ContentRepository + DemoSourceRuntime（Browse/Details/Reader）
 ```
 
 说明：

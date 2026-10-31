@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import androidx.savedstate.read
 
 private const val DETAILS_PATTERN = "details/{contentId}"
+private const val READER_PATTERN = "reader/{contentId}/{chapterId}"
 
 @Composable
 fun MiyomuNavHost(
@@ -33,11 +34,26 @@ fun MiyomuNavHost(
         ) { entry ->
             content(MiyomuRoute.Details(entry.arguments?.read { getString("contentId") }.orEmpty()))
         }
+        composable(
+            route = READER_PATTERN,
+            arguments = listOf(
+                navArgument("contentId") { type = NavType.StringType },
+                navArgument("chapterId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            content(
+                MiyomuRoute.Reader(
+                    contentId = entry.arguments?.read { getString("contentId") }.orEmpty(),
+                    chapterId = entry.arguments?.read { getString("chapterId") }.orEmpty(),
+                ),
+            )
+        }
     }
 }
 
 val MiyomuRoute.destinationRoute: String
     get() = when (this) {
         is MiyomuRoute.Details -> DETAILS_PATTERN
+        is MiyomuRoute.Reader -> READER_PATTERN
         else -> key
     }

@@ -10,9 +10,11 @@ import app.miyomu.core.model.ContentState
 import app.miyomu.core.model.ContentSummary
 import app.miyomu.core.model.ContentType
 import app.miyomu.core.model.Outcome
+import app.miyomu.core.model.PageSummary
 import app.miyomu.core.model.SourceId
 import app.miyomu.core.source.SourceRegistry
 import kotlinx.coroutines.CancellationException
+import org.skepsun.kototoro.core.source.SourceChapter
 import org.skepsun.kototoro.core.source.SourceContent
 import org.skepsun.kototoro.core.source.SourceDetailsFetchMode
 
@@ -20,6 +22,7 @@ class DefaultContentRepository(
     private val registry: SourceRegistry,
 ) : ContentRepository {
     private val cache = mutableMapOf<Long, SourceContent>()
+    private val chapterCache = mutableMapOf<Long, SourceChapter>()
 
     override suspend fun browse(offset: Int, limit: Int): Outcome<List<ContentSummary>> {
         return try {
@@ -57,6 +60,35 @@ class DefaultContentRepository(
                     },
                 ),
             )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Outcome.Failure(AppError.Network(e))
+        }
+    }
+
+    override suspend fun pages(contentId: ContentId, chapterId: ChapterId): Outcome<List<PageSummary>> {
+        return try {
+            val runtime = registry.primary()
+            val source = runtime.getSources().first()
+            var chapter = chapterCache[chapterId.value]
+            if (chapter == null) {
+                val content = cache[contentId.value] ?: loadById(runtime, source.name, contentId.value)
+                    ?: return Outcome.Failure(AppError.NotFound("content ${contentId.value}"))
+                val detailed = runtime.getDetails(content, SourceDetailsFetchMode.ALLOW_CACHE)
+                detailed.chapters.orEmpty().forEach { chapterCache[it.id] = it }
+                chapter = chapterCache[chapterId.value]
+            }
+            if (chapter == null) return Outcome.Failure(AppError.NotFound("chapter ${chapterId.value}"))
+            val pages = runtime.getPages(chapter, null)
+            Outcome.Success(pages.mapIndexed { index, page ->
+                PageSummary(
+                    id = page.id,
+                    index = index,
+                    url = page.url,
+                    headers = page.headers.orEmpty(),
+                )
+            })
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {

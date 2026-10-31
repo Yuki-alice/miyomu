@@ -10,6 +10,7 @@ kotlin {
             implementation(project(":core:ui"))
             implementation(project(":core:design"))
             implementation(project(":core:reader"))
+            implementation(project(":core:data"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.ui)

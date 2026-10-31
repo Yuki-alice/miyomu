@@ -8,7 +8,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 2. **功能先照搬**：数据、源协议、阅读器几何、数据库、备份、扩展运行时直接复用，先保 parity，不主动裁剪。
 3. **UI 全新 MD3E**：不复用旧页面，按 Material 3 Expressive 重新设计；原型与架构迁移并行。
 
-当前处于 **P1 进行中**：三端可构建/启动；核心模块与 **374 个测试**通过；第一条真实数据流（Fixture → Repository → UI）已打通。
+当前处于 **P1 进行中**：三端可构建/启动；核心模块与 **375 个测试**通过；Browse → Details → Reader 的 fixture 数据链路已打通。
 
 ## 文档
 
@@ -24,6 +24,7 @@ Miyomu 以 [Kototoro](reference/Kototoro) v2.3.4 为基线，做三件事：
 | [build-logic](docs/12-build-logic.md) | 约定插件、模块写法与验证 | ✅ |
 | [Navigation](docs/13-navigation.md) | Navigation Compose KMP、路由与返回栈 | ✅ |
 | [数据流](docs/14-data-flow.md) | Fixture → Repository → UI 的第一条真实链路 | ✅ |
+| [Reader 路由](docs/15-reader-route.md) | Details → Reader 与分页演示 | ✅ |
 | [参考项目分析](docs/00-reference-analysis.md) | Kototoro 的规模、机制、可借鉴点与风险 | 分析材料 |
 | [技术栈初稿](docs/01-tech-stack.md) | KMP + CMP 选型；DB/ID 部分已被 07 修正 | 初稿 |
 | [架构初稿](docs/02-architecture.md) | 模块/SourceRuntime/DB；部分结论已被 07 修正 | 初稿 |

@@ -1,5 +1,6 @@
 package app.miyomu.feature.discover
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ fun DetailsScreen(
     repository: ContentRepository,
     contentId: String,
     onBack: () -> Unit,
+    onOpenReader: (String, Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var details by remember { mutableStateOf<ContentDetails?>(null) }
@@ -70,10 +72,14 @@ fun DetailsScreen(
                 Text("Chapters", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     items(current.chapters, key = { it.id.value }) { chapter ->
-                        Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .clickable { onOpenReader(contentId, chapter.id.value) }
+                                .padding(vertical = 10.dp),
+                        ) {
                             Text(chapter.title, style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Chapter ${chapter.number} · demo",
+                                "Chapter ${chapter.number} · tap to read",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
